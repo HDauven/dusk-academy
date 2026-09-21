@@ -1,7 +1,7 @@
-import {courses, courseKey, lastPathKey, exerciseSteps, partSteps, courseLimit, courseLesson, lessonComplete, explorerScenarios, restoreCourse, serializeCourse, assessCourse} from './courses.js';
-import {storageKey, restore as restoreCharacter, serialize as serializeCharacter, cleanName} from './lesson.js';
+import {courses, courseKey, lastPathKey, exerciseSteps, partSteps, courseLimit, courseLesson, lessonComplete, explorerScenarios, restoreCourse, serializeCourse, assessCourse} from './courses.js?v=browser-1';
+import {storageKey, restore as restoreCharacter, serialize as serializeCharacter, cleanName} from './lesson.js?v=browser-1';
 import {highlight, syncScroll} from './editor.js';
-import {browserRuntime, previewRecap} from './hosting.js';
+import {browserRuntime, previewRecap} from './hosting.js?v=browser-1';
 import {executeDapp} from './dapp-sandbox.js';
 
 const $ = selector => document.querySelector(selector);
@@ -157,7 +157,7 @@ function start() {
   async function execute(payload,signal) {
     if(browse&&id==='dapps')return executeDapp(payload,signal);
     const script=new URL(id==='circuits'?'./circuit-worker.js':'./dapp-worker.js',import.meta.url);
-    const response=await fetch(script,{signal});
+    const response=await fetch(script,{signal,cache:'reload'});
     if(!response.ok||!browse&&!response.headers.get('Content-Security-Policy')?.startsWith("default-src 'none'; script-src 'self' blob: 'wasm-unsafe-eval'; worker-src 'none'; connect-src ")) throw Error('The isolated worker is unavailable. Open this lesson through npm run dev.');
     signal.throwIfAborted();
     return new Promise((resolve,reject)=>{

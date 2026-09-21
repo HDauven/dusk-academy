@@ -1,7 +1,7 @@
-import {chapters, lessons, codeSteps, stepsFor, partSteps, storageKey, restore, serialize, assess, unlocked, markChecked, contractIds, cleanName} from './lesson.js';
-import {courses, courseKey, lastPathKey, restoreCourse, courseComplete, lessonComplete} from './courses.js';
+import {chapters, lessons, codeSteps, stepsFor, partSteps, storageKey, restore, serialize, assess, unlocked, markChecked, contractIds, cleanName} from './lesson.js?v=browser-1';
+import {courses, courseKey, lastPathKey, restoreCourse, courseComplete, lessonComplete} from './courses.js?v=browser-1';
 import {highlight, syncScroll} from './editor.js';
-import {browserRuntime, previewRecap} from './hosting.js';
+import {browserRuntime, previewRecap} from './hosting.js?v=browser-1';
 import {simulateContract, inspectInterface} from './contract-simulator.js';
 
 const $ = selector => document.querySelector(selector);

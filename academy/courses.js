@@ -379,7 +379,10 @@ export function courseLimit(course, state, preview = false) {
 }
 export const courseComplete = (course,state) => exerciseSteps(course).every(i=>Boolean(state.checks[i]));
 export const courseLesson = (course,step) => course.lessons.find(lesson=>step<=course.chapters.findIndex(c=>c.id===lesson.end));
-export const lessonComplete = (course,state,lesson) => Boolean(state.checks[course.chapters.findIndex(c=>c.id===lesson.check)]);
+export function lessonComplete(course,state,lesson) {
+  const first=course.chapters.findIndex(c=>c.id===lesson.start),last=course.chapters.findIndex(c=>c.id===lesson.check);
+  return first>=0&&last>=first&&exerciseSteps(course).filter(i=>i>=first&&i<=last).every(i=>Boolean(state.checks[i]));
+}
 
 // Runtime positions stay numeric; persisted positions/checks use stable chapter IDs.
 // This is the only positional map needed for the original version-1 records.

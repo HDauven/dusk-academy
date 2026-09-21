@@ -22,6 +22,9 @@ const AxeBuilder=require('@axe-core/playwright').default;
       if(process.env.PAGES_LIVE==='1'&&prefix===base)return route.continue();
       const relative=new URL(url).pathname.slice(new URL(prefix).pathname.length)||'index.html',file=path.resolve(root,decodeURIComponent(relative));
       if(!file.startsWith(root+path.sep)){unexpected.push(url);return route.abort();}
+      // A cached pre-browser helper ignores the new simulated flag and writes native credit.
+      // New entrypoints must request a different module URL, not reuse that old writer.
+      if(relative==='academy/lesson.js'&&!new URL(url).search){return route.fulfill({contentType:'text/javascript',body:`import {chapters} from './lesson.js?v=browser-1'; export * from './lesson.js?v=browser-1'; export function markChecked(state,step){state.checks[chapters[step].check]=state.source;}`});}
       try{const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.webp':'image/webp','.woff2':'font/woff2'};await route.fulfill({body:await readFile(file),contentType:types[path.extname(file)]||'text/plain'});}
       catch(error){errors.push(relative+': '+error.message);await route.abort();}
     });
@@ -47,7 +50,7 @@ const AxeBuilder=require('@axe-core/playwright').default;
         await page.locator('#code').fill(answer.replace('count: 0','count: 7'));await run('bad');
         assert.deepEqual((await saved(storageKey)).simulated,before,'wrong initialization cannot award '+c.id);
         draft=answer;await page.locator('#code').fill(draft);await run('good');
-        const state=await saved(storageKey);assert.equal(state.simulated[c.check],draft);assert.ok(Object.values(state.checks).every(v=>!v));
+        const state=await saved(storageKey);assert.ok(Object.values(state.checks).every(v=>!v),'cached native helpers must not award native credit');assert.equal(state.simulated?.[c.check],draft);
         if(['record-cancel','permission-resize','test-atomic','build-driver'].includes(c.id))await axe(c.id+' results');
         if(c.id==='build-driver'){
           assert.match(await page.locator('#build-detail').textContent(),/Interpreted source \(not WASM\).*Prebuilt reference data-driver/s);
@@ -69,6 +72,12 @@ const AxeBuilder=require('@axe-core/playwright').default;
     for(const [id,course]of Object.entries(courses)){
       await page.goto(base+`course.html?path=${id}#begin`);await waitStep(0);let source=course.starter||'',explorer;
       if(id==='dusk'){await page.locator('#character-name-input').fill('Mira');assert.deepEqual(await saved(storageKey),{...contractSave,name:'Mira'});}
+      if(id==='dapps'){
+        await choose(course.chapters.findIndex(c=>c.id==='wallet'));await page.locator('input[value="approval"]').check();await page.locator('#quiz button').click();
+        assert.match(await page.locator('#character-skill').innerText(),/^Learning /,'answering an early wallet quiz does not earn a coding skill');
+        await choose(course.chapters.findIndex(c=>c.id==='learned'));assert.equal(await page.locator('#earned').isVisible(),false);
+        await page.reload();await choose(0);
+      }
       for(const [i,c]of course.chapters.entries()){
         await waitStep(i);if(course.language)assert.equal(await page.locator('#code').inputValue(),source,id+'/'+c.id+' keeps source');
         if(c.kind==='code'){

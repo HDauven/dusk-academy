@@ -8,7 +8,7 @@ import {circuitProgram} from './circuit-program.js';
 import {execute} from './circuit-worker.js';
 import {fixtureResponse} from './offline-transport.js';
 import {chapters,assess,codeSteps,restore,serialize,markChecked,unlocked} from './lesson.js';
-import {courses,exerciseSteps,restoreCourse,serializeCourse,courseLimit,assessCourse} from './courses.js';
+import {courses,exerciseSteps,restoreCourse,serializeCourse,courseLimit,lessonComplete,assessCourse} from './courses.js';
 const root=new URL('../',import.meta.url);
 const sources=JSON.parse(execFileSync('python3',['-B','-c','import json; from build_browser import lesson_sources; print(json.dumps(lesson_sources()))'],{cwd:root,env:{...process.env,PYTHONPATH:'tools'},encoding:'utf8'}));
 
@@ -62,6 +62,8 @@ test('browser gate programs configure real PLONK proofs, not solution-selected W
 });
 
 test('simulated histories are bounded, separate and survive every path and native review',()=>{
+  const dapp=courses.dapps,wallet=dapp.chapters.findIndex(c=>c.id==='wallet');
+  assert.equal(lessonComplete(dapp,{checks:{[wallet]:'approval'}},dapp.lessons[0]),false,'a quiz alone cannot award a coding skill');
   const state=restore(null);state.started=true;
   for(const step of codeSteps){state.active=step;state.source=sources[chapters[step].check==='initial'?'initial':chapters[step].scenario];markChecked(state,step,true);}
   state.step=chapters.length-1;

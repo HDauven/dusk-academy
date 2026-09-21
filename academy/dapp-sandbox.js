@@ -3,7 +3,7 @@
 let assets;
 async function files(signal) {
   return assets??=Promise.all(['vendor/dusk-connect.js','courses.js','dapp-worker.js','offline-transport.js','vendor/counter-driver.wasm','vendor/explorer-driver.wasm'].map(async name=>{
-    const r=await fetch(new URL(name,import.meta.url),{signal});if(!r.ok)throw Error('The bundled browser runtime is unavailable. Reload the page.');
+    const r=await fetch(new URL(name,import.meta.url),{signal,cache:'reload'});if(!r.ok)throw Error('The bundled browser runtime is unavailable. Reload the page.');
     return name.endsWith('.wasm')?new Uint8Array(await r.arrayBuffer()):r.text();
   })).catch(error=>{assets=null;throw error;});
 }
