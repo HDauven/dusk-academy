@@ -2,17 +2,37 @@
 
 The entrance offers four independent learning paths. Contracts has seven Forge lessons, dApps has two cumulative lessons, and Start with Dusk and Circuits each have one working opening lesson. There are 133 chapters across eleven lessons. None requires completing another path.
 
-Contract lessons put explanations beside editable source and real execution results. **Your skills** shows only the lessons in this contract path and links back to **All learning paths**. The final completion screen offers **All paths** instead of looping into the editor.
+Contract lessons put explanations beside editable source and runtime-labelled results. **Your skills** shows only the lessons in this contract path and links back to **All learning paths**. The final completion screen offers **All paths** instead of looping into the editor.
 
 The original contract shell and hashes remain intact. The other paths share `course.html` and `course-app.js`, the existing stylesheet, editor overlay, fonts and portrait. The entrance is read-only and resumes the most recently visited started path. Leaving a lesson cancels client grading without terminating an already-started server job. A path's completed opening lesson is labelled Review, not represented as a finished specialization.
 
 **The avatar represents the learner. Lessons award skills.** The workshop register is a teaching example, not verified membership, identity or legal compliance.
 
-## Static preview
+## Browser simulator
 
-The [GitHub Pages site](https://hdauven.github.io/dusk-academy/) serves the same files without an execution backend. `hosting.js` shows a preview notice outside `localhost`, `127.0.0.1` and `[::1]`. Coding chapters can be browsed in any order, their drafts and optional answers still save, and completion pages show expected results rather than claiming a successful run. Run buttons, keyboard execution and wallet access are disabled. The dApp wallet question gives feedback without awarding its coding lesson. Start with Dusk retains its real knowledge-check progression.
+The [GitHub Pages site](https://hdauven.github.io/dusk-academy/) serves the same files without an execution backend. `hosting.js` selects browser mode outside `localhost`, `127.0.0.1` and `[::1]`. The contract page also accepts `?runtime=simulator` for static development on loopback. Normal localhost usage retains the native runner.
 
-`unlocked`, `courseLimit`, `restore` and `restoreCourse` accept an optional preview flag to preserve browsing bookmarks without creating checkpoints. The default local behavior, checkpoint validation, save formats and old migrations are unchanged. Browser storage is origin-specific; preview progress is separate from localhost. Copy drafts manually when switching. This UI distinction is not a sandbox or authorization boundary. See [release scope and licensing](../README.md#release-scope).
+`counter-simulator.js` is a bounded interpreter for the opening counter, not a Rust compiler or full DuskVM emulator. It tokenizes the complete source, checks the supported structure and types, builds expressions/statements, then evaluates them. It never evaluates learner text as JavaScript. There are no dynamic imports, host calls, loops or learner-defined function calls in its language. The interpreter runs synchronously with a source and expression-depth bound; it does not need a worker, worker CSP headers or a server sandbox.
+
+Supported source:
+
+- The supplied `no_std`, WASM target and Forge annotations, `mod registry`, `Registry { count: u64 }`, and exactly `new`, `get_count` and parameterless `register`. Keep their supplied signatures. Method order may vary; `register` may explicitly return `()`.
+- Decimal u64 literals, underscores, an optional `u64` suffix, and `u64::MAX`. Calculations use BigInt with checked 0 through 18446744073709551615 bounds, never Number rounding.
+- Parenthesized expressions, `+`, `-`, `*`, `/`, `%` with ordinary precedence, `self.count` reads and `Self { count: expression }` construction.
+- Local u64 `let` / `let mut` bindings, optional `: u64`, shadowing, assignment and compound assignment. Binding names match `[a-z][a-z0-9_]*`, excluding keywords. Only `register(&mut self)` may assign the field.
+- Tail expressions, explicit returns, expression statements, whitespace, line comments and nested block comments.
+
+Other Rust features, including `checked_add`, branches, loops, helper functions, imports, extra fields and argument-taking methods, are unsupported. A limitation message includes a line/column and does not claim that valid Rust is wrong. Bounds are 8,000 UTF-8 source bytes, 64 nested expressions and an arithmetic tree height of 64. Each Run makes two independent instances, reads the initial/fresh values and executes three register calls, using the same opening behavioral grader as native mode. A failed call restores its count; earlier successful calls remain. There are no gas estimates, live transactions, ABI generation or cryptographic claims.
+
+The optional v3 `simulated` map holds only the `initial` and `change` source snapshots. The native `checks` chain is never filled by simulation, and native completion is never inferred from these snapshots. Existing native credit remains visible when switching to browser mode; the UI does not relabel it as simulated. Each snapshot retains the existing 8,000-byte bound; the raw-save bound includes both extra snapshots. Restoring and cross-path name edits preserve both histories without replacing the current draft. Earlier first-lesson review checks the latest opening task, not an unsupported later ABI. Advanced source stays intact and is rejected as unsupported rather than rewritten to the starter.
+
+Unit tests cover evaluation, type/syntax rejection, precision, fresh state, arithmetic failures and simulator rollback. `test:forge` compares supported programs against freshly compiled DuskVM observations and checks that both runtimes reject arithmetic overflow/underflow. The native opening runner stops on failure, so these comparisons do not independently observe its post-failure state; simulator rollback is checked separately. This is coverage of the documented subset, not proof of general VM equivalence.
+
+## Reading previews
+
+Later coding chapters can be browsed in any order, their drafts and optional answers still save, and uncompleted lesson recaps show expected results rather than claiming a successful run. Their Run buttons, keyboard execution and wallet access remain disabled on Pages. The dApp wallet question gives feedback without awarding its coding lesson. Start with Dusk retains its real knowledge-check progression.
+
+`unlocked`, `courseLimit`, `restore` and `restoreCourse` accept an optional preview flag to preserve browsing bookmarks without creating checkpoints. The default native gates, checkpoint validation and old migrations are unchanged. Browser storage is origin-specific; preview progress is separate from localhost. Copy drafts manually when switching. This UI distinction is not a sandbox or authorization boundary. See [release scope and licensing](../README.md#release-scope).
 
 ## Contract path
 
@@ -32,17 +52,17 @@ The first lesson introduces Rust/Forge/DuskVM roles, the file structure, fields 
 
 Rust syntax is explained only where the contract needs it. Supplied code remains visible and editable. No automatic source rewriting occurs between lessons, including for equivalent learner solutions. A new edit needs a new successful check. Completing the first entrypoint task can also fill a missing initial-state check, without overwriting an existing initial-state source snapshot.
 
-Reading earlier chapters does not rewind the file or call a now-obsolete signature. The saved `active` checkpoint identifies the latest coding task; the editor explicitly names it on guide/practice pages and earlier reviews. Run executes and grades that real task. Optional answers can be wrong or skipped without blocking navigation or fabricating a check. The chapter strip shows only the current four- or five-chapter part. A keyboard-accessible native selector groups all chapters by lesson, retaining focus on selection. The skills dialog links the seven earned/available lessons.
+In native mode, reading earlier chapters does not rewind the file or call a now-obsolete signature. The saved `active` checkpoint identifies the latest coding task; the editor explicitly names it on guide/practice pages and earlier reviews. Run executes and grades that real task. Optional answers can be wrong or skipped without blocking navigation or fabricating a check. The chapter strip shows only the current four- or five-chapter part. A keyboard-accessible native selector groups all chapters by lesson, retaining focus on selection. The skills dialog links the seven earned/available lessons.
 
 The existing `dusk-academy-forge-lesson-v1` storage key is retained. The **version-3 payload** uses stable chapter IDs for `step` and `active`, the original named checkpoint keys, and chapter-ID optional answers. Runtime positions remain numeric. `serialize()` writes IDs. `restore()` translates all 37 old numeric positions through a fixed v1/v2 map. Both lesson controllers reuse `cleanName()` when editing the shared learner name. Old hashes, names, unfinished drafts, historical snapshots and earned skills remain intact. New reading/practice pages do not revoke completion, require replay or grant new skills. Even an old records graduate or a reader at the build guide resumes the corresponding page and active ABI.
 
-The entrance reads without rewriting saves. Entering a lesson saves the migrated form. Other paths merge name edits through this same serializer, preserving contract positions, answers and all 22 checks. Blank/dangling checks and unknown answers are discarded. Malformed/oversized saves do not prevent startup. The raw bound derives from 22 snapshots plus current source, each still limited to 8,000 UTF-8 bytes, including worst-case JSON escaping. Unrelated storage is untouched.
+The entrance reads without rewriting saves. Entering a lesson saves the migrated form. Other paths merge name edits through this same serializer, preserving contract positions, answers and all 22 checks. Blank/dangling checks and unknown answers are discarded. Malformed/oversized saves do not prevent startup. The raw bound derives from 22 native snapshots, two optional simulator snapshots and current source, each limited to 8,000 UTF-8 bytes, including worst-case JSON escaping. Unrelated storage is untouched.
 
 The initial scaffold compiles but deliberately starts at seven and has an empty mutation method. Later checks exercise actual numeric inputs, zero rejection, exact capacity, a write that is rolled back, overflow, recovery and a new deployment. The runner checks repeated reads to catch a getter that changes state. These are focused finite educational checks, not a proof of correctness for every possible program or a credential.
 
 These lessons omit wallet setup, deployment transactions, end-user account authorization and privacy implementation. Record IDs do not prove ownership. Cancellation is initially unrestricted. Lesson five restricts changes to the record's calling contract, using a VM-provided identity. A and B are open local test relays, not authenticated wallet adapters. Their code must never be deployed as production authorization. Only non-personal IDs, seat counts and contract-owner metadata are used. The dApp and circuit paths introduce client calls and proof construction. Signed transactions and contract verification remain future work. A skill award records completion locally, not on-chain or as a Dusk-issued credential.
 
-## Runtime
+## Native runtime
 
 See the [root setup instructions and execution boundaries](../README.md). `npm run setup:forge` builds the official, pinned Forge dependencies and a fixed native runner from trusted source. The HTTP path never runs Cargo, accepts a manifest or installs packages. Setup checks verify the source signature, recorded dependency libraries and required runner/fixture artifacts. Missing caches return setup instructions before compilation. Circuit compilation similarly checks its harness and recorded libraries. These checks do not hash every transitive dependency or rebuild files automatically.
 
@@ -80,7 +100,7 @@ Restoration still validates source bounds, answer IDs and checkpoint order. Earl
 
 The learner name remains in the existing Forge record. A name edit merges into a freshly restored record instead of overwriting the contract draft with an old copy. A failed name save is retried with subsequent saves; blocked storage keeps a warning visible and asks before leaving the page. This is local single-browser progress, not a multi-tab synchronization service.
 
-The academy uses vanilla HTML/CSS/JavaScript and local artwork, fonts and SDK files. There are no analytics or browser keys. PLONK dependencies are prepared on the compiler host. Worker networking is restricted by response CSP from the development server. If those headers are missing, editable code does not run.
+The academy uses vanilla HTML/CSS/JavaScript and local artwork, fonts and SDK files. There are no analytics or browser keys. PLONK dependencies are prepared on the compiler host. Worker networking is restricted by response CSP from the development server. Without those headers, learner JavaScript and compiled circuit workers do not run. The counter simulator does not use workers.
 
 ## Read-only registration explorer
 

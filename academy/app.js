@@ -1,15 +1,21 @@
 import {chapters, lessons, stepsFor, partSteps, storageKey, restore, serialize, assess, unlocked, markChecked, contractIds, cleanName} from './lesson.js';
 import {courses, courseKey, lastPathKey, restoreCourse, courseComplete, lessonComplete} from './courses.js';
 import {highlight, syncScroll} from './editor.js';
-import {preview, previewRecap} from './hosting.js';
+import {preview, browserContracts, previewRecap} from './hosting.js';
+import {simulateCounter} from './counter-simulator.js';
 
 const $ = selector => document.querySelector(selector);
 let state;
-try { state = restore(localStorage.getItem(storageKey), preview); }
-catch { state = restore(null, preview); }
-const limit = () => unlocked(state, preview);
+try { state = restore(localStorage.getItem(storageKey), browserContracts); }
+catch { state = restore(null, browserContracts); }
+const limit = () => unlocked(state, browserContracts);
+const simulatorEnd = chapters.findLastIndex(c => c.lesson === 0 && c.kind === 'code');
+const simulation = () => browserContracts && chapters[state.step].lesson === 0;
+const activeStep = () => simulation() ? Math.min(state.active, simulatorEnd) : state.active;
+const checked = check => state.checks[check] || (browserContracts && state.simulated?.[check]);
+const simulatedCredit = check => browserContracts && !state.checks[check] && state.simulated?.[check];
 let controller = null, ticket = 0, busy = false;
-const activeChapter = () => chapters[state.active];
+const activeChapter = () => chapters[activeStep()];
 
 function save() {
   try { localStorage.setItem(storageKey, serialize(state)); localStorage.setItem(lastPathKey, 'contracts'); $('#save-error').hidden = true; }
@@ -19,15 +25,15 @@ function save() {
 function character() {
   document.querySelectorAll('.character-name').forEach(node => { node.textContent = state.name.trim() || 'Apprentice'; });
   const current = lessons[chapters[state.step].lesson];
-  $('#character-skill').textContent = state.checks[current.check] ? `${current.skill} learned` : `Learning ${current.skill.toLowerCase()}`;
+  $('#character-skill').textContent = checked(current.check) ? `${current.skill}${simulatedCredit(current.check) ? ' · simulator' : ' learned'}` : `Learning ${current.skill.toLowerCase()}`;
   $('#lesson-skills').replaceChildren(...lessons.map((lesson, i) => {
-    const steps = stepsFor(i), complete = Boolean(state.checks[lesson.check]);
+    const steps = stepsFor(i), complete = Boolean(checked(lesson.check));
     const button = document.createElement('button'); button.type = 'button'; button.className = 'skill-button'; button.dataset.lesson = i;
     if (i === 0) button.id = 'return-to-lesson';
     button.disabled = steps[0] > limit();
     const icon = document.createElement('span'); icon.textContent = complete ? '✓' : '◇'; icon.setAttribute('aria-hidden', 'true');
     const status = document.createElement('small');
-    status.textContent = complete ? 'Learned' : button.disabled ? `After ${lessons[i-1].skill.toLowerCase()}` : chapters[state.step].lesson === i ? 'Current lesson' : 'Available';
+    status.textContent = complete ? (simulatedCredit(lesson.check) ? 'Simulator check passed' : 'Learned') : button.disabled ? `After ${lessons[i-1].skill.toLowerCase()}` : browserContracts && i > 0 ? 'Reading preview' : chapters[state.step].lesson === i ? 'Current lesson' : 'Available';
     if (i === 0) { icon.id = 'skill-state'; status.id = 'skill-status'; }
     button.append(icon, document.createTextNode(lesson.skill), status);
     button.addEventListener('click', () => {
@@ -44,7 +50,7 @@ function showPaths(focus = true) {
   $('#paths').hidden = false; $('#contract-path').hidden = true;
   $('#course').hidden = true; $('#lesson-controls').hidden = true; $('#path-profile').hidden = false;
   $('.skip-link').href = '#paths-title'; $('.skip-link').textContent = 'Skip to learning paths';
-  const completed = lessons.filter(lesson => state.checks[lesson.check]).length;
+  const completed = lessons.filter(lesson => checked(lesson.check)).length;
   const target = '#' + chapters[state.step].id;
   $('#open-contracts').href = target;
   $('#open-contracts').textContent = (completed === lessons.length ? 'Review lessons' : state.started ? 'Continue lesson' : 'Open path') + ' →';
@@ -53,7 +59,7 @@ function showPaths(focus = true) {
   $('#resume-chapter').textContent = chapters[state.step].title;
   $('#contracts-first-count').textContent = stepsFor(0).length;
   $('#contracts-size').textContent = `${lessons.length} lessons · ${chapters.length} chapters`;
-  $('#contracts-progress').textContent = `${completed} of ${lessons.length} lessons completed`;
+  $('#contracts-progress').textContent = `${completed} of ${lessons.length} lessons completed${simulatedCredit('change') ? ' · first lesson simulated' : ''}`;
   $('#contracts-progress').hidden = !state.started;
   let last = 'contracts';
   try { last = localStorage.getItem(lastPathKey) || last; } catch { /* Storage is optional. */ }
@@ -109,10 +115,10 @@ function navigation() {
   $('#page-count').textContent = `${lessonSteps.indexOf(state.step) + 1} / ${lessonSteps.length}`;
   $('#next').hidden = state.step === chapters.length - 1;
   $('#all-paths').hidden = !$('#next').hidden;
-  $('#next').disabled = busy || (!preview && chapter.kind === 'code' && state.checks[activeChapter().check] !== state.source);
-  $('#next').textContent = preview ? 'Continue preview →' : chapter.kind === 'intro' ? 'Begin lesson →' : chapter.kind === 'earned' ? 'Next lesson →' : chapters[state.step + 1]?.kind === 'earned' ? 'Finish lesson →' : 'Continue →';
-  $('#run').disabled = preview;
-  $('#run').textContent = preview ? 'Local setup required' : busy ? 'Cancel run' : '▶  Run contract';
+  $('#next').disabled = busy || ((!browserContracts || simulation()) && chapter.kind === 'code' && state.checks[activeChapter().check] !== state.source && (!simulation() || state.simulated?.[activeChapter().check] !== state.source));
+  $('#next').textContent = browserContracts && !simulation() ? 'Continue preview →' : chapter.kind === 'intro' ? 'Begin lesson →' : chapter.kind === 'earned' ? 'Next lesson →' : chapters[state.step + 1]?.kind === 'earned' ? 'Finish lesson →' : 'Continue →';
+  $('#run').disabled = browserContracts && !simulation();
+  $('#run').textContent = $('#run').disabled ? 'Local setup required' : busy ? 'Cancel run' : simulation() ? '▶ Simulate contract' : '▶  Run contract';
   $('#code').setAttribute('aria-busy', String(busy));
 }
 
@@ -125,7 +131,7 @@ function clearResults(message = 'Run the contract to see the call results.') {
   $('#call-results').hidden = true; $('#trace-results').hidden = true;
   $('#trace-details').hidden = true; $('#trace-details').open = false;
   $('#build-results').hidden = true; $('#build-results').open = false; $('#build-detail').textContent = '';
-  $('#test-empty').hidden = false; $('#test-empty').textContent = preview ? 'No code runs in this preview. Follow the local setup to check your work.' : message;
+  $('#test-empty').hidden = false; $('#test-empty').textContent = browserContracts && !simulation() ? 'This lesson has no browser simulator yet. Follow the native setup to run it.' : message;
   $('#feedback').hidden = true;
 }
 
@@ -145,6 +151,9 @@ function render(focus) {
   $('#task-copy').textContent = chapter.task || '';
   $('#lesson-note').textContent = chapter.note || '';
   $('#lesson-note').hidden = !chapter.note;
+  $('#simulator-note').hidden = !simulation();
+  $('#results-runtime').textContent = simulation() ? 'Browser simulator · not DuskVM' : 'Local DuskVM';
+  $('#code-note').textContent = simulation() ? 'Ctrl / ⌘ + Enter to simulate' : browserContracts ? 'Native setup required' : 'Ctrl / ⌘ + Enter to run';
   $('#hint').hidden = !chapter.hint; $('#hint').open = false; $('#hint-copy').textContent = chapter.hint || '';
   $('#editor').hidden = !coding; $('#character-card').hidden = !coding; $('#scene').hidden = coding;
   $('#reading-panel').hidden = chapter.kind !== 'guide';
@@ -161,13 +170,16 @@ function render(focus) {
     }));
   }
   $('#character-setup').hidden = step !== 0; $('#earned').hidden = coding || step === 0;
-  $('#earned-label').textContent = earned ? 'Skill learned' : 'Next skill';
+  $('#earned-label').textContent = earned ? (simulatedCredit(lesson.check) ? 'Simulator check passed' : 'Skill learned') : 'Next skill';
   $('#earned-title').textContent = lesson.skill; $('#earned-summary').textContent = lesson.summary;
   $('#earned .skill-emblem').textContent = earned ? '✓' : '◇';
-  $('#earned').dataset.earned = String(earned && !preview);
-  if (preview && earned) previewRecap(lesson.skill);
-  $('#code-context').hidden = !coding || (chapter.kind === 'code' && state.active === step);
-  $('#code-context').textContent = chapter.kind === 'code' ? `You’re reviewing an earlier chapter. Code and tests are still on “${activeChapter().short}”.` : `Code and tests: “${activeChapter().short}”. Keep the same file while reading and practising.`;
+  $('#earned').dataset.earned = String(earned && (!browserContracts || (simulation() && checked(lesson.check))));
+  if (browserContracts && earned) {
+    if (simulation() && checked(lesson.check)) $('#chapter-label').textContent = simulatedCredit(lesson.check) ? 'First lesson checked in the browser simulator' : 'First lesson checked in local DuskVM';
+    else previewRecap(lesson.skill);
+  }
+  $('#code-context').hidden = !coding || (!simulation() && chapter.kind === 'code' && state.active === step);
+  $('#code-context').textContent = simulation() ? `Simulator checks: “${activeChapter().short}”. Only the first lesson’s Rust subset is supported. The file is interpreted, not compiled.` : chapter.kind === 'code' ? `You’re reviewing an earlier chapter. Code and tests are still on “${activeChapter().short}”.` : `Code and tests: “${activeChapter().short}”. Keep the same file while reading and practising.`;
   $('#character-name-input').value = state.name;
   $('#code').value = state.source;
   $('#code').scrollTop = $('#code').scrollLeft = 0;
@@ -182,7 +194,7 @@ function render(focus) {
 function go(step, focus = true) {
   if (!Number.isInteger(step) || step < 0 || step > limit()) return;
   cancel(); state.step = step;
-  if (preview && step > 0) state.started = true;
+  if (browserContracts && step > 0) state.started = true;
   if (chapters[step].kind === 'code') state.active = Math.max(state.active, step);
   history.replaceState(null, '', '#' + chapters[step].id);
   render(focus); save();
@@ -255,29 +267,33 @@ function showResults(result, step) {
 }
 
 async function run() {
-  if (preview) return;
+  if (browserContracts && !simulation()) return;
   if (busy) { cancel(); clearResults('Run cancelled.'); navigation(); return; }
   if (['intro','earned'].includes(chapters[state.step].kind)) return;
   cancel();
-  const thisTicket = ticket, source = state.source, step = state.active;
+  const thisTicket = ticket, source = state.source, step = activeStep(), simulated = simulation();
   const chapter = chapters[step];
   controller = new AbortController(); const active = controller;
   const timeout = setTimeout(() => active.abort(), 45000);
-  busy = true; clearResults('Compiling and testing your contract…'); navigation();
+  busy = true; clearResults(simulated ? 'Interpreting your counter in the browser…' : 'Compiling and testing your contract…'); navigation();
   try {
     if (new TextEncoder().encode(source).length > 8000) throw Error('The source limit is 8,000 UTF-8 bytes. Shorten the file and run it again.');
-    const response = await fetch('/api/forge', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({source, lesson:chapter.scenario}), signal:active.signal});
-    if (thisTicket !== ticket) return;
-    const result = await response.json().catch(() => ({}));
-    if (thisTicket !== ticket) return;
-    if (!response.ok) throw Error(result.error || 'The local runner is unavailable. Run npm run setup:forge, then npm run dev.');
+    let result;
+    if (simulated) result = simulateCounter(source);
+    else {
+      const response = await fetch('/api/forge', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({source, lesson:chapter.scenario}), signal:active.signal});
+      if (thisTicket !== ticket) return;
+      result = await response.json().catch(() => ({}));
+      if (thisTicket !== ticket) return;
+      if (!response.ok) throw Error(result.error || 'The local runner is unavailable. Run npm run setup:forge, then npm run dev.');
+    }
     const error = assess(step, result);
     if (result.ok) showResults(result, step);
     else $('#test-empty').textContent = 'No call results.';
     if (error) feedback(error, 'bad', result.error || '');
     else {
-      markChecked(state, step);
-      feedback(chapter.success, 'good');
+      markChecked(state, step, simulated);
+      feedback((simulated ? 'Simulator check passed. ' : '') + chapter.success, 'good');
       character(); save();
     }
   } catch (error) {

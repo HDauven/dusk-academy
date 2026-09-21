@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "python3 -B tools/serve.py",
     "start": "npm run dev",
-    "test": "node --test academy/test.mjs academy/courses.test.mjs && python3 -B tools/test_server.py",
+    "test": "node --test academy/test.mjs academy/courses.test.mjs academy/counter-simulator.test.mjs && python3 -B tools/test_server.py",
     "test:forge": "python3 -B tools/test_forge_lesson.py",
     "test:circuits": "python3 -B tools/test_circuit_lesson.py",
     "setup:forge": "python3 -B tools/forge_lesson.py",

@@ -164,6 +164,27 @@ test('preview bookmarks survive without granting checks or weakening local progr
   assert.equal(restoreCourse('dusk',knowledge,true).step,0,'preview cannot skip knowledge checks');
 });
 
+test('simulator snapshots stay separate from native checks and survive shared-name restoration',()=>{
+  const state=restore(null);state.started=true;
+  const native=structuredClone(state.checks);
+  markChecked(state,step('contract-state'),true);markChecked(state,step('arguments'),true);
+  assert.equal(state.simulated,undefined,'only the two supported code checks may record simulation');
+  state.source='// simulator initialization';markChecked(state,step('state'),true);
+  state.source='// simulator increment';markChecked(state,step('entrypoint'),true);
+  assert.deepEqual(state.checks,native);assert.equal(unlocked(state),step('state'),'no native gate was passed');
+  assert.deepEqual(state.simulated,{initial:'// simulator initialization',change:'// simulator increment'});
+  const raw=JSON.parse(serialize(state));
+  assert.deepEqual(restore(JSON.stringify(raw)),state);
+  assert.deepEqual(restore(JSON.stringify(raw),true),state);
+  const merged=restore(JSON.stringify(raw));merged.name='Mira';
+  assert.deepEqual(restore(serialize(merged)).simulated,state.simulated);
+  assert.equal(restore(JSON.stringify({...raw,simulated:{change:'// dangling'}})).simulated,undefined);
+  assert.deepEqual(restore(JSON.stringify({...raw,simulated:{initial:'// keep',change:'é'.repeat(4001),capacity:'// discard'}})).simulated,{initial:'// keep'});
+  const escaped='// '+'\u0001'.repeat(7900);
+  const full={...state,source:escaped,checks:Object.fromEntries(Object.keys(state.checks).map(k=>[k,escaped])),simulated:{initial:escaped,change:escaped}};
+  assert.deepEqual(restore(serialize(full)).simulated,full.simulated,'all bounded snapshots survive worst-case JSON escaping');
+});
+
 test('current shell reuses chapter/practice controls and retains opaque local artwork',()=>{
   const page=readFileSync(new URL('../index.html',import.meta.url),'utf8');
   for(const id of ['code','trace-results','chapter-menu','part-title','reading-panel','quiz','study-panels']) assert.ok(page.includes(`id="${id}"`));

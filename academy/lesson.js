@@ -39,14 +39,14 @@ export const lessons = [
 export const chapters = [
   {
     id:'begin', lesson:0, part:0, kind:'intro', short:'Your first contract', title:'Build a registration counter',
-    body:`<p>The workshop needs to count registrations. You’ll build a <strong>native Dusk contract</strong> that stores a count and adds one per successful call.</p><p>The Forge project is supplied. Read the file, make two small edits and check the results in local DuskVM. Rust syntax is introduced where the contract needs it.</p><p>Keep the same file as later lessons add arguments, rules and records. You do not need to complete another path, install learner-side packages or connect a wallet.</p>`,
+    body:`<p>The workshop needs to count registrations. You’ll build a <strong>native Dusk contract</strong> that stores a count and adds one per successful call.</p><p>The Forge project is supplied. Read the file, make two small edits and check the returned counts. The first lesson supports a browser teaching simulator as well as local DuskVM. The Run button identifies the runtime. Rust syntax is introduced where the contract needs it.</p><p>Keep the same file as later lessons add arguments, rules and records. You do not need to complete another path, install learner-side packages or connect a wallet.</p>`,
     task:'Start the count at zero and add one registration per call.',
     note:'15 chapters with worked examples, optional practice and two coding checks. No wallet, tokens or live deployment required.'
   },
   {
     id:'contract-pieces', lesson:0, part:0, kind:'guide', short:'Rust, Forge, VM', title:'Know which tool does which job',
-    body:`<p>You write the register in <strong>Rust</strong>. A compiler checks the program and produces <strong>WebAssembly</strong> (WASM), an executable format.</p><p><strong>Dusk Forge</strong> supplies contract tooling and the contract macro used in this file. <strong>DuskVM</strong> executes the resulting native Dusk contract.</p><p>The project and dependencies are already prepared. Run compiles your edited file and executes fixed tests locally. Nothing is deployed to a live network.</p>`,
-    panelTitle:'What happens when you press Run', panel:`<ol class="example-flow"><li><strong>Source</strong><p>Your Rust file describes state and methods.</p></li><li><strong>Compile</strong><p>The server builds WASM against pinned Forge/Dusk dependencies.</p></li><li><strong>Execute</strong><p>A fresh local DuskVM deployment receives the lesson’s calls.</p></li><li><strong>Inspect</strong><p>The page displays actual returned values or compiler/VM errors.</p></li></ol>`,
+    body:`<p>You write the register in <strong>Rust</strong>. A compiler checks the program and produces <strong>WebAssembly</strong> (WASM), an executable format.</p><p><strong>Dusk Forge</strong> supplies contract tooling and the contract macro used in this file. <strong>DuskVM</strong> executes the resulting native Dusk contract.</p><p>In the native local version, Run compiles your edited file and executes fixed tests in DuskVM. The browser simulator instead interprets a supported Rust subset without compiling it. Neither sends a network transaction.</p>`,
+    panelTitle:'The native build and run path', panel:`<ol class="example-flow"><li><strong>Source</strong><p>Your Rust file describes state and methods.</p></li><li><strong>Compile</strong><p>The server builds WASM against pinned Forge/Dusk dependencies.</p></li><li><strong>Execute</strong><p>A fresh local DuskVM deployment receives the lesson’s calls.</p></li><li><strong>Inspect</strong><p>The page displays actual returned values or compiler/VM errors.</p></li></ol>`,
     note:'The editor remains usable on reading pages. Its banner names the real coding checkpoint Run will check.'
   },
   {
@@ -71,7 +71,7 @@ export const chapters = [
   },
   {
     id:'contract-initialization', lesson:0, part:1, kind:'guide', short:'Initialize once', title:'Choose the value for a fresh deployment',
-    body:`<p>The supplied Forge constructor is <code>pub const fn new() -&gt; Self</code>. Inside this impl, <code>Self</code> means Registry. The constant constructor lets the generated contract start with this initial state.</p><p>The lesson creates a fresh deployment for every Run. Calls within that run then share it. Editing new() is not an upgrade or migration of an existing live deployment.</p>`,
+    body:`<p>The supplied Forge constructor is <code>pub const fn new() -&gt; Self</code>. Inside this impl, <code>Self</code> means Registry. The constant constructor lets the generated contract start with this initial state.</p><p>Each Run starts a fresh instance. Native execution deploys it in local DuskVM; the simulator creates it in browser memory. Calls within that run share the instance. Editing new() is not an upgrade or migration of an existing live deployment.</p>`,
     panelTitle:'Declaration, construction, read', panel:`<pre class="example"><code>// Field type:
 count: u64
 
@@ -117,7 +117,7 @@ self.count</code></pre><p>Your next edit changes only 7 to 0. Leave the getter a
   },
   {
     id:'contract-persistence', lesson:0, part:2, kind:'practice', short:'What persists?', title:'A read does not reset the register',
-    body:`<p>After two successful increments, this deployment holds 2. Another read should return that same stored value without initializing a new contract.</p><p>Pressing Run starts a fresh deployment. Your saved source and skill checks are browser progress, not the VM’s stored count.</p>`,
+    body:`<p>After two successful increments, this deployment holds 2. Another read should return that same stored value without initializing a new contract.</p><p>Pressing Run starts a fresh deployment. Your saved source and skill checks are browser progress, not the test instance’s stored count.</p>`,
     question:'After two increments, another getter call on the same deployment should return…',
     choices:[['two','2, without resetting or incrementing the count.'],['zero','0, because every method call runs the constructor.'],['three','3, because a getter is another registration.']], answer:'two',
     success:'It reads the stored 2. A new deployment and a read of an existing one are different operations.',
@@ -125,12 +125,12 @@ self.count</code></pre><p>Your next edit changes only 7 to 0. Leave the getter a
   },
   {
     id:'contract-debugging', lesson:0, part:2, kind:'guide', short:'Fix a failed run', title:'Use the failure to choose your next edit',
-    body:`<p>A run can fail before or during execution, or it can execute successfully with the wrong result. Read the feedback before changing several things at once.</p><p>Compiler details refer to <code>lib.rs</code>, the temporary source built from this editor. Start with the first relevant diagnostic and the named line.</p>`,
+    body:`<p>A run can fail before or during execution, or it can execute successfully with the wrong result. Read the feedback before changing several things at once.</p><p>Native compiler details refer to <code>lib.rs</code>, the temporary source built from this editor. Simulator diagnostics instead identify syntax or types outside its supported subset. A simulator limitation does not mean your program is invalid Rust. Start with the named line.</p>`,
     panelTitle:'Three failures, three next steps', panel:`<dl class="concept-list"><dt>The contract didn’t compile</dt><dd>Check syntax and types. For example, adding the string "one" to u64 is not an integer addition.</dd><dt>DuskVM couldn’t complete the run</dt><dd>Inspect the VM details. A missing entrypoint or exhausted gas is not evidence that your business rule worked.</dd><dt>The count was 1, 1, 1</dt><dd>The code ran but replaced the count each time. Check for = 1 where you intended += 1.</dd></dl><p>Keep a working version in the editor, make one correction, and Run again. The page does not silently repair your source.</p>`
   },
   {
     id:'contract-boundaries', lesson:0, part:2, kind:'practice', short:'What was proved?', title:'A counter is not a membership system',
-    body:`<p>The tests check a small state update in local DuskVM. They do not establish who submitted each call, whether a person already registered or whether a live transaction became final.</p><p>Rust field visibility does not encrypt contract state. Keep names, identity documents and other personal data out of this public counter.</p>`,
+    body:`<p>The tests check a small state update in the selected runtime. A simulator check is not a native compilation or DuskVM check. Neither runtime establishes who submitted each call, whether a person already registered or whether a live transaction became final.</p><p>Rust field visibility does not encrypt contract state. Keep names, identity documents and other personal data out of this public counter.</p>`,
     question:'A count of 3 establishes what in this exercise?',
     choices:[['people','Three different verified people registered.'],['calls','Three successful increments occurred in this test deployment.'],['private','Three private identities are encrypted in the count field.']], answer:'calls',
     success:'The count records increments, not verified people or private identity data.',
@@ -138,7 +138,7 @@ self.count</code></pre><p>Your next edit changes only 7 to 0. Leave the getter a
   },
   {
     id:'learned', lesson:0, part:2, kind:'earned', short:'Contract state', title:'The count persists between calls',
-    body:`<p><code>get_count</code> returned 3 after three <code>register</code> calls. Each call updated the state left by the previous call.</p>
+    body:`<p>With the working increment, <code>get_count</code> returns 3 after three <code>register</code> calls. Each call updates the state left by the previous call.</p>
     <p>Refreshing an app or making another read does not re-run the constructor. A fresh deployment starts from <code>new()</code>.</p>
     <p>This contract counts accepted calls, not verified people. It has no identity check, duplicate prevention or caller restriction.</p>
     <p>Next, change <code>register</code> to accept an amount so one call can add several registrations.</p>`,
@@ -795,11 +795,12 @@ export function unlocked(state, preview = false) {
   return codeSteps.find(step => !state.checks[chapters[step].check]) ?? chapters.length - 1;
 }
 
-export function markChecked(state, step) {
+export function markChecked(state, step, simulated = false) {
   const check = chapters[step]?.check;
-  if (!check) return;
-  state.checks[check] = state.source;
-  if (check === 'change' && !state.checks.initial) state.checks.initial = state.source;
+  if (!check || (simulated && chapters[step].lesson !== 0)) return;
+  const checks = simulated ? (state.simulated ??= {}) : state.checks;
+  checks[check] = state.source;
+  if (check === 'change' && !checks.initial) checks.initial = state.source;
 }
 
 const validCount = value => typeof value === 'string' && /^\d{1,20}$/.test(value);
@@ -986,7 +987,7 @@ export function serialize(state) {
 export function restore(raw, preview = false) {
   const fresh = {version:3, step:0, started:false, active:codeSteps[0], name:'', source:starter, checks:Object.fromEntries(codeSteps.map(step => [chapters[step].check, null])), answers:{}};
   try {
-    if (!raw || raw.length > (codeSteps.length + 1) * 48000 + 10000) return fresh; // Bounded 8 KB snapshots plus JSON escaping.
+    if (!raw || raw.length > (codeSteps.length + 3) * 48000 + 10000) return fresh; // Native + two simulator snapshots + source, including JSON escaping.
     const value = JSON.parse(raw);
     if (![1,2,3].includes(value?.version)) return fresh;
     const position = saved => chapters.findIndex(c => c.id === (value.version === 3 ? (typeof saved === 'string' ? saved : null) : Number.isInteger(saved) ? legacyIds[saved] : null));
@@ -1001,6 +1002,11 @@ export function restore(raw, preview = false) {
       fresh.checks[key] = checked;
       fresh.active = step;
       fresh.started = true;
+    }
+    if (value.version === 3) for (const check of ['initial','change']) {
+      const source = value.simulated?.[check];
+      if (!validSource(source) || !source.trim()) break;
+      (fresh.simulated ??= {})[check] = source;
     }
     const limit = unlocked(fresh, preview), step = position(value.step), active = position(value.active);
     if (value.version !== 1 && codeSteps.includes(active) && active <= limit) fresh.active = Math.max(fresh.active, active);

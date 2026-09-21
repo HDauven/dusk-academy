@@ -2,9 +2,11 @@
 
 A browser-based course in Dusk development.
 
-**[Open the static preview](https://hdauven.github.io/dusk-academy/)** · [Source on GitHub](https://github.com/HDauven/dusk-academy)
+**[Open Dusk Academy](https://hdauven.github.io/dusk-academy/)** · [Source on GitHub](https://github.com/HDauven/dusk-academy)
 
-GitHub Pages hosts the lessons and knowledge questions. Coding chapters are freely browsable, but **code checks and wallet access require the local version**. The preview does not compile contracts, read VM fixtures, generate proofs or award coding skills. There is no simulated execution.
+GitHub Pages hosts the lessons, knowledge questions and a **browser-only simulator for the first contract lesson**. Its two coding checks evaluate the edited counter using a documented Rust subset. No compiler, RPC node, wallet, API key or runtime service is needed. Simulator progress is labelled and stored separately from native checks.
+
+Later coding lessons remain reading previews on Pages. Their native execution, dApp reads and circuit proofs still require the local setup. This is a first-lesson pilot, not a simulator for all seven contract lessons.
 
 | Learning path | Lessons | Chapters | What you build or study |
 |---|---:|---:|---|
@@ -18,6 +20,14 @@ These are **11 lessons / 133 chapters**, not four finished courses. Paths are in
 The first contract lesson has 15 chapters. Lessons combine short explanations, worked examples and optional practice. Coding lessons keep the same editable file throughout. Run always checks the active coding task, including when reviewing an earlier page. The contract path has 22 execution checkpoints and 19 optional questions.
 
 The entrance keeps curriculum totals visible beside saved progress, with Open, Continue or Review links. Each path saves its own source and checks. The character name is shared. Earlier chapter links, drafts, historical checkpoints and earned skills survive save migration. Normal saving is silent. A failed save shows a warning and asks before leaving the page.
+
+## Browser simulator
+
+Open the first contract lesson on Pages, edit the supplied Rust and select **Simulate contract**. The interpreter evaluates the actual supported program, including incorrect updates. It does not match answer strings or replay stored results. Unsupported syntax gets a simulator limitation message, not a claim that the code is invalid Rust.
+
+The simulator models one counter, checked u64 arithmetic, independent instances and rollback of a failed call. It does not compile Rust or emulate DuskVM, gas, network finality, permissions or cross-contract execution. See the [supported subset and limits](academy/README.md#browser-simulator).
+
+For local static development, `python3 -m http.server 8000` is sufficient. Open `http://localhost:8000/?runtime=simulator#begin` to select browser contract mode on loopback. No Rust setup is needed. Runs work without networking once the page assets are loaded; offline reopening is not implemented.
 
 ## Run locally
 
@@ -35,11 +45,11 @@ npm run setup:circuits
 npm run dev
 ```
 
-Open **http://localhost:5173/** after starting the server. Saves belong to the browser origin. Preview drafts and progress do not automatically transfer to localhost; copy any source you want to keep before switching.
+Open **http://localhost:5173/** after starting the server. Saves belong to the browser origin. Pages drafts and progress do not automatically transfer to localhost; copy any source you want to keep before switching.
 
 Setup builds trusted dependencies, fixed VM fixtures and matching data-drivers outside this project, in `~/.cache/dusk-academy/{forge-lesson,circuit-lesson}`. Learner requests never run Cargo or install packages. The bundled Connect SDK, fonts and artwork load locally. No CDN, analytics, browser API keys or learner-side package installation is used.
 
-A static server can display lessons but **cannot run coding exercises**. The local server supplies compiler endpoints, fixed contract reads and worker CSP headers. There is no simulated fallback.
+A static server can run the first-lesson simulator. Native execution still needs the development server for compiler endpoints, fixed contract reads and worker CSP headers. The native runner never silently falls back to simulation if it fails.
 
 ### If execution is unavailable
 
@@ -50,7 +60,7 @@ A static server can display lessons but **cannot run coding exercises**. The loc
 
 ## What executes
 
-- **Contracts** compile with pinned Forge and run in local DuskVM 1.6.0. Each Run starts a fresh deployment. Calls within it share state. Fixed scenarios check acceptance, rejection, recovery, ownership, receipt events and two-contract rollback. The final check also builds the method data-driver and checks its schema and exact u64 encoding/decoding with Connect.
+- **Native contracts** compile with pinned Forge and run in local DuskVM 1.6.0. Each Run starts a fresh deployment. Calls within it share state. Fixed scenarios check acceptance, rejection, recovery, ownership, receipt events and two-contract rollback. The final check also builds the method data-driver and checks its schema and exact u64 encoding/decoding with Connect.
 - **dApps** use the genuine Connect SDK and generated drivers. Reads reach fixed local VM fixtures. The explorer checks exact IDs, missing records, owner IDs, confirmation flags and recovery after an intentional HTTP 503. Calls are prepared but never signed or submitted.
 - **Circuits** compile against dusk-plonk 0.22.1. A browser worker generates fresh demonstration parameters, produces real PLONK proofs, rejects an invalid witness and checks public-input binding. No verifier is deployed.
 
@@ -68,7 +78,7 @@ npm run test:forge
 npm run test:circuits
 ```
 
-`npm test` covers curriculum, save migration, local assets, request boundaries, worker headers and missing-cache recovery without requiring Rust setup. The other two commands require prepared caches and exercise real compilation, VM calls and proofs.
+`npm test` covers the counter interpreter, separate simulator snapshots, curriculum, save migration, local assets, request boundaries, worker headers and missing-cache recovery without requiring Rust setup. The other two commands require prepared caches and exercise real compilation, VM calls and proofs. Forge tests also compare simulator observations with freshly compiled native counter programs, including wrong updates, equivalent expressions, exact large integers and arithmetic rejection.
 
 With the local server running, use Playwright and `@axe-core/playwright` as optional development tools:
 
@@ -78,19 +88,19 @@ node tools/test_courses.cjs
 node tools/test_pages.cjs
 ```
 
-`CHROMIUM_PATH` selects an existing Chromium. The Pages check serves local files at a mocked project-site URL, with no backend, and checks preview navigation, saves, disabled execution and honest skill states. It does not need the local server or Rust setup. Set `PAGES_LIVE=1` to check the published site instead of mocked files.
+`CHROMIUM_PATH` selects an existing Chromium. The Pages check serves local files at a mocked project-site URL, with no backend, and checks simulator execution, unsupported/wrong source, offline runs, separate snapshots, preview navigation and honest skill states. It does not need the local server or Rust setup. Set `PAGES_LIVE=1` to check the published site instead of mocked files.
 
 The two local-execution browser suites cover all chapters, 1,636 layouts and 290 axe checks, source/snapshot continuity, optional practice, keyboard navigation, blocked storage, cancellation, actual SDK reads and PLONK execution. The no-wallet test does not verify real extension approval.
 
 ## Release scope
 
-**The public site is a static preview, not a public execution service.** GitHub Pages publishes the root of `main`, with `.nojekyll` disabling Jekyll processing. There is no build step or hosted compiler. `academy/hosting.js` selects preview mode outside loopback hosts. This is presentation logic, not a security boundary.
+**The public site serves static assets and a bounded browser teaching interpreter, not a hosted compiler or public VM service.** GitHub Pages publishes the root of `main`, with `.nojekyll` disabling Jekyll processing. There is no build step or hosted compiler. `academy/hosting.js` selects browser mode outside loopback hosts, with the remaining coding lessons kept as reading previews. This is presentation logic, not a security boundary.
 
 The Python server binds to loopback by default. Keep it local.
 
 Compilation and VM execution use bubblewrap with private namespaces, cleared environments, no network, read-only dependencies and fixed commands. Source, request, artifact, gas, memory and time limits remain in place. Browser cancellation discards stale results but does not stop an already-started server job.
 
-Public code execution still needs independent isolation review, aggregate per-job quotas and a bounded worker service. Per-process limits and worker deadlines are not aggregate resource quotas. Do not expose this server through a public bind address or proxy as a substitute for that work.
+Public server-side compilation and VM execution still need independent isolation review, aggregate per-job quotas and a bounded worker service. Per-process limits and worker deadlines are not aggregate resource quotas. Do not expose this server through a public bind address or proxy as a substitute for that work.
 
 Before offering hosted execution:
 

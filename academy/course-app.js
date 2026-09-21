@@ -20,7 +20,8 @@ function start() {
   function save() {
     try {
       if(nameDirty) {
-        const saved=restoreCharacter(localStorage.getItem(storageKey),preview); saved.name=person.name;
+        // Name edits preserve valid bookmarks from either runtime, not just this page's mode.
+        const saved=restoreCharacter(localStorage.getItem(storageKey),true); saved.name=person.name;
         localStorage.setItem(storageKey,serializeCharacter(saved)); nameDirty=false;
       }
       localStorage.setItem(courseKey(id),serializeCourse(course,state)); localStorage.setItem(lastPathKey,id); unsaved=false;

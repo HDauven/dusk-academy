@@ -137,9 +137,12 @@ def check():
     answer = initial.replace('// Add one registration.', 'self.count += 1;')
     first = run_contract(initial)
     assert first == {'ok': True, 'initial': '0', 'after': ['0','0','0'], 'fresh': '0'}, first
+    counter_cases = [{'source': initial, 'result': first}]
     for statement in ['self.count += 1;', 'self.count = self.count + 1;', 'let next = self.count.checked_add(1).unwrap(); self.count = next;']:
         result = run_contract(initial.replace('// Add one registration.', statement))
         assert result == {'ok': True, 'initial': '0', 'after': ['1','2','3'], 'fresh': '0'}, result
+        if '.checked_add' not in statement:  # Method calls are outside the simulator subset.
+            counter_cases.append({'source': initial.replace('// Add one registration.', statement), 'result': result})
     result = run_contract(answer.replace('count: 0', 'count: 7'))
     assert result['initial'] == '7' and result['after'] == ['8','9','10'], result
     bad = run_contract(answer.replace('self.count += 1;', 'self.count = 1;'))
@@ -153,6 +156,31 @@ def check():
     loop = run_contract(answer.replace('self.count += 1;', 'loop { self.count = self.count.wrapping_add(1); }'))
     assert not loop['ok'] and time.monotonic()-began < 22, loop
     assert run_contract(answer)['ok'], 'A bad run must not poison the next session'
+    # Independent native oracle for the browser interpreter. No stored success traces.
+    for code in [source, answer.replace('count: 0', 'count: 7'),
+                 initial.replace('// Add one registration.', 'self.count = 1;'),
+                 initial.replace('// Add one registration.', 'let next: u64 = self.count + (6 / 2 - 2); self.count = next;'),
+                 initial.replace('// Add one registration.', 'let mut n = 8; n %= 3; self.count += n - 1;'),
+                 answer.replace('self.count\n', 'return self.count;\n'),
+                 answer.replace('count: 0', 'count: 9_007_199_254_740_993u64'),
+                 initial.replace('count: 0', 'count: u64::MAX'),
+                 answer.replace('count: 0', 'count: u64::MAX'),
+                 initial.replace('// Add one registration.', 'self.count -= 1;')]:
+        counter_cases.append({'source': code, 'result': run_contract(code)})
+    subprocess.run(['node', '--input-type=module', '-e', '''
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const {simulateCounter}=await import(process.argv[1]);
+const cases=JSON.parse(readFileSync(0,'utf8'));
+for(const {source,result} of cases) {
+  if(result.ok) assert.deepEqual(simulateCounter(source),result);
+  else {
+    assert.equal(result.phase,'execute');
+    assert.throws(()=>simulateCounter(source),/overflow|underflow/);
+  }
+}
+console.log(`PASS: browser counter compared against ${cases.length} freshly compiled native cases, including exact u64 values and arithmetic rejection.`);
+''', (ROOT / 'academy/counter-simulator.js').as_uri()], input=json.dumps(counter_cases), text=True, check=True)
 
     arguments = answer.replace('register(&mut self)', 'register(&mut self, amount: u64)').replace('self.count += 1;', 'self.count += amount;')
     positive = arguments.replace('self.count += amount;', 'assert!(amount > 0); self.count += amount;')
