@@ -1,0 +1,16 @@
+{
+  "name": "dusk-academy",
+  "private": true,
+  "license": "MIT",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -B tools/serve.py",
+    "start": "npm run dev",
+    "test": "node --test academy/test.mjs academy/courses.test.mjs && python3 -B tools/test_server.py",
+    "test:forge": "python3 -B tools/test_forge_lesson.py",
+    "test:circuits": "python3 -B tools/test_circuit_lesson.py",
+    "setup:forge": "python3 -B tools/forge_lesson.py",
+    "setup:circuits": "python3 -B tools/circuit_lesson.py"
+  }
+}

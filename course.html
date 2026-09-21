@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121622"><title>Dusk Academy</title>
+  <link rel="icon" href="academy/assets/portrait-pixel.webp" type="image/webp">
+  <link rel="stylesheet" href="academy/style.css">
+  <script type="module" src="academy/course-app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#lesson-title">Skip to lesson</a>
+  <div class="shell">
+    <header class="masthead">
+      <a class="brand" href="./#paths" aria-label="Dusk Academy, all learning paths">DUSK<span>ACADEMY</span></a>
+      <p class="course" id="course-name"></p>
+      <div class="header-actions"><button class="text-button" id="skills-button">Your skills</button><button class="icon-button" id="about-button" aria-label="About this lesson">?</button></div>
+    </header>
+    <nav class="chapter-overview" aria-label="All lesson chapters"><p id="part-title"></p><div><label class="sr-only" for="chapter-menu">Jump to a chapter</label><select id="chapter-menu"></select></div></nav>
+    <nav class="chapters" aria-label="Chapters in this part" id="chapters"></nav>
+    <main class="lesson" id="lesson" hidden>
+      <article class="story" aria-labelledby="lesson-title">
+        <p class="eyebrow" id="chapter-label"></p><h1 id="lesson-title" tabindex="-1"></h1>
+        <div id="story-copy"></div>
+        <div id="study-panels"></div>
+        <div class="task" hidden><span class="task-mark" aria-hidden="true">◇</span><div><h2>Your turn</h2><p id="task-copy"></p></div></div>
+        <p class="aside" id="lesson-note"></p>
+        <details id="hint" hidden><summary>Need a hint?</summary><p id="hint-copy"></p></details>
+        <div class="character-card" id="character-card" hidden><img src="academy/assets/portrait-pixel.webp" alt="Your pixel-art adventurer" width="115" height="130"><div><span class="eyebrow">Your character</span><strong class="character-name">Apprentice</strong><span class="character-skill" id="character-skill"></span></div></div>
+      </article>
+      <section class="scene" id="scene" aria-label="Your character in the workshop">
+        <img class="scene-art" src="academy/assets/workshop-pixel.webp" width="768" height="512" alt="An adventurer in a lantern-lit workshop overlooking the city at dusk">
+        <div class="scene-caption"><span class="eyebrow">The workshop</span><strong class="character-name">Apprentice</strong></div>
+        <div class="character-setup" id="character-setup"><div><label for="character-name-input">Character name</label><input id="character-name-input" placeholder="Apprentice" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="name-note"><span id="name-note">Optional</span></div><div class="skill-to-learn"><span class="skill-emblem" aria-hidden="true">◇</span><div><small>Skill to learn</small><strong class="skill-name"></strong></div></div></div>
+        <div class="earned" id="earned" hidden><span class="skill-emblem" aria-hidden="true">✓</span><div><small>Skill learned</small><strong class="skill-name"></strong></div></div>
+      </section>
+      <section class="quiz-panel reading-panel" id="reading-panel" aria-labelledby="reading-title" hidden><p class="eyebrow">Worked example</p><h2 id="reading-title"></h2><div id="reading-copy"></div></section>
+      <section class="quiz-panel" id="quiz-panel" aria-label="Check your understanding" hidden>
+        <p class="aside" id="practice-note" hidden>Optional practice. These questions do not award skills or block the next chapter.</p>
+        <form id="quiz"><fieldset><legend id="question"></legend><div id="choices"></div></fieldset><button class="run-button" type="submit">Check answer</button></form>
+        <p class="feedback" id="quiz-feedback" role="status" hidden></p>
+        <section id="wallet-demo" aria-labelledby="wallet-title" hidden><h2 id="wallet-title">Try wallet discovery</h2><p>No connection happens until you choose a wallet and request access. No transaction will be sent.</p><button id="find-wallet" class="text-button" type="button">Find wallets</button><div id="wallet-picker" hidden><label for="wallet-provider">Installed wallet</label><select id="wallet-provider"></select><button id="connect-wallet" class="run-button" type="button">Request profile access</button></div><p id="wallet-status" role="status"></p></section>
+      </section>
+      <section class="editor" id="editor" aria-label="Code editor" hidden>
+        <header class="filebar"><strong id="filename"></strong><span id="runtime"></span></header>
+        <p id="code-context" hidden></p>
+        <div class="code-editor"><div class="gutter" aria-hidden="true"><pre id="line-numbers"></pre></div><div class="code-surface"><pre id="highlight" aria-hidden="true"></pre><textarea id="code" aria-label="Lesson source code" aria-describedby="code-note" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" maxlength="8000"></textarea></div></div>
+        <div class="editor-actions"><span id="code-note">Ctrl / ⌘ + Enter to run</span><button id="run" class="run-button">Run code</button></div>
+        <div class="test-panel"><div class="test-heading"><h2 id="results-title">Results</h2><span id="results-runtime"></span></div><p id="test-empty">Run the code to see results.</p><table id="trace-results" hidden><caption class="sr-only">Exercise test results</caption><thead></thead><tbody></tbody></table><details id="artifact" hidden><summary>Proof bytes · hexadecimal</summary><pre id="proof-bytes"></pre></details></div>
+        <div class="feedback" id="feedback" role="status" hidden><p id="feedback-text"></p></div>
+      </section>
+    </main>
+    <nav class="lesson-actions" aria-label="Continue the lesson"><button id="previous" class="back-button" hidden>← Back</button><span id="page-count"></span><button id="next" class="next-button">Begin lesson →</button><a id="all-paths" class="next-button" href="./#paths" hidden>All paths →</a></nav>
+    <p id="save-error" role="status" hidden>Your browser couldn’t save your work. Keep this tab open.</p>
+  </div>
+  <dialog id="skills" aria-labelledby="skills-title"><form method="dialog"><button class="close" aria-label="Close your skills">×</button></form><h2 id="skills-title">Your skills</h2><p id="skill-path"></p><div id="skill-status"></div><a href="./#paths">All learning paths →</a></dialog>
+  <dialog id="about" aria-labelledby="about-title"><form method="dialog"><button class="close" aria-label="Close about this lesson">×</button></form><h2 id="about-title">How this lesson runs</h2><div id="about-copy"></div><p>Dusk Academy is an independent learning project, not an official Dusk product.</p><a href="https://github.com/dusk-network/docs" target="_blank" rel="noopener noreferrer">Official Dusk documentation ↗</a></dialog>
+  <noscript><p>Enable JavaScript to open these lessons.</p><a href="./">All paths</a></noscript>
+</body>
+</html>

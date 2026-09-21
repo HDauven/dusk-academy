@@ -1,0 +1,20 @@
+[package]
+name = "dusk-academy-circuit"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dusk-plonk = { version = "=0.22.1", default-features = false, features = ["alloc"] }
+dusk-bytes = "=0.1.8"
+rand_chacha = { version = "=0.3.1", default-features = false }
+rand_core = { version = "=0.6.4", default-features = false }
+serde_json = "=1.0.149"
+
+[profile.release]
+opt-level = 3
+panic = "abort"
+overflow-checks = true
