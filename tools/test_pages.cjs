@@ -103,7 +103,8 @@ const AxeBuilder=require('@axe-core/playwright').default;
       const before=await saved(key);
       await page.reload(); await waitStep(list.length-1);
       assert.deepEqual(await saved(key),before,'preview bookmark and draft survive reload');
-      await page.locator('#all-paths').click(); await page.locator('#paths').waitFor();
+      await page.locator('#all-paths').click();
+      await page.waitForFunction(()=>document.querySelector('#open-dapps')?.getAttribute('href')?.includes('#'));
       assert.equal(await page.locator(`#${id}-size`).isVisible(),true);
       assert.match(await page.locator(`#open-${id}`).getAttribute('href'),new RegExp('#'+list.at(-1).id+'$'));
     }
