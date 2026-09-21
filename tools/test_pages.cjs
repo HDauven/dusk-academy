@@ -1,214 +1,136 @@
-// Optional Pages check: existing Playwright + axe tooling, no compiler or server.
+// Static-host integration: all coding paths, real workers/proofs, no execution server.
 const assert=require('node:assert/strict');
 const {readFile}=require('node:fs/promises');
+const {execFileSync}=require('node:child_process');
 const path=require('node:path');
 const {chromium}=require('playwright');
 const AxeBuilder=require('@axe-core/playwright').default;
-
 (async()=>{
-  const {chapters,storageKey,starter}=await import('../academy/lesson.js');
-  const {courses,courseKey}=await import('../academy/courses.js');
-  const base='https://hdauven.github.io/dusk-academy/', loopback='http://localhost:8000/', root=path.resolve(__dirname,'..');
+  const {chapters,storageKey,starter,codeSteps}=await import('../academy/lesson.js');
+  const {courses,courseKey,exerciseSteps}=await import('../academy/courses.js');
+  const {explorerSources}=await import('./dapp-sources.mjs');
+  const root=path.resolve(__dirname,'..'),base='https://hdauven.github.io/dusk-academy/',loopback='http://localhost:8000/';
+  const sources=JSON.parse(execFileSync('python3',['-B','-c','import json; from build_browser import lesson_sources; print(json.dumps(lesson_sources()))'],{cwd:root,env:{...process.env,PYTHONPATH:path.join(root,'tools')},encoding:'utf8'}));
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox']});
-  const errors=[], unexpected=[]; let layouts=0, axeChecks=0;
+  let layouts=0,audits=0,workerCount=0;const unexpected=[],errors=[];
   try {
     const context=await browser.newContext({viewport:{width:1440,height:950}});
     await context.route('**/*',async route=>{
-      const url=route.request().url(), prefix=[base,loopback].find(prefix=>url.startsWith(prefix));
-      if(!prefix||route.request().method()!=='GET'||/\/(?:api|on)\/|-worker\.js|\/vendor\/dusk-connect\.js/.test(url)) {
-        unexpected.push(url); return route.abort();
-      }
-      if(process.env.PAGES_LIVE==='1'&&prefix===base) return route.continue();
-      const relative=new URL(url).pathname.slice(new URL(prefix).pathname.length)||'index.html';
-      const file=path.resolve(root,decodeURIComponent(relative));
-      if(!file.startsWith(root+path.sep)) { unexpected.push(url); return route.abort(); }
-      try {
-        const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.woff2':'font/woff2','.webp':'image/webp','.png':'image/png'};
-        await route.fulfill({body:await readFile(file),contentType:types[path.extname(file)]||'text/plain'});
-      } catch(error) { errors.push(`${relative}: ${error.message}`); await route.abort(); }
+      const url=route.request().url();if(url.startsWith('blob:'))return route.continue();
+      const prefix=[base,loopback].find(p=>url.startsWith(p));
+      if(!prefix||route.request().method()!=='GET'||/\/(api|on)\//.test(url)){unexpected.push(url);return route.abort();}
+      if(process.env.PAGES_LIVE==='1'&&prefix===base)return route.continue();
+      const relative=new URL(url).pathname.slice(new URL(prefix).pathname.length)||'index.html',file=path.resolve(root,decodeURIComponent(relative));
+      if(!file.startsWith(root+path.sep)){unexpected.push(url);return route.abort();}
+      try{const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.webp':'image/webp','.woff2':'font/woff2'};await route.fulfill({body:await readFile(file),contentType:types[path.extname(file)]||'text/plain'});}
+      catch(error){errors.push(relative+': '+error.message);await route.abort();}
     });
-    const page=await context.newPage();
-    page.on('pageerror',error=>errors.push(error.message));
-    page.on('worker',worker=>unexpected.push(worker.url()));
-    page.on('response',response=>{if(response.status()>=400) errors.push(`${response.status()} ${response.url()}`);});
+    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));page.on('worker',()=>workerCount++);
     const saved=key=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
-    const waitStep=step=>page.waitForFunction(step=>document.querySelector('#lesson').dataset.step===String(step),step);
-    const layout=async label=>{
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,label); layouts++;
-    };
-    const axe=async label=>{
-      const result=await new AxeBuilder({page}).analyze();
-      assert.deepEqual(result.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[],label); axeChecks++;
-    };
-    await page.goto(base); await page.locator('#hosting-note').waitFor(); await page.evaluate(()=>document.fonts.ready);
-    assert.match(await page.locator('#hosting-note').innerText(),/Browser learning.*bounded simulator, not DuskVM/);
-    assert.equal(await page.locator('#hosting-note a').first().getAttribute('href'),'https://github.com/HDauven/dusk-academy#run-locally');
-    assert.deepEqual(await page.locator('#dusk-size, #contracts-size, #dapps-size, #circuits-size').allTextContents(),['1 lesson · 15 chapters','7 lessons · 83 chapters','2 lessons · 23 chapters','1 lesson · 12 chapters']);
-    assert.equal(await saved(storageKey),null,'entrance does not write a save');
-    await page.evaluate(()=>localStorage.setItem('unrelated-progress','keep'));
-    for(const width of [320,1440]) {
-      await page.setViewportSize({width,height:950}); await layout('overview'); await axe('overview');
-      await page.screenshot({path:`/tmp/dusk-pages-${width}.png`,fullPage:true});
+    const waitStep=i=>page.waitForFunction(i=>document.querySelector('#lesson').dataset.step===String(i),i);
+    const choose=async i=>{await page.locator('#chapter-menu').selectOption(String(i));await waitStep(i);};
+    const run=async tone=>{await page.locator('#run').click();await page.locator('#feedback').waitFor({timeout:30000});await page.waitForFunction(()=>document.querySelector('#code').getAttribute('aria-busy')==='false');assert.equal(await page.locator('#feedback').getAttribute('data-tone'),tone,await page.locator('#feedback').innerText());};
+    const layout=async label=>{assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,label);layouts++;};
+    const axe=async label=>{const result=await new AxeBuilder({page}).analyze();assert.deepEqual(result.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[],label);audits++;};
+    await page.goto(base);await page.locator('#hosting-note').waitFor();assert.match(await page.locator('#hosting-note').innerText(),/Every coding path runs here without a backend/);
+    assert.equal(await saved(storageKey),null);await page.evaluate(()=>localStorage.setItem('unrelated-progress','keep'));
+    for(const width of [320,1440]){await page.setViewportSize({width,height:950});await layout('overview');await axe('overview');}
+    // A legacy preview bookmark may browse ahead, but must not move the active ABI.
+    await page.goto(base+'#build-driver');await waitStep(chapters.findIndex(c=>c.id==='build-driver'));
+    assert.equal(await page.locator('#code').inputValue(),starter);assert.match(await page.locator('#code-context').innerText(),/Initial state/);
+    await choose(0);let draft=starter;
+    for(const [i,c]of chapters.entries()){
+      await waitStep(i);assert.equal(await page.locator('#code').inputValue(),draft,c.id+' keeps the draft');
+      if(c.kind==='code'){
+        const before=(await saved(storageKey)).simulated;
+        const answer=sources[c.check==='initial'?'initial':c.scenario];assert.ok(answer,c.id);
+        await page.locator('#code').fill(answer.replace('count: 0','count: 7'));await run('bad');
+        assert.deepEqual((await saved(storageKey)).simulated,before,'wrong initialization cannot award '+c.id);
+        draft=answer;await page.locator('#code').fill(draft);await run('good');
+        const state=await saved(storageKey);assert.equal(state.simulated[c.check],draft);assert.ok(Object.values(state.checks).every(v=>!v));
+        if(['record-cancel','permission-resize','test-atomic','build-driver'].includes(c.id))await axe(c.id+' results');
+        if(c.id==='build-driver'){
+          assert.match(await page.locator('#build-detail').textContent(),/Interpreted source \(not WASM\).*Prebuilt reference data-driver/s);
+          assert.match(await page.locator('#feedback').innerText(),/without Rust compilation/);
+          assert.doesNotMatch(await page.locator('#story-copy').innerText(),/compile both targets|newly built driver/);
+        }
+      }
+      if(c.choices){const before=(await saved(storageKey)).simulated;await page.locator(`input[value="${c.answer}"]`).check();await page.locator('#quiz button').click();assert.deepEqual((await saved(storageKey)).simulated,before,'practice never awards code');}
+      if(c.kind==='earned'){assert.equal(await page.locator('#earned').isVisible(),true);assert.match(await page.locator('#earned-label').innerText(),/simulator/i);}
+      for(const width of [320,1440]){await page.setViewportSize({width,height:950});await layout('contracts/'+c.id);if(c.kind==='earned')await axe('contracts/'+c.id);}
+      if(i<chapters.length-1){assert.equal(await page.locator('#next').isDisabled(),false,c.id);await page.locator('#next').click();}
     }
-    for(const [id,list,key,source,url] of [
-      ['contracts',chapters,storageKey,starter,base+'#begin'],
-      ['dapps',courses.dapps.chapters,courseKey('dapps'),courses.dapps.starter,base+'course.html?path=dapps#begin'],
-      ['circuits',courses.circuits.chapters,courseKey('circuits'),courses.circuits.starter,base+'course.html?path=circuits#begin'],
-    ]) {
-      await page.goto(url); await waitStep(0);
-      assert.equal(await page.locator('#chapter-menu option:disabled').count(),0,'all coding chapters are browsable');
-      await page.locator('#chapter-menu').selectOption('1'); await waitStep(1);
-      assert.equal((await saved(key)).started,true,'jumping into a preview enables resume');
-      await page.locator('#chapter-menu').selectOption('0'); await waitStep(0);
-      let draft=source, edited=false;
-      for(const [i,c] of list.entries()) {
-        await waitStep(i);
-        assert.equal(await page.locator('#code').inputValue(),draft,`${id}/${c.id}: same draft`);
-        if(!['intro','earned'].includes(c.kind)) {
-          if(!edited) { draft=source+'\n// Saved preview notes.'; await page.locator('#code').fill(draft); edited=true; }
-          if(id==='contracts'&&c.lesson===0) {
-            assert.equal(await page.locator('#run').isDisabled(),false);
-            assert.match(await page.locator('#results-runtime').innerText(),/Browser simulator/);
-            if(c.kind==='code') {
-              assert.equal(await page.locator('#next').isDisabled(),true);
-              await page.locator('#run').click();
-              assert.equal(await page.locator('#feedback').getAttribute('data-tone'),'bad');
-              if(c.check==='initial') draft=draft.replace('count: 7','count: 0');
-              else {
-                const before=await saved(key);
-                await page.locator('#code').fill(draft.replace('// Add one registration.','loop {}'));
-                await page.locator('#run').click();
-                assert.match(await page.locator('#feedback-text').innerText(),/Not supported by this lesson simulator/);
-                assert.deepEqual((await saved(key)).simulated,before.simulated,'unsupported source cannot earn a check');
-                await page.locator('#code').fill(draft.replace('// Add one registration.','self.count = 1;'));
-                await page.locator('#run').click();
-                assert.deepEqual(await page.locator('#call-results strong').allTextContents(),['0','1','1','1'],'wrong source produces its actual simulated trace');
-                assert.equal(await page.locator('#feedback').getAttribute('data-tone'),'bad');
-                draft=draft.replace('// Add one registration.','let next = 1 + self.count; self.count = next;');
-              }
-              await page.locator('#code').fill(draft);await page.locator('#code').press('Control+Enter');
-              assert.equal(await page.locator('#feedback').getAttribute('data-tone'),'good');
-              assert.equal((await saved(key)).simulated[c.check],draft);
-              assert.equal(await page.locator('#next').isDisabled(),false);
-            } else {
-              await page.locator('#code').press('Meta+Enter');
-              assert.equal(await page.locator('#feedback').isVisible(),true);
-            }
-          } else {
-            assert.equal(await page.locator('#run').isDisabled(),true);
-            await page.locator('#code').press('Control+Enter');
-            await page.locator('#code').press('Meta+Enter');
-            // Disabled controls must also be guarded inside their handlers.
-            await page.locator('#run').dispatchEvent('click');
-            assert.match(await page.locator('#test-empty').innerText(),id==='contracts'?/no browser simulator yet/:/No code runs in this preview/);
-            assert.equal(await page.locator('#feedback').isVisible(),false);
+    let contractSave=await saved(storageKey);assert.equal(Object.keys(contractSave.simulated).length,22);
+    await page.reload();await waitStep(chapters.length-1);assert.deepEqual(await saved(storageKey),contractSave);
+    await choose(chapters.findIndex(c=>c.id==='contract-getter'));assert.equal(await page.locator('#code').inputValue(),draft);assert.match(await page.locator('#code-context').innerText(),/Build and verify/);await run('good');
+    assert.equal((await saved(storageKey)).simulated.initial,contractSave.simulated.initial,'review preserves the initial historical source');
+    await page.locator('.brand').click();await page.locator('#paths').waitFor();assert.match(await page.locator('#contracts-progress').innerText(),/7 of 7.*simulated/);contractSave=await saved(storageKey);
+    const finalSources={};
+    for(const [id,course]of Object.entries(courses)){
+      await page.goto(base+`course.html?path=${id}#begin`);await waitStep(0);let source=course.starter||'',explorer;
+      if(id==='dusk'){await page.locator('#character-name-input').fill('Mira');assert.deepEqual(await saved(storageKey),{...contractSave,name:'Mira'});}
+      for(const [i,c]of course.chapters.entries()){
+        await waitStep(i);if(course.language)assert.equal(await page.locator('#code').inputValue(),source,id+'/'+c.id+' keeps source');
+        if(c.kind==='code'){
+          await run('bad');
+          if(id==='dapps'){
+            if(c.id==='read')source=source.replace('return 0;','return dusk.readContract({contract:"registry",functionName:"get_count"});');
+            else if(c.id==='prepare')source=source.replace('return null;','return dusk.prepareContractCall({contract:"registry",functionName:"register",args:amount,privacy:"public",amount:"0",deposit:"0"});');
+            else{explorer??=explorerSources(source);source=explorer[c.id];}
+          }else source=c.id==='constraint'?source.replace('// Bind sum to total.','composer.assert_equal(total, sum);'):source.replace('append_witness(self.total)','append_public(self.total)');
+          await page.locator('#code').fill(source);await run('good');
+          const state=await saved(courseKey(id));assert.equal(state.simulated[c.id],source);assert.deepEqual(state.checks,{});
+          if(c.id==='prepare'){
+            const future=course.chapters.findIndex(c=>c.id==='explorer-read');await choose(future);await page.reload();await waitStep(future);
+            assert.match(await page.locator('#code-context').innerText(),/Prepare a call/,'an unchecked wallet quiz must not become the active code task');await choose(i);
           }
+          if(c.id==='explorer-recovery')assert.deepEqual(await page.locator('#trace-results tbody tr td:nth-child(2)').allTextContents(),['found','found','missing','found','missing','missing','unavailable','found']);
+          if(c.id==='public'){assert.match(await page.locator('#proof-bytes').textContent(),/^[a-f0-9]{2016}$/);assert.match(await page.locator('#results-runtime').innerText(),/real PLONK/);}
+          await axe(id+'/'+c.id+' results');
         }
-        if(['practice','quiz'].includes(c.kind)) {
-          await page.locator(`#choices input[value="${c.answer}"]`).check();
-          await page.locator('#quiz button').click();
-          assert.equal(await page.locator('#quiz-feedback').getAttribute('data-tone'),'good');
+        if(c.choices){
+          const before=await saved(courseKey(id));if(c.kind==='quiz')assert.equal(await page.locator('#next').isDisabled(),true);
+          await page.locator(`input[value="${c.choices.find(([v])=>v!==c.answer)[0]}"]`).check();await page.locator('#quiz button').click();assert.equal(await page.locator('#quiz-feedback').getAttribute('data-tone'),'bad');
+          await page.locator(`input[value="${c.answer}"]`).check();await page.locator('#quiz button').click();
+          if(c.kind==='practice'){assert.deepEqual((await saved(courseKey(id))).checks,before.checks);assert.deepEqual((await saved(courseKey(id))).simulated,before.simulated);}
+          if(c.wallet){assert.equal(await page.locator('#wallet-demo').isVisible(),false);await page.locator('#find-wallet').dispatchEvent('click');await page.locator('#connect-wallet').dispatchEvent('click');assert.equal(await page.locator('#wallet-status').innerText(),'');}
         }
-        if(c.wallet) {
-          assert.equal(await page.locator('#wallet-demo').isVisible(),false);
-          await page.locator('#find-wallet').dispatchEvent('click');
-          await page.locator('#connect-wallet').dispatchEvent('click');
-          assert.equal(await page.locator('#wallet-status').innerText(),'');
-        }
-        if(c.kind==='earned') {
-          if(id==='contracts'&&c.lesson===0) {
-            assert.equal(await page.locator('#earned').isVisible(),true);
-            assert.match(await page.locator('#earned-label').innerText(),/simulator check passed/i);
-            assert.match(await page.locator('#chapter-label').innerText(),/checked.*simulator/i);
-          } else {
-            assert.equal(await page.locator('#earned').isVisible(),false,'no unearned skill claims');
-            assert.match(await page.locator('#chapter-label').innerText(),/recap.*preview/i);
-            assert.match(await page.locator('#story-copy summary').innerText(),/Expected results/);
-          }
-        }
-        assert.ok(Object.values((await saved(key)).checks).every(check=>!check),'simulation never awards native checks');
-        for(const width of [320,1440]) {
-          await page.setViewportSize({width,height:950}); await layout(`${id}/${c.id}/${width}`);
-          if(i===0||c.kind==='earned') await axe(`${id}/${c.id}/${width}`);
-        }
-        if(i<list.length-1) {
-          assert.equal(await page.locator('#next').isDisabled(),false,'checked simulator tasks and reference chapters can continue');
-          await page.locator('#next').click();
-        }
+        if(c.kind==='earned'){assert.equal(await page.locator('#earned').isVisible(),true);if(course.language)assert.match(await page.locator('#chapter-label').innerText(),/checked in the browser runtime/i);}
+        for(const width of [320,1440]){await page.setViewportSize({width,height:950});await layout(id+'/'+c.id);if(c.kind==='earned')await axe(id+'/'+c.id);}
+        if(i<course.chapters.length-1){assert.equal(await page.locator('#next').isDisabled(),false,id+'/'+c.id);await page.locator('#next').click();}
       }
-      const before=await saved(key);
-      await page.reload(); await waitStep(list.length-1);
-      assert.deepEqual(await saved(key),before,'preview bookmark and draft survive reload');
-      await page.locator('#all-paths').click();
-      await page.waitForFunction(()=>document.querySelector('#open-dapps')?.getAttribute('href')?.includes('#'));
-      assert.equal(await page.locator(`#${id}-size`).isVisible(),true);
-      assert.match(await page.locator(`#open-${id}`).getAttribute('href'),new RegExp('#'+list.at(-1).id+'$'));
+      finalSources[id]=source;const state=await saved(courseKey(id));await page.reload();await waitStep(course.chapters.length-1);assert.deepEqual(await saved(courseKey(id)),state);
+      assert.equal(Object.keys(course.language?state.simulated:state.checks).length,exerciseSteps(course).length);
+      await page.locator('#all-paths').click();await page.waitForFunction(()=>document.querySelector('#open-dapps')?.href.includes('#'));
+      assert.match(await page.locator('#open-'+id).innerText(),/Review/);
     }
-    const contractSave=await saved(storageKey);
-    assert.deepEqual(Object.keys(contractSave.simulated),['initial','change']);
-    assert.notEqual(contractSave.simulated.initial,contractSave.simulated.change,'historical simulator snapshots remain distinct');
-    assert.match(await page.locator('#contracts-progress').innerText(),/first lesson simulated/);
-    // Reviewing the first lesson after browsing later ABIs must not erase or reset the draft.
-    await page.goto(base+'#contract-getter');await waitStep(chapters.findIndex(c=>c.id==='contract-getter'));
-    assert.equal(await page.locator('#code').inputValue(),contractSave.source);
-    await page.locator('#run').click();assert.equal(await page.locator('#feedback').getAttribute('data-tone'),'good');
-    assert.match(await page.locator('#code-context').innerText(),/Entrypoint/);
-    // After all static assets are loaded, simulation needs no further network access.
-    await context.setOffline(true);await page.locator('#run').click();
-    assert.equal(await page.locator('#feedback').getAttribute('data-tone'),'good');
-    await context.setOffline(false);
-    await page.locator('.brand').click();await page.locator('#paths').waitFor();
-    const reviewedSave=await saved(storageKey);
-    await page.locator('#open-dusk').click(); await waitStep(0);
-    await page.locator('#character-name-input').fill('Mira');
-    assert.deepEqual(await saved(storageKey),{...reviewedSave,name:'Mira'},'shared name preserves simulator snapshots, bookmark and draft');
-    for(const [i,c] of courses.dusk.chapters.entries()) {
-      await waitStep(i);
-      if(c.kind==='quiz') assert.equal(await page.locator('#next').isDisabled(),true,'knowledge gates are not bypassed');
-      if(['quiz','practice'].includes(c.kind)) {
-        await page.locator(`#choices input[value="${c.answer}"]`).check(); await page.locator('#quiz button').click();
-      }
-      for(const width of [320,1440]) {
-        await page.setViewportSize({width,height:950}); await layout(`dusk/${c.id}/${width}`);
-        if(c.kind==='earned') await axe(`dusk/${width}`);
-      }
-      if(i<courses.dusk.chapters.length-1) await page.locator('#next').click();
-    }
-    assert.equal(await page.locator('#earned').isVisible(),true,'completed knowledge checks can earn their own skill');
-    assert.equal(Object.keys((await saved(courseKey('dusk'))).checks).length,3);
-    assert.equal(await page.evaluate(()=>localStorage.getItem('unrelated-progress')),'keep');
-    // Static localhost has no compiler either. Explicit mode uses the same interpreter.
+    // Execute probes inside the actual learner sandbox, not a mocked CSP header.
+    await page.goto(base+'course.html?path=dapps#explorer-recovery');await waitStep(courses.dapps.chapters.findIndex(c=>c.id==='explorer-recovery'));
+    const beforeSandbox=await saved(courseKey('dapps'));
+    const probe=`
+if(typeof document!=="undefined"||typeof localStorage!=="undefined"||typeof Worker!=="undefined"||typeof SharedWorker!=="undefined"||globalThis.location.origin!=="null")throw Error("Isolation failure");
+let storageDenied=false;try{indexedDB.open("not-allowed");}catch{storageDenied=true;}if(!storageDenied)throw Error("Persistent storage available");
+let blocked=false;try{await WorkerGlobalScope.prototype.fetch.call(globalThis,"https://example.invalid/exfiltration");}catch{blocked=true;}if(!blocked)throw Error("Native fetch escaped CSP");
+let codeBlocked=false;try{Function("return 1")();}catch{codeBlocked=true;}if(!codeBlocked)throw Error("eval escaped CSP");
+`;
+    await page.locator('#code').fill(probe+finalSources.dapps);await run('good');assert.equal(await page.locator('iframe').count(),0,'frames and workers are disposed after results');
+    await page.locator('#code').fill('while(true) {}\n'+finalSources.dapps);await page.locator('#run').click();await page.waitForTimeout(400);await page.locator('#run').click();assert.match(await page.locator('#test-empty').innerText(),/cancelled/i);assert.equal(await page.locator('iframe').count(),0);
+    for(let i=0;i<100&&page.workers().length;i++)await page.waitForTimeout(20);
+    assert.equal(page.workers().length,0,'removing the opaque frame must terminate its spinning worker');
+    assert.equal((await saved(courseKey('dapps'))).simulated.read,beforeSandbox.simulated.read);
+    await page.locator('#code').fill(finalSources.dapps);await run('good');
+    // Knowledge and unrelated storage remain real and independent.
+    assert.equal(await page.evaluate(()=>localStorage.getItem('unrelated-progress')),'keep');assert.equal(Object.keys((await saved(courseKey('dusk'))).checks).length,3);
+    // Explicit browser mode on static loopback needs neither compiler nor worker headers.
     await page.goto(loopback+'?runtime=simulator#entrypoint');await waitStep(chapters.findIndex(c=>c.id==='entrypoint'));
-    await page.locator('#code').fill(starter.replace('count: 7','count: 0').replace('// Add one registration.','self.count += 1;'));
-    await page.locator('#run').click();assert.equal(await page.locator('#feedback').getAttribute('data-tone'),'good');
-    const localSave=await saved(storageKey);
-    for(const width of [390,1440]) {
-      await page.setViewportSize({width,height:950});await layout(`simulator results ${width}`);await axe(`simulator results ${width}`);
-      await page.screenshot({path:`/tmp/academy-simulator-${width}.png`,fullPage:true});
-    }
-    await page.goto(loopback+'course.html?path=dusk#begin');await waitStep(0);
-    await page.locator('#character-name-input').fill('Nora');
-    assert.deepEqual(await saved(storageKey),{...localSave,name:'Nora'},'a name edit in native mode must not rewind a simulator bookmark');
-    await page.goto(loopback+'#state');await waitStep(chapters.findIndex(c=>c.id==='state'));
-    assert.match(await page.locator('#run').innerText(),/Run contract/);
-    assert.equal(await page.locator('#next').isDisabled(),true,'simulator credit cannot bypass a native check');
-    assert.deepEqual((await saved(storageKey)).simulated,localSave.simulated);
-    // Existing native credit remains visible when switching to the simulator.
+    // Browsing ahead retains the initial task until it has been checked.
+    await page.locator('#code').fill(sources.state);await run('good');await choose(chapters.findIndex(c=>c.id==='entrypoint'));await run('good');
+    const localSave=await saved(storageKey);await page.goto(loopback+'course.html?path=dusk#begin');await waitStep(0);await page.locator('#character-name-input').fill('Nora');assert.deepEqual(await saved(storageKey),{...localSave,name:'Nora'});
+    await page.goto(loopback+'#state');await waitStep(chapters.findIndex(c=>c.id==='state'));assert.match(await page.locator('#run').innerText(),/Run contract/);assert.equal(await page.locator('#next').isDisabled(),true,'simulation never bypasses a native gate');
     const nativeSave={...localSave,simulated:undefined,checks:{...localSave.checks,...localSave.simulated}};
     await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:storageKey,value:nativeSave});
-    await page.goto(loopback+'?runtime=simulator#learned');await waitStep(chapters.findIndex(c=>c.id==='learned'));
-    assert.match(await page.locator('#earned-label').innerText(),/skill learned/i);
-    assert.match(await page.locator('#chapter-label').innerText(),/checked in local DuskVM/i);
-    await page.locator('#chapter-menu').selectOption(String(chapters.findIndex(c=>c.id==='entrypoint')));
-    await waitStep(chapters.findIndex(c=>c.id==='entrypoint'));
-    await page.locator('#code').fill(nativeSave.source.replace('self.count += 1;','self.count = 1 + self.count;'));
-    assert.equal(await page.locator('#next').isDisabled(),true);
-    await page.locator('#run').click();assert.equal(await page.locator('#next').isDisabled(),false,'new simulation can check an edited native graduate draft');
-    assert.deepEqual((await saved(storageKey)).checks,nativeSave.checks,'simulation does not rewrite native snapshots');
-    await page.locator('.brand').click();await page.locator('#paths').waitFor();
-    assert.equal(await page.locator('#contracts-progress').innerText(),'1 of 7 lessons completed');
-    assert.deepEqual(unexpected,[],'no backend calls, worker execution or wallet SDK loading');
-    assert.deepEqual(errors,[]);
-    console.log(`PASS: ${process.env.PAGES_LIVE==='1'?'live':'mocked'} Pages project path, all 133 chapters, editable first-lesson simulator with separate snapshots, wrong/unsupported source, offline runs, no native awards or backend/worker calls, knowledge gates, ${layouts} layouts and ${axeChecks} axe checks.`);
-  } finally { await browser.close(); }
+    await page.goto(loopback+'?runtime=simulator#learned');await waitStep(chapters.findIndex(c=>c.id==='learned'));assert.match(await page.locator('#chapter-label').innerText(),/local DuskVM/i);
+    assert.ok(workerCount>10,'actual isolated SDK and PLONK workers ran');assert.deepEqual(unexpected,[],'no backend, external network or RPC requests');assert.deepEqual(errors,[]);
+    console.log(`PASS: all 133 chapters, 22 contract checks / 8 dApp checks / 2 real circuit-proof checks, independent knowledge gates, exact IDs, CSP/opaque-origin isolation, cancellation, separate native/browser saves, ${layouts} layouts and ${audits} axe checks. No execution server or RPC.`);
+  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

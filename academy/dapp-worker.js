@@ -5,7 +5,7 @@ import {explorerScenarios, explorerIds, invalidRecordIds} from './courses.js';
 const originalFetch = fetch;
 const reads = [];
 globalThis.fetch = async (...args) => {
-  const request = new Request(...args);
+  const request = new Request(typeof args[0] === 'string' ? new URL(args[0], location.origin) : args[0], args[1]);
   const url = new URL(request.url);
   const input = url.pathname.startsWith('/on/contracts:') ? new Uint8Array(await request.clone().arrayBuffer()) : null;
   const response = await originalFetch(request);

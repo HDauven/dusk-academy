@@ -115,10 +115,10 @@ export async function prepareRegistration(dusk, amount) {
     chapters:[
       {id:'begin', part:0, kind:'intro', short:'The app', title:'Read the register from a dApp',
        body:`<p>The workshop’s count belongs to a contract, not to a browser tab. A <strong>dApp</strong> is the application interface that lets a user read that state and request actions.</p><p>You’ll use <strong>Dusk Connect</strong>, the official browser SDK (software development kit). It supplies reusable code for working with nodes, contract interfaces and wallets. The setup is supplied, so you can concentrate on returning a read result and preparing one typed call.</p><p>We’ll first separate the app, node, wallet and contract. Then you’ll extend two functions in the same JavaScript file, inspect their results and learn where wallet approval and finality fit.</p>`,
-       note:'15 short chapters. The real SDK reads two supplied local DuskVM fixtures. No wallet, tokens or completed contract lesson is required. No transaction will be sent.'},
+       note:'15 short chapters. The real SDK reads two supplied fixtures, using DuskVM in native mode or simulated transport in browser mode. No wallet, tokens or completed contract lesson is required. No transaction will be sent.'},
       {id:'components', part:0, kind:'guide', short:'Four pieces', title:'Know which component does the work',
        body:`<p>The <strong>app</strong> displays information and asks for actions. A <strong>node</strong> provides access to network data. The <strong>contract</strong> defines the stored state and rules.</p><p>The <strong>wallet</strong> manages authorization. A public read does not need a signature, whereas a live write requires a transaction flow with user approval.</p><p>Dusk Connect joins these pieces through an API. It does not move the contract into the browser or give the website access to the wallet’s private keys.</p>`,
-       panelTitle:'The read you will implement', panel:`<ol class="example-flow"><li><strong>Your function</strong><p>Asks Dusk Connect to read <code>get_count</code>.</p></li><li><strong>Node / local adapter</strong><p>Returns the contract’s encoded result. Here it comes from actual local DuskVM execution.</p></li><li><strong>Data-driver</strong><p>Decodes the bytes into a value the app can use.</p></li><li><strong>Interface</strong><p>Displays that returned count without inventing its own state.</p></li></ol>`},
+       panelTitle:'The read you will implement', panel:`<ol class="example-flow"><li><strong>Your function</strong><p>Asks Dusk Connect to read <code>get_count</code>.</p></li><li><strong>Node / local adapter</strong><p>Returns the contract’s encoded result. Native mode uses local DuskVM; browser mode uses simulated fixture bytes.</p></li><li><strong>Data-driver</strong><p>Decodes the bytes into a value the app can use.</p></li><li><strong>Interface</strong><p>Displays that returned count without inventing its own state.</p></li></ol>`},
       {id:'address', part:0, kind:'guide', short:'Which contract?', title:'Choose a contract and a read endpoint',
        body:`<p>A contract ID identifies the contract being called. A node URL identifies where the app sends its read request. Neither is the user’s wallet address.</p><p>The supplied <code>createApp(nodeUrl, contractId)</code> creates a <code>registry</code> preset with the correct contract and its generated data-driver URL.</p><p><code>pinnedNodeUrl</code> keeps reads on the supplied endpoint, instead of allowing wallet metadata to change it. A deployed app must separately check the network on which the wallet will send a transaction.</p>`,
        panelTitle:'The supplied preset', panel:`<pre class="example"><code>contracts: {
@@ -204,10 +204,10 @@ export async function prepareRegistration(dusk, amount) {
        success:'Separate missing information from a real zero. Recovery should not invent state or silently duplicate a write.',
        error:'A failed request is not a successful read of zero. Show the error or stale state and give the user a clear recovery action.'},
       {id:'learned', part:2, kind:'earned', short:'Dusk Connect client', title:'Your app can read and prepare calls',
-       body:`<p>Your JavaScript reads actual DuskVM state and prepares typed arguments with the generated data-driver. The same file works for both supplied registers.</p><p>You’ve separated the application, node and wallet, preserved exact values, and distinguished preparation from approval and final execution.</p><p>No transaction was sent. Signed writes and receipt tracking are not implemented in this lesson.</p><p>Next, extend this file into a read-only registration explorer. Its supplied registry does not depend on your contract-course save.</p>`},
+       body:`<p>Your JavaScript reads the supplied fixture state and prepares typed arguments with the generated data-driver. The same file works for both supplied registers.</p><p>You’ve separated the application, node and wallet, preserved exact values, and distinguished preparation from approval and final execution.</p><p>No transaction was sent. Signed writes and receipt tracking are not implemented in this lesson.</p><p>Next, extend this file into a read-only registration explorer. Its supplied registry does not depend on your contract-course save.</p>`},
       {id:'explorer', part:3, kind:'intro', short:'Registry explorer', title:'Look up an individual registration',
        body:`<p>A count tells you how many seats are reserved. A <strong>record</strong> gives you one reservation’s seat count, owning contract and confirmation flag.</p><p>Keep your existing JavaScript. Over eight chapters you’ll add a record lookup, handle missing records, read the other fields and recover from an unavailable endpoint.</p><p>A separate, supplied registry has three records. Their IDs are <code>0</code>, <code>2</code> and <code>9007199254740993</code>. IDs are stable identifiers, not array positions. Gaps do not make later records invalid.</p><p>This fixture is a read-only teaching snapshot, not a deployed service. You do not need to build it or complete the contract path. Its owner fields identify contracts, not wallet users.</p>`,
-       note:'The matching contract and data-driver are built during local setup. No signing, writes, event decoding or live deployment is added.'},
+       note:'Native setup builds the fixture and driver. Browser mode bundles the real driver with simulated reads. No signing, writes, event decoding or live deployment is added.'},
       {id:'explorer-read', part:3, kind:'code', scenario:'explorer-read', short:'Read a record', title:'Give the getter a record ID',
        body:`<p>The counter and record registry have different interfaces. Extend your factory without breaking its existing two-argument callers:</p><pre class="example"><code>export function createApp(nodeUrl, contractId,
     driverPath = "/api/registry-driver") {
@@ -276,7 +276,7 @@ const args = JSON.rawJSON(id);</code></pre><p>Replace the old Number conversion 
        hint:'Await readRegistration inside try. Do not put a return null fallback inside readRegistration. A failed request is not a missing record.',
        note:'Only reads are retried in this test. Signed writes remain deferred, and uncertain write outcomes must not be blindly retried.'},
       {id:'explorer-learned', part:4, kind:'earned', short:'Registry client', title:'Your explorer reports what it actually read',
-       body:`<p>The same JavaScript file still reads counters and prepares unsigned calls. It now looks up a supplied registry’s seats, contract ownership and confirmation flags through its matching driver.</p><p>You’ve preserved large IDs, rejected invalid input and separated found, missing and unavailable results. A later working read recovers without fabricating a record.</p><p>These are public reads of fixed local DuskVM state. Wallet signing, live transaction tracking and registered event decoding have not been implemented.</p>`},
+       body:`<p>The same JavaScript file still reads counters and prepares unsigned calls. It now looks up a supplied registry’s seats, contract ownership and confirmation flags through its matching driver.</p><p>You’ve preserved large IDs, rejected invalid input and separated found, missing and unavailable results. A later working read recovers without fabricating a record.</p><p>These are public reads of a fixed teaching fixture, not a live network. The runtime label distinguishes native DuskVM from simulated transport. Wallet signing, live transaction tracking and registered event decoding have not been implemented.</p>`},
     ],
   },
   circuits: {
@@ -390,14 +390,14 @@ const legacyIds = {
 };
 export function serializeCourse(course,state) {
   const keyed = values => Object.fromEntries(Object.entries(values).map(([i,value])=>[course.chapters[i].id,value]));
-  return JSON.stringify({...state,version:2,step:course.chapters[state.step].id,active:course.chapters[state.active]?.id??null,checks:keyed(state.checks),answers:keyed(state.answers)});
+  return JSON.stringify({...state,version:2,step:course.chapters[state.step].id,active:course.chapters[state.active]?.id??null,checks:keyed(state.checks),answers:keyed(state.answers),...(state.simulated?{simulated:keyed(state.simulated)}:{})});
 }
 export function restoreCourse(id, raw, preview = false) {
   const course=courses[id], code=course.chapters.findIndex(c=>c.kind==='code');
   const state={version:2,step:0,active:code,started:false,source:course.starter||'',checks:{},answers:{}};
   const validSource=s=>typeof s==='string'&&new TextEncoder().encode(s).length<=8000;
   try {
-    if (!raw || raw.length>(exerciseSteps(course).filter(i=>course.chapters[i].kind==='code').length+1)*48000+16000) return state;
+    if (!raw || raw.length>(exerciseSteps(course).filter(i=>course.chapters[i].kind==='code').length*2+1)*48000+16000) return state;
     const value=JSON.parse(raw);
     if(![1,2].includes(value?.version)) return state;
     const key = c => value.version===1?legacyIds[id].indexOf(c.id):c.id;
@@ -416,6 +416,13 @@ export function restoreCourse(id, raw, preview = false) {
       if(c.kind==='quiz' ? check!==c.answer : !validSource(check)||!check.trim()) break;
       state.checks[i]=check;state.started=true;
       if(c.kind==='code') state.active=i;
+    }
+    if(value.version===2&&course.language) for(const i of exerciseSteps(course)) {
+      const c=course.chapters[i], check=value.simulated?.[c.id];
+      if(c.kind==='quiz' ? check===c.answer : validSource(check)&&check.trim()) {
+        (state.simulated??={})[i]=check;state.started=true;
+        if(preview&&c.kind==='code')state.active=Math.max(state.active,i);
+      } else if(!state.checks[i]) break;
     }
     const limit=courseLimit(course,state,preview), step=position(value.step), active=position(value.active);
     if(step>=0&&step<=limit) state.step=step;

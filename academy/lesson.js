@@ -39,7 +39,7 @@ export const lessons = [
 export const chapters = [
   {
     id:'begin', lesson:0, part:0, kind:'intro', short:'Your first contract', title:'Build a registration counter',
-    body:`<p>The workshop needs to count registrations. You’ll build a <strong>native Dusk contract</strong> that stores a count and adds one per successful call.</p><p>The Forge project is supplied. Read the file, make two small edits and check the returned counts. The first lesson supports a browser teaching simulator as well as local DuskVM. The Run button identifies the runtime. Rust syntax is introduced where the contract needs it.</p><p>Keep the same file as later lessons add arguments, rules and records. You do not need to complete another path, install learner-side packages or connect a wallet.</p>`,
+    body:`<p>The workshop needs to count registrations. You’ll build a <strong>native Dusk contract</strong> that stores a count and adds one per successful call.</p><p>The Forge project is supplied. Read the file, make two small edits and check the returned counts. These lessons support a browser teaching simulator as well as local DuskVM. The Run button identifies the runtime. Rust syntax is introduced where the contract needs it.</p><p>Keep the same file as later lessons add arguments, rules and records. You do not need to complete another path, install learner-side packages or connect a wallet.</p>`,
     task:'Start the count at zero and add one registration per call.',
     note:'15 chapters with worked examples, optional practice and two coding checks. No wallet, tokens or live deployment required.'
   },
@@ -294,7 +294,7 @@ pub fn register(&amp;mut self, amount: u64)</code></pre><p>A client’s matching
   {
     id:'validation-learned', lesson:2, part:2, kind:'earned', short:'Input validation', title:'A failed call keeps the previous state',
     body:`<p><code>register(8)</code> failed at a count of 3. <code>register(7)</code> then succeeded and brought the count to 10.</p>
-    <p>DuskVM rolled back the failed call while keeping the changes from earlier successful calls.</p>`,
+    <p>The selected runtime rolled back failed calls while keeping earlier successful changes. A simulator check is not a native DuskVM run.</p>`,
     note:'Next, keep a record of each registration so it can be found and cancelled. Caller permissions come later.',
   },
   {
@@ -444,7 +444,7 @@ self.count -= removed.seats;</code></pre>
   {
     id:'records-learned', lesson:3, part:2, kind:'earned', short:'Learned', title:'The register remembers individual groups',
     body:`<p>Your contract now stores ID/seat records, returns newly allocated IDs, distinguishes missing records and cancels a specific registration.</p>
-    <p>The local DuskVM tests exercised a full lifecycle: create, read, reject, cancel and refill. Stored totals, record counts and ID allocation stayed consistent across calls.</p>
+    <p>The lifecycle checks exercised create, read, reject, cancel and refill. Stored totals, record counts and ID allocation stayed consistent across calls.</p>
     <p>No personal data, wallet signature or ownership rule was added. The next lesson adds caller permissions. These records are not proof of identity or access rights.</p>`,
   },
   {
@@ -760,7 +760,7 @@ dusk-forge build all</code></pre>
   },
   {
     id:'build-abi', lesson:6, part:2, kind:'guide', short:'Match the interface', title:'Build the client interface from the same source',
-    body:`<p>The contract WASM and method data-driver serve different consumers. A driver from an earlier version can have the right method name but the wrong argument or result type.</p><p>The final check loads the newly built driver through Dusk Connect and tests its actual schema and encoded arguments. A hash identifies an artifact without proving deployment or correctness.</p>`,
+    body:`<p>The contract WASM and method data-driver serve different consumers. A driver from an earlier version can have the right method name but the wrong argument or result type.</p><p>In native mode, the final check loads the newly built driver through Dusk Connect and tests its actual schema and encoded arguments. Browser mode instead compares your parsed public interface to a prebuilt reference driver and tests its real encoding. A hash identifies an artifact without proving deployment or correctness.</p>`,
     panelTitle:'Signatures that evolved in this file', panel:`<dl class="concept-list"><dt>register</dt><dd>Now takes one u64 amount and returns a u64 record ID.</dd><dt>get_registration</dt><dd>Now returns Option&lt;u64&gt;, not the earlier bare u64.</dd><dt>resize</dt><dd>Takes an (id, seats) tuple and returns unit.</dd></dl><p>The method driver is not automatically a registered event schema. Signing, network deployment and upgrades remain separate from this build check.</p>`
   },
   {
@@ -779,7 +779,7 @@ resize(2, 4)    → an (id, seats) tuple</code></pre>
   {
     id:'building-learned', lesson:6, part:2, kind:'earned', short:'Learned', title:'The register passes a cumulative build check',
     body:`<p>You built state, typed arguments, validation, stable records, contract ownership, receipt events and cross-contract operations in the same file.</p>
-    <p>The final run checked state across both contracts, rejection and recovery, atomic pairs and the generated method data-driver.</p>
+    <p>The final run checked state, rejection and recovery, atomic pairs and the method interface. Native mode builds both WASM targets; browser mode interprets the source and checks a prebuilt reference driver.</p>
     <p>This is still a local learning contract. End-user authentication, production event schemas, deployment and upgrade policy, gas budgets and independent review remain separate work.</p>`,
     note:'Your draft and earlier checkpoints are saved in this browser when storage is available. Use All paths to choose another specialization, or Back to review this one.',
   },
@@ -797,7 +797,7 @@ export function unlocked(state, preview = false) {
 
 export function markChecked(state, step, simulated = false) {
   const check = chapters[step]?.check;
-  if (!check || (simulated && chapters[step].lesson !== 0)) return;
+  if (!check) return;
   const checks = simulated ? (state.simulated ??= {}) : state.checks;
   checks[check] = state.source;
   if (check === 'change' && !checks.initial) checks.initial = state.source;
@@ -987,7 +987,7 @@ export function serialize(state) {
 export function restore(raw, preview = false) {
   const fresh = {version:3, step:0, started:false, active:codeSteps[0], name:'', source:starter, checks:Object.fromEntries(codeSteps.map(step => [chapters[step].check, null])), answers:{}};
   try {
-    if (!raw || raw.length > (codeSteps.length + 3) * 48000 + 10000) return fresh; // Native + two simulator snapshots + source, including JSON escaping.
+    if (!raw || raw.length > (codeSteps.length * 2 + 1) * 48000 + 10000) return fresh; // Both runtime histories plus current source, including JSON escaping.
     const value = JSON.parse(raw);
     if (![1,2,3].includes(value?.version)) return fresh;
     const position = saved => chapters.findIndex(c => c.id === (value.version === 3 ? (typeof saved === 'string' ? saved : null) : Number.isInteger(saved) ? legacyIds[saved] : null));
@@ -1003,10 +1003,12 @@ export function restore(raw, preview = false) {
       fresh.active = step;
       fresh.started = true;
     }
-    if (value.version === 3) for (const check of ['initial','change']) {
-      const source = value.simulated?.[check];
-      if (!validSource(source) || !source.trim()) break;
-      (fresh.simulated ??= {})[check] = source;
+    if (value.version === 3) for (const i of codeSteps) {
+      const check = chapters[i].check, source = value.simulated?.[check];
+      if (validSource(source) && source.trim()) {
+        (fresh.simulated ??= {})[check] = source; fresh.started = true;
+        if (preview) fresh.active = Math.max(fresh.active, i);
+      } else if (!fresh.checks[check]) break;
     }
     const limit = unlocked(fresh, preview), step = position(value.step), active = position(value.active);
     if (value.version !== 1 && codeSteps.includes(active) && active <= limit) fresh.active = Math.max(fresh.active, active);

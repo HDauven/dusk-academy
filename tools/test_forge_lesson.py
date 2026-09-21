@@ -5,9 +5,17 @@ import os
 import subprocess
 import tempfile
 import time
-from forge_lesson import run_contract, read_demo, read_registration, data_driver, REGISTRY_GETTERS, sandbox
+from forge_lesson import run_contract as native_run_contract, read_demo, read_registration, data_driver, REGISTRY_GETTERS, sandbox
 
 ROOT = Path(__file__).resolve().parent.parent
+SIMULATOR_CASES = []
+
+
+def run_contract(source, lesson='state'):
+    result = native_run_contract(source, lesson)
+    if result.get('ok'):
+        SIMULATOR_CASES.append({'source': source, 'scenario': lesson, 'result': result})
+    return result
 
 
 def record_sources(source):
@@ -284,6 +292,7 @@ console.log(`PASS: browser counter compared against ${cases.length} freshly comp
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const {createDuskApp}=await import(process.argv[1]);
+const {fixtureResponse}=await import(new URL('../offline-transport.js',process.argv[1]));
 const app=createDuskApp({pinnedNodeUrl:'http://localhost',autoConnect:false,wallet:{waitForProvider:false,rememberLastUsedProvider:false}});
 try {
   const driver=await app.driver('data:application/wasm;base64,'+readFileSync(process.argv[2]+'/driver.wasm').toString('base64'));
@@ -295,6 +304,8 @@ try {
       const encoded=driver.encodeInputFn(method,JSON.stringify(JSON.rawJSON(id)));
       assert.equal(new DataView(encoded.buffer,encoded.byteOffset,8).getBigUint64(0,true),BigInt(id));
       assert.equal(driver.decodeOutputFn(method,Buffer.from(hex,'hex')),expected[method]);
+      const simulated=fixtureResponse('/on/contracts:'+'55'.repeat(32)+'/'+method,encoded);
+      assert.equal(Buffer.from(await simulated.arrayBuffer()).toString('hex'),hex,'simulated bytes match actual pinned VM output for '+method+' '+id);
     }
   }
   // The pin's generic u64 input rejects JSON strings: never teach otherwise.
@@ -345,6 +356,18 @@ for(const result of malformed) assert.throws(()=>assess(step('build-driver'),res
         try: sandbox(work, [], ['/usr/bin/true'], work/'out', work/'err', deadline=time.monotonic()-1)
         except ValueError as error: assert 'too long' in str(error)
         else: raise AssertionError('Expired shared deadline was ignored')
+    subprocess.run(['node', '--input-type=module', '-e', '''
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const {simulateContract}=await import(process.argv[1]);
+const cases=JSON.parse(readFileSync(0,'utf8'));
+assert.ok(cases.length>=50,'do not silently shrink conformance coverage');
+for(const {source,scenario,result} of cases){
+  const actual=simulateContract(source,scenario),{build,...native}=result;
+  assert.deepEqual(actual,native,scenario+' must match actual native observations, including wrong programs');
+}
+console.log(`PASS: all seven contract lessons, ${cases.length} freshly compiled positive/negative/equivalent native programs match interpreted traces, state, callers, events and rollback.`);
+''', (ROOT / 'academy/contract-simulator.js').as_uri()], input=json.dumps(SIMULATOR_CASES), text=True, check=True)
     print('PASS: seven real Forge lessons, VM caller/ownership checks, actual receipt events, typed cross-contract reads/writes, two-contract and outer rollback, equivalent guards/removal, 66-call workflow, matching data-driver build/SDK ABI, unchanged counter fixtures, real registry reads/matching driver/exact u64 inputs, migrations, limits and isolated compilation.')
 
 

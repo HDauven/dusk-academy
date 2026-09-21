@@ -56,22 +56,24 @@ test('u64 precision, independent instances and transactional rollback are real m
 
 test('the bounded grammar rejects unsupported and ill-typed source instead of ignoring it',()=>{
   for(const source of [
-    program('loop {}'), program('if true {}'), program('self.count += "one";'),
+    program('match self.count {}'), program('self.count += "one";'),
     program('self.count += 1;', '18446744073709551616'),
     program('let n = 1; n += 1;'), program('let n = unknown;'), program('let if = 1;'),
-    program('let x: bool = 0;'), program('let x = self.count.checked_add(1).unwrap();'),
+    program('let x: bool = 0;'), program('let x = self.count.not_a_method();'),
     program('self.count += 1'), program('self.count'),
     program().replace('count: u64,','count: u64, other: u64,'),
-    program().replace('get_count(&self)','get_count(&mut self)'),
     program().replace('self.count\n','self.count = 1; self.count\n'),
     program().replace('self.count\n','self.count;\n'),
     program().replace('register(&mut self)','register(&mut self, amount: u64)'),
     program().replace('pub fn register','pub fn get_count'),
-    program().replace('pub fn get_count','pub fn count'),
     program().replace('Self { count: 0 }','Self { count: self.count }'),
-    program()+'\nconst IGNORED: u64 = 1;', program()+'\n/* open comment',
+    program()+'\nuse std::fs;', program()+'\n/* open comment',
     program('self.count = '+'('.repeat(66)+'1'+')'.repeat(66)+';'),
     program('self.count = '+Array(67).fill('1').join('+')+';'),
-  ]) assert.throws(()=>simulateCounter(source),/Not supported by this lesson simulator/,source);
+  ]) assert.throws(()=>simulateCounter(source),/Not supported by this lesson runtime/,source);
+  assert.throws(()=>simulateCounter(program().replace('pub fn get_count','pub fn count')),/public get_count/);
+  assert.throws(()=>simulateCounter(program('loop {}')),/instruction limit/);
+  assert.deepEqual(simulateCounter(program('if self.count < 2 { self.count += 1; } else { self.count = self.count + 1; }')).after,['1','2','3']);
+  assert.deepEqual(simulateCounter(program('for n in 0..1 { self.count = self.count.checked_add(1).unwrap(); }')).after,['1','2','3']);
   for(const source of [null,42,'','x'.repeat(8001),'é'.repeat(4001)]) assert.throws(()=>simulateCounter(source),/8,000 UTF-8 bytes/);
 });

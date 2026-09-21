@@ -1,0 +1,26 @@
+{
+  "rust": "1.98.0",
+  "forge": "v0.3.0",
+  "duskCore": "1.6.0",
+  "plonk": "0.22.1",
+  "registrySourceSha256": "ddc2aa49d3c0e7d62dd65c0089f419aa2cf7cd673bbf087ad2cfdd643e2feeac",
+  "circuitEngineSourceSha256": "bc83b8bafdf5fc02b965c9226f60db4ce406027f39bb3f132c8047688f394a7e",
+  "artifacts": {
+    "counter-driver.wasm": {
+      "bytes": 122456,
+      "sha256": "bb96a722bc750c1ebb33aa619626336d9e0452389639c9a647b55d9d5760c1f9"
+    },
+    "explorer-driver.wasm": {
+      "bytes": 145463,
+      "sha256": "761131e13564e91a80f121a231ac6f196f210bc05bbd62102a979aec60ee9a96"
+    },
+    "registry-methods.wasm": {
+      "bytes": 156220,
+      "sha256": "33f78215a7b6c421afa0bc7fabda42944cb1b9d6a8c0196048dde62ad1975f53"
+    },
+    "circuit-program.wasm": {
+      "bytes": 704242,
+      "sha256": "da6bb70f92fb2ed794bc8a85d26ac0f4dbb74bb066ab3e87a53bf3f87d5538a2"
+    }
+  }
+}

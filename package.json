@@ -7,9 +7,10 @@
   "scripts": {
     "dev": "python3 -B tools/serve.py",
     "start": "npm run dev",
-    "test": "node --test academy/test.mjs academy/courses.test.mjs academy/counter-simulator.test.mjs && python3 -B tools/test_server.py",
+    "test": "node --test academy/test.mjs academy/courses.test.mjs academy/counter-simulator.test.mjs academy/browser-runtime.test.mjs && python3 -B tools/test_server.py",
     "test:forge": "python3 -B tools/test_forge_lesson.py",
     "test:circuits": "python3 -B tools/test_circuit_lesson.py",
+    "build:browser": "python3 -B tools/build_browser.py",
     "setup:forge": "python3 -B tools/forge_lesson.py",
     "setup:circuits": "python3 -B tools/circuit_lesson.py"
   }

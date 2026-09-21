@@ -4,9 +4,9 @@ A browser-based course in Dusk development.
 
 **[Open Dusk Academy](https://hdauven.github.io/dusk-academy/)** · [Source on GitHub](https://github.com/HDauven/dusk-academy)
 
-GitHub Pages hosts the lessons, knowledge questions and a **browser-only simulator for the first contract lesson**. Its two coding checks evaluate the edited counter using a documented Rust subset. No compiler, RPC node, wallet, API key or runtime service is needed. Simulator progress is labelled and stored separately from native checks.
+**Every coding path runs from static files:** all 22 contract checkpoints, both dApp lessons and both circuit checks. No execution server, public RPC, wallet, API key or learner installation is required. Browser checks are labelled and saved separately from native execution.
 
-Later coding lessons remain reading previews on Pages. Their native execution, dApp reads and circuit proofs still require the local setup. This is a first-lesson pilot, not a simulator for all seven contract lessons.
+Contracts interpret a bounded Rust subset and simulate Dusk behavior. dApps execute actual JavaScript with genuine Connect/data-drivers against simulated reads. Circuits interpret edited gate-building code and generate **real PLONK proofs** in a prebuilt engine. Edited Rust is not compiled in the browser.
 
 | Learning path | Lessons | Chapters | What you build or study |
 |---|---:|---:|---|
@@ -21,15 +21,19 @@ The first contract lesson has 15 chapters. Lessons combine short explanations, w
 
 The entrance keeps curriculum totals visible beside saved progress, with Open, Continue or Review links. Each path saves its own source and checks. The character name is shared. Earlier chapter links, drafts, historical checkpoints and earned skills survive save migration. Normal saving is silent. A failed save shows a warning and asks before leaving the page.
 
-## Browser simulator
+## Browser runtime
 
-Open the first contract lesson on Pages, edit the supplied Rust and select **Simulate contract**. The interpreter evaluates the actual supported program, including incorrect updates. It does not match answer strings or replay stored results. Unsupported syntax gets a simulator limitation message, not a claim that the code is invalid Rust.
+Choose any path and edit the supplied file. The contract and circuit interpreters evaluate the supported source, including incorrect logic, rather than recognize answers or select a successful precompiled solution. Unsupported features report a runtime limitation, not invalid Rust.
 
-The simulator models one counter, checked u64 arithmetic, independent instances and rollback of a failed call. It does not compile Rust or emulate DuskVM, gas, network finality, permissions or cross-contract execution. See the [supported subset and limits](academy/README.md#browser-simulator).
+The contract model covers exact integers, records, immediate callers, events, nested venue calls, failed-call rollback and atomic pairs. Its final check compares the parsed public interface against a **prebuilt reference driver** and tests real ABI encoding. The displayed source hash is not a compiled contract hash. No gas, deployment, wallet authentication or finality is simulated.
 
-For local static development, `python3 -m http.server 8000` is sufficient. Open `http://localhost:8000/?runtime=simulator#begin` to select browser contract mode on loopback. No Rust setup is needed. Runs work without networking once the page assets are loaded; offline reopening is not implemented.
+Actual learner JavaScript runs in a disposable worker inside an opaque sandboxed iframe. Inherited CSP blocks external connections, including attempts to bypass the fixture transport. It cannot access the page's DOM, storage or injected wallet. Circuit Rust is interpreted as bounded gate instructions; the bundled dusk-plonk engine proves and verifies those instructions with fresh demonstration parameters. See [supported syntax, isolation and limits](academy/README.md#browser-runtime).
+
+For local static development, run `python3 -m http.server 8000` and open `http://localhost:8000/?runtime=simulator#paths`. This mode is retained when navigating between paths. Only same-site static assets are fetched. There is no service worker or offline-reopening guarantee.
 
 ## Run locally
+
+This optional mode compiles edited Rust and uses real DuskVM as the reference. It is not required for the static academy.
 
 The host needs Linux, Python 3, Node, Rust/rustup, a C build toolchain and bubblewrap. On Debian/Ubuntu, install bubblewrap with `sudo apt install bubblewrap`. The browser needs WebAssembly and, for exact-ID exercises, native `JSON.rawJSON`. Unsupported browsers receive an update message rather than rounded IDs.
 
@@ -49,7 +53,7 @@ Open **http://localhost:5173/** after starting the server. Saves belong to the b
 
 Setup builds trusted dependencies, fixed VM fixtures and matching data-drivers outside this project, in `~/.cache/dusk-academy/{forge-lesson,circuit-lesson}`. Learner requests never run Cargo or install packages. The bundled Connect SDK, fonts and artwork load locally. No CDN, analytics, browser API keys or learner-side package installation is used.
 
-A static server can run the first-lesson simulator. Native execution still needs the development server for compiler endpoints, fixed contract reads and worker CSP headers. The native runner never silently falls back to simulation if it fails.
+A static server can run every lesson in browser mode. Native execution still needs the development server for compiler endpoints, fixed contract reads and worker CSP headers. The native runner never silently falls back to simulation if it fails.
 
 ### If execution is unavailable
 
@@ -61,14 +65,14 @@ A static server can run the first-lesson simulator. Native execution still needs
 ## What executes
 
 - **Native contracts** compile with pinned Forge and run in local DuskVM 1.6.0. Each Run starts a fresh deployment. Calls within it share state. Fixed scenarios check acceptance, rejection, recovery, ownership, receipt events and two-contract rollback. The final check also builds the method data-driver and checks its schema and exact u64 encoding/decoding with Connect.
-- **dApps** use the genuine Connect SDK and generated drivers. Reads reach fixed local VM fixtures. The explorer checks exact IDs, missing records, owner IDs, confirmation flags and recovery after an intentional HTTP 503. Calls are prepared but never signed or submitted.
-- **Circuits** compile against dusk-plonk 0.22.1. A browser worker generates fresh demonstration parameters, produces real PLONK proofs, rejects an invalid witness and checks public-input binding. No verifier is deployed.
+- **Native dApps** use the genuine Connect SDK and generated drivers. Reads reach fixed local VM fixtures. The explorer checks exact IDs, missing records, owner IDs, confirmation flags and recovery after an intentional HTTP 503. Calls are prepared but never signed or submitted.
+- **Native circuits** compile against dusk-plonk 0.22.1. A browser worker generates fresh demonstration parameters, produces real PLONK proofs, rejects an invalid witness and checks public-input binding. No verifier is deployed.
 
 Contract owners are immediate calling contracts, not authenticated wallet users. The A/B relays are open test fixtures and must not be used as production authorization. Raw receipt events can describe attempted work that later rolls back. They do not establish committed success or network finality.
 
 The explorer's separate getters are coherent only because its fixture never changes. A public owner ID is not a credential, and confirmation is application state rather than finality. Circuit field arithmetic does not authenticate real-world facts or provide bounded-integer constraints.
 
-No live deployment, signed write, credential issuance, legal assessment or registered event-decoding schema is implemented. Optional wallet profile access runs separately in the trusted page and never requests a transaction. Saves and local checks are learning aids, not certification.
+No live deployment, signed write, credential issuance, legal assessment or registered event-decoding schema is implemented. Optional native-mode wallet profile access runs separately in the trusted page and never requests a transaction. Browser mode does not expose wallet controls. Saves and local checks are learning aids, not certification.
 
 ## Checks
 
@@ -78,7 +82,7 @@ npm run test:forge
 npm run test:circuits
 ```
 
-`npm test` covers the counter interpreter, separate simulator snapshots, curriculum, save migration, local assets, request boundaries, worker headers and missing-cache recovery without requiring Rust setup. The other two commands require prepared caches and exercise real compilation, VM calls and proofs. Forge tests also compare simulator observations with freshly compiled native counter programs, including wrong updates, equivalent expressions, exact large integers and arithmetic rejection.
+`npm test` covers the interpreters, all contract checkpoints, real bundled PLONK execution, artifact hashes, separate histories, migrations and local-server boundaries without Rust setup. Native suites require prepared caches. Forge tests compare 69 freshly compiled positive/negative/equivalent programs across all seven lessons with interpreted traces, including ownership, events and rollback; The opening comparison also covers 13 cases, including exact integers and arithmetic rejection. Simulated explorer bytes are compared against actual pinned VM output.
 
 With the local server running, use Playwright and `@axe-core/playwright` as optional development tools:
 
@@ -88,13 +92,13 @@ node tools/test_courses.cjs
 node tools/test_pages.cjs
 ```
 
-`CHROMIUM_PATH` selects an existing Chromium. The Pages check serves local files at a mocked project-site URL, with no backend, and checks simulator execution, unsupported/wrong source, offline runs, separate snapshots, preview navigation and honest skill states. It does not need the local server or Rust setup. Set `PAGES_LIVE=1` to check the published site instead of mocked files.
+`CHROMIUM_PATH` selects an existing Chromium. The Pages check serves local files at a mocked project-site URL without worker-response CSP headers or a backend. It runs all coding checks, real SDK/driver/proof workers, isolation probes, cancellation, native/browser transitions and independent knowledge gates. It does not need the local server or Rust setup. Set `PAGES_LIVE=1` to check the published site instead of mocked files.
 
 The two local-execution browser suites cover all chapters, 1,636 layouts and 290 axe checks, source/snapshot continuity, optional practice, keyboard navigation, blocked storage, cancellation, actual SDK reads and PLONK execution. The no-wallet test does not verify real extension approval.
 
 ## Release scope
 
-**The public site serves static assets and a bounded browser teaching interpreter, not a hosted compiler or public VM service.** GitHub Pages publishes the root of `main`, with `.nojekyll` disabling Jekyll processing. There is no build step or hosted compiler. `academy/hosting.js` selects browser mode outside loopback hosts, with the remaining coding lessons kept as reading previews. This is presentation logic, not a security boundary.
+**The public site serves static assets and a bounded browser teaching interpreter, not a hosted compiler or public VM service.** GitHub Pages publishes the root of `main`, with `.nojekyll` disabling Jekyll processing. There is no build step or hosted compiler. `academy/hosting.js` selects browser mode outside loopback hosts or with `?runtime=simulator`. This is presentation logic, not a security boundary.
 
 The Python server binds to loopback by default. Keep it local.
 
@@ -114,6 +118,7 @@ Original academy code and lesson text are available under the [MIT License](LICE
 
 - Rust examples and tutorial snippets derived from them: MPL-2.0. See [contract license](examples/first-contract/LICENSE) and [circuit license](examples/first-circuit/LICENSE).
 - Bundled Dusk Connect: [MIT](academy/vendor/dusk-connect.LICENSE), with [source provenance](academy/vendor/README.md).
+- Bundled WASM engines/drivers: [sources, reproduction and third-party notices](academy/vendor/README.md#browser-wasm-artifacts). Their upstream licenses, including MPL-2.0, remain in effect.
 - Manrope and Silkscreen fonts: [Manrope OFL](assets/Manrope-OFL.txt) and [Silkscreen OFL](assets/Silkscreen-OFL.txt).
 
 The generated workshop and portrait artwork in `academy/assets/` are included under MIT to the extent the project owner holds rights. [Artwork provenance](academy/README.md#artwork) records the generation and processing details; this is not a claim of exclusive copyright in AI-generated output. Dusk names and trademarks remain with their respective owners. This is an independent learning project, not an official Dusk product.

@@ -1,6 +1,6 @@
 # First PLONK circuit
 
-## Browser harness
+## Native compilation and browser proving
 
 This is the compiler-prepared project for the academy's opening circuit lesson,
 not a deployed verifier contract. Rust **1.98.0** and **dusk-plonk 0.22.1** are pinned.
@@ -26,6 +26,20 @@ npm run dev
 Open `http://localhost:5173/course.html?path=circuits`.
 The setup cache lives outside the project at `~/.cache/dusk-academy/circuit-lesson`.
 No build artifacts or setup secrets are shipped in this directory.
+
+## Static browser engine
+
+The static academy needs no compiler service. `src/browser.rs` is compiled once
+into `academy/vendor/circuit-program.wasm` by `npm run build:browser`. The browser
+interprets supported edited circuit-building Rust into bounded gate instructions;
+this engine applies those instructions to the real composer. A third trusted host
+function supplies the gate programs. Gates and public positions must match across
+all four fixed construction/test samples. No learner Rust is compiled by this mode.
+
+Both modes use the same real prover/verifier harness and produce genuine proofs.
+The starter's missing equality and incorrect alternative gates affect the actual
+proof relation. See [browser runtime limits](../../academy/README.md#browser-runtime)
+and [artifact sources/licenses](../../academy/vendor/README.md#browser-wasm-artifacts).
 
 ## What runs
 
