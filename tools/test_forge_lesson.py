@@ -5,9 +5,17 @@ import os
 import subprocess
 import tempfile
 import time
-from forge_lesson import run_contract, read_demo, read_registration, data_driver, REGISTRY_GETTERS, sandbox
+from forge_lesson import run_contract as native_run_contract, read_demo, read_registration, data_driver, REGISTRY_GETTERS, sandbox
 
 ROOT = Path(__file__).resolve().parent.parent
+SIMULATOR_CASES = []
+
+
+def run_contract(source, lesson='state'):
+    result = native_run_contract(source, lesson)
+    if result.get('ok'):
+        SIMULATOR_CASES.append({'source': source, 'scenario': lesson, 'result': result})
+    return result
 
 
 def record_sources(source):
@@ -137,9 +145,12 @@ def check():
     answer = initial.replace('// Add one registration.', 'self.count += 1;')
     first = run_contract(initial)
     assert first == {'ok': True, 'initial': '0', 'after': ['0','0','0'], 'fresh': '0'}, first
+    counter_cases = [{'source': initial, 'result': first}]
     for statement in ['self.count += 1;', 'self.count = self.count + 1;', 'let next = self.count.checked_add(1).unwrap(); self.count = next;']:
         result = run_contract(initial.replace('// Add one registration.', statement))
         assert result == {'ok': True, 'initial': '0', 'after': ['1','2','3'], 'fresh': '0'}, result
+        if '.checked_add' not in statement:  # Method calls are outside the simulator subset.
+            counter_cases.append({'source': initial.replace('// Add one registration.', statement), 'result': result})
     result = run_contract(answer.replace('count: 0', 'count: 7'))
     assert result['initial'] == '7' and result['after'] == ['8','9','10'], result
     bad = run_contract(answer.replace('self.count += 1;', 'self.count = 1;'))
@@ -153,6 +164,31 @@ def check():
     loop = run_contract(answer.replace('self.count += 1;', 'loop { self.count = self.count.wrapping_add(1); }'))
     assert not loop['ok'] and time.monotonic()-began < 22, loop
     assert run_contract(answer)['ok'], 'A bad run must not poison the next session'
+    # Independent native oracle for the browser interpreter. No stored success traces.
+    for code in [source, answer.replace('count: 0', 'count: 7'),
+                 initial.replace('// Add one registration.', 'self.count = 1;'),
+                 initial.replace('// Add one registration.', 'let next: u64 = self.count + (6 / 2 - 2); self.count = next;'),
+                 initial.replace('// Add one registration.', 'let mut n = 8; n %= 3; self.count += n - 1;'),
+                 answer.replace('self.count\n', 'return self.count;\n'),
+                 answer.replace('count: 0', 'count: 9_007_199_254_740_993u64'),
+                 initial.replace('count: 0', 'count: u64::MAX'),
+                 answer.replace('count: 0', 'count: u64::MAX'),
+                 initial.replace('// Add one registration.', 'self.count -= 1;')]:
+        counter_cases.append({'source': code, 'result': run_contract(code)})
+    subprocess.run(['node', '--input-type=module', '-e', '''
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const {simulateCounter}=await import(process.argv[1]);
+const cases=JSON.parse(readFileSync(0,'utf8'));
+for(const {source,result} of cases) {
+  if(result.ok) assert.deepEqual(simulateCounter(source),result);
+  else {
+    assert.equal(result.phase,'execute');
+    assert.throws(()=>simulateCounter(source),/overflow|underflow/);
+  }
+}
+console.log(`PASS: browser counter compared against ${cases.length} freshly compiled native cases, including exact u64 values and arithmetic rejection.`);
+''', (ROOT / 'academy/counter-simulator.js').as_uri()], input=json.dumps(counter_cases), text=True, check=True)
 
     arguments = answer.replace('register(&mut self)', 'register(&mut self, amount: u64)').replace('self.count += 1;', 'self.count += amount;')
     positive = arguments.replace('self.count += amount;', 'assert!(amount > 0); self.count += amount;')
@@ -256,6 +292,7 @@ def check():
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const {createDuskApp}=await import(process.argv[1]);
+const {fixtureResponse}=await import(new URL('../offline-transport.js',process.argv[1]));
 const app=createDuskApp({pinnedNodeUrl:'http://localhost',autoConnect:false,wallet:{waitForProvider:false,rememberLastUsedProvider:false}});
 try {
   const driver=await app.driver('data:application/wasm;base64,'+readFileSync(process.argv[2]+'/driver.wasm').toString('base64'));
@@ -267,6 +304,8 @@ try {
       const encoded=driver.encodeInputFn(method,JSON.stringify(JSON.rawJSON(id)));
       assert.equal(new DataView(encoded.buffer,encoded.byteOffset,8).getBigUint64(0,true),BigInt(id));
       assert.equal(driver.decodeOutputFn(method,Buffer.from(hex,'hex')),expected[method]);
+      const simulated=fixtureResponse('/on/contracts:'+'55'.repeat(32)+'/'+method,encoded);
+      assert.equal(Buffer.from(await simulated.arrayBuffer()).toString('hex'),hex,'simulated bytes match actual pinned VM output for '+method+' '+id);
     }
   }
   // The pin's generic u64 input rejects JSON strings: never teach otherwise.
@@ -317,6 +356,18 @@ for(const result of malformed) assert.throws(()=>assess(step('build-driver'),res
         try: sandbox(work, [], ['/usr/bin/true'], work/'out', work/'err', deadline=time.monotonic()-1)
         except ValueError as error: assert 'too long' in str(error)
         else: raise AssertionError('Expired shared deadline was ignored')
+    subprocess.run(['node', '--input-type=module', '-e', '''
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const {simulateContract}=await import(process.argv[1]);
+const cases=JSON.parse(readFileSync(0,'utf8'));
+assert.ok(cases.length>=50,'do not silently shrink conformance coverage');
+for(const {source,scenario,result} of cases){
+  const actual=simulateContract(source,scenario),{build,...native}=result;
+  assert.deepEqual(actual,native,scenario+' must match actual native observations, including wrong programs');
+}
+console.log(`PASS: all seven contract lessons, ${cases.length} freshly compiled positive/negative/equivalent native programs match interpreted traces, state, callers, events and rollback.`);
+''', (ROOT / 'academy/contract-simulator.js').as_uri()], input=json.dumps(SIMULATOR_CASES), text=True, check=True)
     print('PASS: seven real Forge lessons, VM caller/ownership checks, actual receipt events, typed cross-contract reads/writes, two-contract and outer rollback, equivalent guards/removal, 66-call workflow, matching data-driver build/SDK ABI, unchanged counter fixtures, real registry reads/matching driver/exact u64 inputs, migrations, limits and isolated compilation.')
 
 

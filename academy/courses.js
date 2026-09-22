@@ -20,7 +20,7 @@ export const courses = {
       {id:'wallets', part:0, kind:'guide', short:'Wallets', title:'What does a wallet actually do?',
        body:`<p>A <strong>wallet</strong> manages the keys used to authorize actions. A private key can produce a digital signature that the network can check without receiving the key.</p><p>An address identifies an account or destination in the relevant transaction model. A signature proves control of a key, not someone’s legal identity or permission to use every service.</p><p>The wallet asks you to approve an action. Your app should not ask for a recovery phrase or private key. The network records balances and contract state. The wallet displays them.</p>`,
        panelTitle:'Keep these separate', panel:`<dl class="concept-list"><dt>Address</dt><dd>An identifier used to receive or refer to funds or an account.</dd><dt>Private key</dt><dd>A secret used to authorize actions. Never paste it into this course or a dApp.</dd><dt>Signature</dt><dd>Evidence that a key authorized particular data. It does not prove a person’s identity.</dd><dt>Wallet approval</dt><dd>A user decision about a specific request, not permanent permission for every future action.</dd></dl>`,
-       note:'No wallet is needed in this path. The dApp path later offers optional discovery of an installed Dusk wallet.'},
+       note:'No wallet is needed in any path. The dApp path explains discovery and approval without connecting an extension.'},
       {id:'transaction-flow', part:0, kind:'practice', short:'A transaction', title:'A request is not yet a completed change',
        body:`<p>A <strong>transaction</strong> is a request for a network action, such as transferring value or calling a contract to add a registration.</p><p>The user authorizes the request, it is submitted to a node, and the network may admit and execute it. The app must check whether execution succeeded and whether its block is finalized. A node is a computer participating in the network. It is separate from the wallet.</p><p><strong>Gas</strong> measures execution work. Network transactions can incur fees in DUSK, the network’s native token, even when a contract call transfers no tokens. A failed execution can still pay gas. Our local lessons do not charge network fees.</p>`,
        question:'The app has a transaction hash after submission. Can it promise that the registration is final?',
@@ -115,10 +115,10 @@ export async function prepareRegistration(dusk, amount) {
     chapters:[
       {id:'begin', part:0, kind:'intro', short:'The app', title:'Read the register from a dApp',
        body:`<p>The workshop’s count belongs to a contract, not to a browser tab. A <strong>dApp</strong> is the application interface that lets a user read that state and request actions.</p><p>You’ll use <strong>Dusk Connect</strong>, the official browser SDK (software development kit). It supplies reusable code for working with nodes, contract interfaces and wallets. The setup is supplied, so you can concentrate on returning a read result and preparing one typed call.</p><p>We’ll first separate the app, node, wallet and contract. Then you’ll extend two functions in the same JavaScript file, inspect their results and learn where wallet approval and finality fit.</p>`,
-       note:'15 short chapters. The real SDK reads two supplied local DuskVM fixtures. No wallet, tokens or completed contract lesson is required. No transaction will be sent.'},
+       note:'15 short chapters. The real SDK reads two supplied fixtures, using simulated transport and genuine data-drivers. No wallet, tokens or completed contract lesson is required. No transaction will be sent.'},
       {id:'components', part:0, kind:'guide', short:'Four pieces', title:'Know which component does the work',
        body:`<p>The <strong>app</strong> displays information and asks for actions. A <strong>node</strong> provides access to network data. The <strong>contract</strong> defines the stored state and rules.</p><p>The <strong>wallet</strong> manages authorization. A public read does not need a signature, whereas a live write requires a transaction flow with user approval.</p><p>Dusk Connect joins these pieces through an API. It does not move the contract into the browser or give the website access to the wallet’s private keys.</p>`,
-       panelTitle:'The read you will implement', panel:`<ol class="example-flow"><li><strong>Your function</strong><p>Asks Dusk Connect to read <code>get_count</code>.</p></li><li><strong>Node / local adapter</strong><p>Returns the contract’s encoded result. Here it comes from actual local DuskVM execution.</p></li><li><strong>Data-driver</strong><p>Decodes the bytes into a value the app can use.</p></li><li><strong>Interface</strong><p>Displays that returned count without inventing its own state.</p></li></ol>`},
+       panelTitle:'The read you will implement', panel:`<ol class="example-flow"><li><strong>Your function</strong><p>Asks Dusk Connect to read <code>get_count</code>.</p></li><li><strong>Simulated transport</strong><p>Returns fixed encoded fixture bytes without contacting a node. Live apps need a real read endpoint.</p></li><li><strong>Data-driver</strong><p>Decodes the bytes into a value the app can use.</p></li><li><strong>Interface</strong><p>Displays that returned count without inventing its own state.</p></li></ol>`},
       {id:'address', part:0, kind:'guide', short:'Which contract?', title:'Choose a contract and a read endpoint',
        body:`<p>A contract ID identifies the contract being called. A node URL identifies where the app sends its read request. Neither is the user’s wallet address.</p><p>The supplied <code>createApp(nodeUrl, contractId)</code> creates a <code>registry</code> preset with the correct contract and its generated data-driver URL.</p><p><code>pinnedNodeUrl</code> keeps reads on the supplied endpoint, instead of allowing wallet metadata to change it. A deployed app must separately check the network on which the wallet will send a transaction.</p>`,
        panelTitle:'The supplied preset', panel:`<pre class="example"><code>contracts: {
@@ -145,7 +145,7 @@ export async function prepareRegistration(dusk, amount) {
 });</code></pre><p>The getter has no argument, so this call does not need <code>args</code>. Connect obtains the encoded response and uses the driver to decode it.</p><p>The two test registers hold different values: 2 and 7. Returning a fixed value cannot correctly read both.</p>`,
        task:'Replace return 0 in readCount with the awaited readContract result. Both test registers should show their own count.',
        hint:'Return await dusk.readContract({ contract: "registry", functionName: "get_count" });',
-       note:'These are actual local reads, not wallet transactions. Keep the supplied client setup unchanged.'},
+       note:'These are real SDK calls over simulated reads, not wallet transactions. Keep the supplied client setup unchanged.'},
       {id:'precision', part:1, kind:'practice', short:'Exact values', title:'Keep the returned count exact',
        body:`<p>The register’s <code>u64</code> can hold integers larger than JavaScript’s <code>Number</code> can represent exactly. Small examples such as 2 and 7 do not reveal that problem.</p><p>The supplied data-driver returns the count as a decimal string. Displaying that string preserves its digits. Avoid blindly converting every returned integer with <code>Number(...)</code>.</p><p>For integer arithmetic, <code>BigInt</code> can preserve precision, but arguments still need the serialization expected by the SDK and driver. A display value and an encoded call argument are different things.</p>`,
        question:'How should an app display the returned string "18446744073709551615" without losing digits?',
@@ -182,10 +182,10 @@ export async function prepareRegistration(dusk, amount) {
       {id:'discovery', part:2, kind:'guide', short:'Discover a wallet', title:'Discovery is not permission to transact',
        body:`<p>Several compatible wallet extensions may be installed. Dusk Connect can discover their providers and let the user choose one.</p><p><code>createDuskWallet()</code> or <code>dusk.wallet</code> exposes the wallet connection. <code>ready()</code> waits for initial discovery and refresh. It does not request transaction approval.</p><p><code>connect()</code> requests profile access. Transaction approval is a separate step, and the user can decline it. An app must also respond if the selected wallet, profile or network changes.</p>`,
        panelTitle:'Three different questions', panel:`<ol class="example-flow"><li><strong>Discovery</strong><p>Which compatible wallet providers are available?</p></li><li><strong>Connection</strong><p>Which profiles has the user allowed this site to access?</p></li><li><strong>Transaction approval</strong><p>Does the user authorize this specific action?</p></li></ol>`,
-       note:'The next checkpoint offers optional real wallet discovery. It remains separate from the editable code and never submits this exercise’s calls.'},
-      {id:'wallet', part:2, kind:'quiz', wallet:true, short:'Wallet approval', title:'Ask before sending a transaction',
+       note:'Discovery is explained here, not executed. The academy never connects a wallet or submits this exercise’s calls.'},
+      {id:'wallet', part:2, kind:'quiz', short:'Wallet approval', title:'Ask before sending a transaction',
        body:`<p>You have read state and prepared arguments without requesting a signature. Preparation creates data without changing the contract.</p><p>A deployed app would request a user-approved transaction through the selected wallet. Profile access alone is not permission for that write.</p><p>After submission, the app still has to establish the execution outcome and finality. We’ll examine that distinction next without sending any transaction here.</p>`,
-       note:'Optional discovery below uses the actual SDK. Editable code runs in a worker without access to your injected wallet.',
+       note:'Editable code runs in an isolated worker without access to an injected wallet. This is a knowledge check, not a connection request.',
        question:'Does preparing register(2) increase the on-chain count?',
        choices:[['yes','Yes, encoding the arguments executes the method.'],['approval','No. A wallet must approve and send a transaction, which must then execute successfully.'],['connect','Connecting the wallet automatically sends the prepared call.']], answer:'approval',
        success:'The prepared call remains unsigned data. Connection, approval, submission and successful execution are separate steps.',
@@ -204,10 +204,10 @@ export async function prepareRegistration(dusk, amount) {
        success:'Separate missing information from a real zero. Recovery should not invent state or silently duplicate a write.',
        error:'A failed request is not a successful read of zero. Show the error or stale state and give the user a clear recovery action.'},
       {id:'learned', part:2, kind:'earned', short:'Dusk Connect client', title:'Your app can read and prepare calls',
-       body:`<p>Your JavaScript reads actual DuskVM state and prepares typed arguments with the generated data-driver. The same file works for both supplied registers.</p><p>You’ve separated the application, node and wallet, preserved exact values, and distinguished preparation from approval and final execution.</p><p>No transaction was sent. Signed writes and receipt tracking are not implemented in this lesson.</p><p>Next, extend this file into a read-only registration explorer. Its supplied registry does not depend on your contract-course save.</p>`},
+       body:`<p>Your JavaScript reads the supplied fixture state and prepares typed arguments with the generated data-driver. The same file works for both supplied registers.</p><p>You’ve separated the application, node and wallet, preserved exact values, and distinguished preparation from approval and final execution.</p><p>No transaction was sent. Signed writes and receipt tracking are not implemented in this lesson.</p><p>Next, extend this file into a read-only registration explorer. Its supplied registry does not depend on your contract-course save.</p>`},
       {id:'explorer', part:3, kind:'intro', short:'Registry explorer', title:'Look up an individual registration',
        body:`<p>A count tells you how many seats are reserved. A <strong>record</strong> gives you one reservation’s seat count, owning contract and confirmation flag.</p><p>Keep your existing JavaScript. Over eight chapters you’ll add a record lookup, handle missing records, read the other fields and recover from an unavailable endpoint.</p><p>A separate, supplied registry has three records. Their IDs are <code>0</code>, <code>2</code> and <code>9007199254740993</code>. IDs are stable identifiers, not array positions. Gaps do not make later records invalid.</p><p>This fixture is a read-only teaching snapshot, not a deployed service. You do not need to build it or complete the contract path. Its owner fields identify contracts, not wallet users.</p>`,
-       note:'The matching contract and data-driver are built during local setup. No signing, writes, event decoding or live deployment is added.'},
+       note:'The prebuilt driver loads locally and reads use simulated transport. Developer tooling separately rebuilds the fixture and driver. No signing, writes, event decoding or live deployment is added.'},
       {id:'explorer-read', part:3, kind:'code', scenario:'explorer-read', short:'Read a record', title:'Give the getter a record ID',
        body:`<p>The counter and record registry have different interfaces. Extend your factory without breaking its existing two-argument callers:</p><pre class="example"><code>export function createApp(nodeUrl, contractId,
     driverPath = "/api/registry-driver") {
@@ -276,7 +276,7 @@ const args = JSON.rawJSON(id);</code></pre><p>Replace the old Number conversion 
        hint:'Await readRegistration inside try. Do not put a return null fallback inside readRegistration. A failed request is not a missing record.',
        note:'Only reads are retried in this test. Signed writes remain deferred, and uncertain write outcomes must not be blindly retried.'},
       {id:'explorer-learned', part:4, kind:'earned', short:'Registry client', title:'Your explorer reports what it actually read',
-       body:`<p>The same JavaScript file still reads counters and prepares unsigned calls. It now looks up a supplied registry’s seats, contract ownership and confirmation flags through its matching driver.</p><p>You’ve preserved large IDs, rejected invalid input and separated found, missing and unavailable results. A later working read recovers without fabricating a record.</p><p>These are public reads of fixed local DuskVM state. Wallet signing, live transaction tracking and registered event decoding have not been implemented.</p>`},
+       body:`<p>The same JavaScript file still reads counters and prepares unsigned calls. It now looks up a supplied registry’s seats, contract ownership and confirmation flags through its matching driver.</p><p>You’ve preserved large IDs, rejected invalid input and separated found, missing and unavailable results. A later working read recovers without fabricating a record.</p><p>These are public reads of a fixed teaching fixture, not a live network. Real SDK and driver operations use simulated transport; DuskVM does not execute in this page. Wallet signing, live transaction tracking and registered event decoding have not been implemented.</p>`},
     ],
   },
   circuits: {
@@ -308,7 +308,7 @@ impl Circuit for SumCircuit {
     chapters:[
       {id:'begin', part:0, kind:'intro', short:'The statement', title:'Prove a sum without publishing its inputs',
        body:`<p>A prover knows two numbers. A verifier wants evidence that they satisfy a sum relation, without receiving the individual numbers through the proof.</p><p>A <strong>circuit</strong> describes mathematical constraints for the proof system to check. The Rust code builds those constraints.</p><p>You’ll use the supplied <strong>dusk-plonk</strong> project. First understand witnesses and an addition gate, then add an equality constraint and a public total. Finally, check what the proof establishes and where its guarantees stop.</p>`,
-       note:'12 short chapters. Proving and verification run as real browser WASM. Each run uses fresh demonstration setup parameters, not a production ceremony. No proof is sent to a contract.'},
+       note:'12 short chapters. Edited Rust gates are interpreted, not compiled. Proving and verification run as real browser WASM. Each run uses fresh demonstration setup parameters, not a production ceremony. No proof is sent to a contract.'},
       {id:'roles', part:0, kind:'guide', short:'Who sees what?', title:'Separate the prover from the verifier',
        body:`<p>The <strong>prover</strong> knows the values used to satisfy the circuit. These are called a <strong>witness</strong>, or witness values. The <strong>verifier</strong> checks the proof against the intended circuit and its public inputs.</p><p>For our example, think of 4 and 5 as the prover’s inputs, and 9 as the total to check. The lesson displays all test values so you can follow the arithmetic. They are not real private user data.</p><p>Zero knowledge does not hide information the application separately publishes. Public inputs and the consequences of a statement can reveal information, even when the proof does not reveal individual witnesses.</p>`,
        panelTitle:'A verifier should receive', panel:`<dl class="concept-list"><dt>The intended verification rules</dt><dd>A verification key associated with the circuit it expects.</dd><dt>The proof</dt><dd>Evidence generated from values satisfying that circuit.</dd><dt>The public inputs</dt><dd>The values the application has deliberately exposed, such as a claimed total.</dd><dt>Not the private witnesses</dt><dd>The original values should remain with the prover in a real private flow.</dd></dl>`},
@@ -372,14 +372,16 @@ export const courseKey = id => `dusk-academy-${id}-v1`;
 export const lastPathKey = 'dusk-academy-last-path';
 export const exerciseSteps = course => course.chapters.map((c,i)=>['code','quiz'].includes(c.kind)?i:-1).filter(i=>i>=0);
 export const partSteps = (course,step) => course.chapters.map((c,i)=>c.part===course.chapters[step].part?i:-1).filter(i=>i>=0);
-export function courseLimit(course, state, preview = false) {
-  if (preview && course.language) return course.chapters.length - 1;
+export function courseLimit(course, state) {
   if (!state.started) return 0;
-  return exerciseSteps(course).find(i=>!state.checks[i]) ?? course.chapters.length-1;
+  return exerciseSteps(course).find(i=>!state.checks[i]&&!state.simulated?.[i]) ?? course.chapters.length-1;
 }
-export const courseComplete = (course,state) => exerciseSteps(course).every(i=>Boolean(state.checks[i]));
+export const courseComplete = (course,state) => exerciseSteps(course).every(i=>Boolean(state.checks[i]||state.simulated?.[i]));
 export const courseLesson = (course,step) => course.lessons.find(lesson=>step<=course.chapters.findIndex(c=>c.id===lesson.end));
-export const lessonComplete = (course,state,lesson) => Boolean(state.checks[course.chapters.findIndex(c=>c.id===lesson.check)]);
+export function lessonComplete(course,state,lesson) {
+  const first=course.chapters.findIndex(c=>c.id===lesson.start),last=course.chapters.findIndex(c=>c.id===lesson.check);
+  return first>=0&&last>=first&&exerciseSteps(course).filter(i=>i>=first&&i<=last).every(i=>Boolean(state.checks[i]||state.simulated?.[i]));
+}
 
 // Runtime positions stay numeric; persisted positions/checks use stable chapter IDs.
 // This is the only positional map needed for the original version-1 records.
@@ -390,14 +392,14 @@ const legacyIds = {
 };
 export function serializeCourse(course,state) {
   const keyed = values => Object.fromEntries(Object.entries(values).map(([i,value])=>[course.chapters[i].id,value]));
-  return JSON.stringify({...state,version:2,step:course.chapters[state.step].id,active:course.chapters[state.active]?.id??null,checks:keyed(state.checks),answers:keyed(state.answers)});
+  return JSON.stringify({...state,version:2,step:course.chapters[state.step].id,active:course.chapters[state.active]?.id??null,checks:keyed(state.checks),answers:keyed(state.answers),...(state.simulated?{simulated:keyed(state.simulated)}:{})});
 }
-export function restoreCourse(id, raw, preview = false) {
+export function restoreCourse(id, raw) {
   const course=courses[id], code=course.chapters.findIndex(c=>c.kind==='code');
   const state={version:2,step:0,active:code,started:false,source:course.starter||'',checks:{},answers:{}};
   const validSource=s=>typeof s==='string'&&new TextEncoder().encode(s).length<=8000;
   try {
-    if (!raw || raw.length>(exerciseSteps(course).filter(i=>course.chapters[i].kind==='code').length+1)*48000+16000) return state;
+    if (!raw || raw.length>(exerciseSteps(course).filter(i=>course.chapters[i].kind==='code').length*2+1)*48000+16000) return state;
     const value=JSON.parse(raw);
     if(![1,2].includes(value?.version)) return state;
     const key = c => value.version===1?legacyIds[id].indexOf(c.id):c.id;
@@ -417,10 +419,17 @@ export function restoreCourse(id, raw, preview = false) {
       state.checks[i]=check;state.started=true;
       if(c.kind==='code') state.active=i;
     }
-    const limit=courseLimit(course,state,preview), step=position(value.step), active=position(value.active);
-    if(step>=0&&step<=limit) state.step=step;
+    if(value.version===2&&course.language) for(const i of exerciseSteps(course)) {
+      const c=course.chapters[i], check=value.simulated?.[c.id];
+      if(c.kind==='quiz' ? check===c.answer : validSource(check)&&check.trim()) {
+        (state.simulated??={})[i]=check;state.started=true;
+        if(c.kind==='code')state.active=Math.max(state.active,i);
+      } else if(!state.checks[i]) break;
+    }
+    const limit=Math.max(code,courseLimit(course,state)), step=position(value.step), active=position(value.active);
+    if(step>=0&&(course.language||step<=limit)) state.step=step;
     if(active>=0&&active<=limit&&course.chapters[active].kind==='code') state.active=Math.max(state.active,active);
-    if(course.chapters[state.step].kind==='code') state.active=Math.max(state.active,state.step);
+    if(course.chapters[state.step].kind==='code'&&state.step<=limit) state.active=Math.max(state.active,state.step);
   } catch { /* A broken save must not block the lesson. */ }
   return state;
 }

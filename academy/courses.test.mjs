@@ -103,7 +103,7 @@ test('v2 chapter identity survives inserted material; bounded and malformed save
     assert.equal(moved.source,state.source);
   } finally {course.chapters.splice(1,1);}
   const invalid=restoreCourse('dapps',JSON.stringify({version:2,step:'learned',active:'prepare',started:true,source:'x'.repeat(8001),checks:{prepare:'draft'},answers:{await:'missing'}}));
-  assert.equal(invalid.step,0);assert.equal(invalid.source,course.starter);assert.deepEqual(invalid.checks,{});assert.deepEqual(invalid.answers,{});
+  assert.equal(invalid.step,course.chapters.findIndex(c=>c.id==='learned'));assert.equal(invalid.active,4);assert.equal(invalid.source,course.starter);assert.deepEqual(invalid.checks,{});assert.deepEqual(invalid.answers,{});
   const v1=restoreCourse('dusk',JSON.stringify({version:1,answers:{'-1':'same'}}));assert.deepEqual(v1.answers,{});
   const escaped=course.starter+'\n// '+'\u0001'.repeat(6000);
   const full={...state,source:escaped,checks:Object.fromEntries(exerciseSteps(course).map(i=>[i,course.chapters[i].kind==='code'?escaped:course.chapters[i].answer]))};

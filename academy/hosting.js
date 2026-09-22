@@ -1,18 +1,12 @@
-// The execution service and its worker policy are supported only on loopback.
-export const preview = !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-
-if (preview) {
-  const notice = document.createElement('aside');
-  notice.id = 'hosting-note'; notice.setAttribute('aria-label', 'Static preview');
-  notice.innerHTML = '<strong>Static preview.</strong> Browse the coding lessons and try the knowledge questions. <a href="https://github.com/HDauven/dusk-academy#run-locally">Run locally</a> for code checks and wallet access. Reading does not earn coding skills. <a href="https://github.com/HDauven/dusk-academy#license">Source and licenses</a>.';
-  document.querySelector('.masthead').after(notice);
-  document.querySelector('#code-note').textContent = 'Edit here. Run checks locally.';
-}
-
-export function previewRecap(skill) {
-  document.querySelector('#chapter-label').textContent = 'Lesson recap · static preview';
+// The same browser runtime runs on every host, including localhost.
+const notice = document.createElement('aside');
+notice.id = 'hosting-note'; notice.setAttribute('aria-label', 'Browser learning');
+notice.innerHTML = '<strong>Browser learning.</strong> Every coding path runs here without a backend or RPC node. Contracts use a Rust-subset simulator; dApps use real JavaScript and Connect with simulated reads; circuits use interpreted builders and real PLONK proofs. No edited Rust is compiled. <a href="https://github.com/HDauven/dusk-academy#browser-runtime">Runtime limits</a> · <a href="https://github.com/HDauven/dusk-academy#license">Licenses</a>.';
+document.querySelector('.masthead').after(notice);
+export function uncheckedRecap(skill) {
+  document.querySelector('#chapter-label').textContent = 'Lesson recap · not yet checked';
   document.querySelector('#lesson-title').textContent = `Review ${skill.toLowerCase()}`;
   const copy = document.querySelector('#story-copy');
-  copy.innerHTML = `<p>Complete the coding checks in the local version to earn this skill. No code has been run in this preview.</p><details class="try-it"><summary>Expected results after completing the exercises</summary>${copy.innerHTML}</details>`;
+  copy.innerHTML = `<p>Complete this lesson’s coding checks to earn the skill. Browsing alone does not check your code.</p><details class="try-it"><summary>Expected results after completing the exercises</summary>${copy.innerHTML}</details>`;
   document.querySelector('#earned').hidden = true;
 }

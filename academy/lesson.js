@@ -39,14 +39,14 @@ export const lessons = [
 export const chapters = [
   {
     id:'begin', lesson:0, part:0, kind:'intro', short:'Your first contract', title:'Build a registration counter',
-    body:`<p>The workshop needs to count registrations. You’ll build a <strong>native Dusk contract</strong> that stores a count and adds one per successful call.</p><p>The Forge project is supplied. Read the file, make two small edits and check the results in local DuskVM. Rust syntax is introduced where the contract needs it.</p><p>Keep the same file as later lessons add arguments, rules and records. You do not need to complete another path, install learner-side packages or connect a wallet.</p>`,
+    body:`<p>The workshop needs to count registrations. You’ll build a <strong>native Dusk contract</strong> that stores a count and adds one per successful call.</p><p>The Forge project is supplied. Read the file, make two small edits and check the returned counts. The browser interprets your edited Rust subset and simulates the contract. It does not compile it or run DuskVM. Rust syntax is introduced where the contract needs it.</p><p>Keep the same file as later lessons add arguments, rules and records. You do not need to complete another path, install learner-side packages or connect a wallet.</p>`,
     task:'Start the count at zero and add one registration per call.',
     note:'15 chapters with worked examples, optional practice and two coding checks. No wallet, tokens or live deployment required.'
   },
   {
     id:'contract-pieces', lesson:0, part:0, kind:'guide', short:'Rust, Forge, VM', title:'Know which tool does which job',
-    body:`<p>You write the register in <strong>Rust</strong>. A compiler checks the program and produces <strong>WebAssembly</strong> (WASM), an executable format.</p><p><strong>Dusk Forge</strong> supplies contract tooling and the contract macro used in this file. <strong>DuskVM</strong> executes the resulting native Dusk contract.</p><p>The project and dependencies are already prepared. Run compiles your edited file and executes fixed tests locally. Nothing is deployed to a live network.</p>`,
-    panelTitle:'What happens when you press Run', panel:`<ol class="example-flow"><li><strong>Source</strong><p>Your Rust file describes state and methods.</p></li><li><strong>Compile</strong><p>The server builds WASM against pinned Forge/Dusk dependencies.</p></li><li><strong>Execute</strong><p>A fresh local DuskVM deployment receives the lesson’s calls.</p></li><li><strong>Inspect</strong><p>The page displays actual returned values or compiler/VM errors.</p></li></ol>`,
+    body:`<p>You write the register in <strong>Rust</strong>. A compiler checks the program and produces <strong>WebAssembly</strong> (WASM), an executable format.</p><p><strong>Dusk Forge</strong> supplies contract tooling and the contract macro used in this file. <strong>DuskVM</strong> executes the resulting native Dusk contract.</p><p>In this academy, Run interprets a supported Rust subset and simulates fixed scenarios without compiling it or sending a network transaction. Native Forge builds remain a separate developer workflow.</p>`,
+    panelTitle:'The browser check', panel:`<ol class="example-flow"><li><strong>Source</strong><p>Your Rust file describes state and methods.</p></li><li><strong>Interpret</strong><p>The browser evaluates the supported Rust subset, including incorrect logic.</p></li><li><strong>Simulate</strong><p>A fresh simulated instance receives the lesson’s calls.</p></li><li><strong>Inspect</strong><p>The page displays returned values or runtime diagnostics. No contract WASM is built.</p></li></ol>`,
     note:'The editor remains usable on reading pages. Its banner names the real coding checkpoint Run will check.'
   },
   {
@@ -71,7 +71,7 @@ export const chapters = [
   },
   {
     id:'contract-initialization', lesson:0, part:1, kind:'guide', short:'Initialize once', title:'Choose the value for a fresh deployment',
-    body:`<p>The supplied Forge constructor is <code>pub const fn new() -&gt; Self</code>. Inside this impl, <code>Self</code> means Registry. The constant constructor lets the generated contract start with this initial state.</p><p>The lesson creates a fresh deployment for every Run. Calls within that run then share it. Editing new() is not an upgrade or migration of an existing live deployment.</p>`,
+    body:`<p>The supplied Forge constructor is <code>pub const fn new() -&gt; Self</code>. Inside this impl, <code>Self</code> means Registry. The constant constructor lets the generated contract start with this initial state.</p><p>Each Run starts a fresh instance. Native execution deploys it in local DuskVM; the simulator creates it in browser memory. Calls within that run share the instance. Editing new() is not an upgrade or migration of an existing live deployment.</p>`,
     panelTitle:'Declaration, construction, read', panel:`<pre class="example"><code>// Field type:
 count: u64
 
@@ -117,7 +117,7 @@ self.count</code></pre><p>Your next edit changes only 7 to 0. Leave the getter a
   },
   {
     id:'contract-persistence', lesson:0, part:2, kind:'practice', short:'What persists?', title:'A read does not reset the register',
-    body:`<p>After two successful increments, this deployment holds 2. Another read should return that same stored value without initializing a new contract.</p><p>Pressing Run starts a fresh deployment. Your saved source and skill checks are browser progress, not the VM’s stored count.</p>`,
+    body:`<p>After two successful increments, this deployment holds 2. Another read should return that same stored value without initializing a new contract.</p><p>Pressing Run starts a fresh deployment. Your saved source and skill checks are browser progress, not the test instance’s stored count.</p>`,
     question:'After two increments, another getter call on the same deployment should return…',
     choices:[['two','2, without resetting or incrementing the count.'],['zero','0, because every method call runs the constructor.'],['three','3, because a getter is another registration.']], answer:'two',
     success:'It reads the stored 2. A new deployment and a read of an existing one are different operations.',
@@ -125,12 +125,12 @@ self.count</code></pre><p>Your next edit changes only 7 to 0. Leave the getter a
   },
   {
     id:'contract-debugging', lesson:0, part:2, kind:'guide', short:'Fix a failed run', title:'Use the failure to choose your next edit',
-    body:`<p>A run can fail before or during execution, or it can execute successfully with the wrong result. Read the feedback before changing several things at once.</p><p>Compiler details refer to <code>lib.rs</code>, the temporary source built from this editor. Start with the first relevant diagnostic and the named line.</p>`,
-    panelTitle:'Three failures, three next steps', panel:`<dl class="concept-list"><dt>The contract didn’t compile</dt><dd>Check syntax and types. For example, adding the string "one" to u64 is not an integer addition.</dd><dt>DuskVM couldn’t complete the run</dt><dd>Inspect the VM details. A missing entrypoint or exhausted gas is not evidence that your business rule worked.</dd><dt>The count was 1, 1, 1</dt><dd>The code ran but replaced the count each time. Check for = 1 where you intended += 1.</dd></dl><p>Keep a working version in the editor, make one correction, and Run again. The page does not silently repair your source.</p>`
+    body:`<p>A run can fail before or during execution, or it can execute successfully with the wrong result. Read the feedback before changing several things at once.</p><p>Simulator diagnostics identify syntax or types outside its supported subset. A simulator limitation does not mean your program is invalid Rust. Start with the named line.</p>`,
+    panelTitle:'Three failures, three next steps', panel:`<dl class="concept-list"><dt>The interpreter cannot evaluate the file</dt><dd>Check the named syntax or type limitation. For example, adding the string "one" to u64 is not an integer addition. Valid Rust outside this teaching subset needs separate native tooling.</dd><dt>The simulator could not finish</dt><dd>Inspect the runtime details. A missing entrypoint or exhausted instruction limit is not evidence that your business rule worked.</dd><dt>The count was 1, 1, 1</dt><dd>The code ran but replaced the count each time. Check for = 1 where you intended += 1.</dd></dl><p>Keep a working version in the editor, make one correction, and Run again. The page does not silently repair your source.</p>`
   },
   {
     id:'contract-boundaries', lesson:0, part:2, kind:'practice', short:'What was proved?', title:'A counter is not a membership system',
-    body:`<p>The tests check a small state update in local DuskVM. They do not establish who submitted each call, whether a person already registered or whether a live transaction became final.</p><p>Rust field visibility does not encrypt contract state. Keep names, identity documents and other personal data out of this public counter.</p>`,
+    body:`<p>The tests simulate a small state update. A simulator check is not a native compilation or DuskVM check. It does not establish who submitted each call, whether a person already registered or whether a live transaction became final.</p><p>Rust field visibility does not encrypt contract state. Keep names, identity documents and other personal data out of this public counter.</p>`,
     question:'A count of 3 establishes what in this exercise?',
     choices:[['people','Three different verified people registered.'],['calls','Three successful increments occurred in this test deployment.'],['private','Three private identities are encrypted in the count field.']], answer:'calls',
     success:'The count records increments, not verified people or private identity data.',
@@ -138,7 +138,7 @@ self.count</code></pre><p>Your next edit changes only 7 to 0. Leave the getter a
   },
   {
     id:'learned', lesson:0, part:2, kind:'earned', short:'Contract state', title:'The count persists between calls',
-    body:`<p><code>get_count</code> returned 3 after three <code>register</code> calls. Each call updated the state left by the previous call.</p>
+    body:`<p>With the working increment, <code>get_count</code> returns 3 after three <code>register</code> calls. Each call updates the state left by the previous call.</p>
     <p>Refreshing an app or making another read does not re-run the constructor. A fresh deployment starts from <code>new()</code>.</p>
     <p>This contract counts accepted calls, not verified people. It has no identity check, duplicate prevention or caller restriction.</p>
     <p>Next, change <code>register</code> to accept an amount so one call can add several registrations.</p>`,
@@ -270,8 +270,8 @@ pub fn register(&amp;mut self, amount: u64)</code></pre><p>A client’s matching
   },
   {
     id:'rule-overflow', lesson:2, part:1, kind:'guide', short:'Integer overflow', title:'Do not let a huge amount become a small total',
-    body:`<p>A u64 has a maximum value. Adding beyond that range is <strong>overflow</strong>. Silently wrapping around could turn an invalid huge total into a small one that passes a capacity check.</p><p>This lesson compiles with overflow checks enabled, so ordinary overflowing addition fails. Do not replace it with wrapping_add to silence a failure.</p>`,
-    panelTitle:'Keep the arithmetic rule explicit', panel:`<dl class="concept-list"><dt>Ordinary addition in this runner</dt><dd>Overflow is checked by the fixed compiler settings.</dd><dt>checked_add</dt><dd>Returns an Option. Callers must handle None as failure rather than inventing a value.</dd><dt>Production build</dt><dd>Verify arithmetic behavior in the intended build profile. Do not assume every Rust release profile matches this teaching runner.</dd></dl>`
+    body:`<p>A u64 has a maximum value. Adding beyond that range is <strong>overflow</strong>. Silently wrapping around could turn an invalid huge total into a small one that passes a capacity check.</p><p>The simulator checks overflow, as does the pinned native reference build. Ordinary overflowing addition fails. Do not replace it with wrapping_add to silence a failure.</p>`,
+    panelTitle:'Keep the arithmetic rule explicit', panel:`<dl class="concept-list"><dt>Ordinary addition in this runner</dt><dd>Overflow is checked by the interpreter.</dd><dt>checked_add</dt><dd>Returns an Option. Callers must handle None as failure rather than inventing a value.</dd><dt>Production build</dt><dd>Verify arithmetic behavior in the intended build profile. Do not assume every Rust release profile matches this teaching runner.</dd></dl>`
   },
   {
     id:'rule-rollback', lesson:2, part:2, kind:'guide', short:'Rollback boundary', title:'Restore the state before the failed call',
@@ -288,13 +288,13 @@ pub fn register(&amp;mut self, amount: u64)</code></pre><p>A client’s matching
   },
   {
     id:'rule-errors', lesson:2, part:2, kind:'guide', short:'Read the error', title:'Not every failed run validates a rule',
-    body:`<p>The runner distinguishes contract panics from execution failures such as missing entrypoints, bad ABI data or gas exhaustion.</p><p>A deliberate assertion rejects an invalid request. An infinite loop that runs out of gas does not demonstrate the same rule, even though the count did not change.</p>`,
-    panelTitle:'What the check needs', panel:`<dl class="concept-list"><dt>Valid call</dt><dd>Completes and leaves the expected new state.</dd><dt>Invalid business request</dt><dd>Rejects through the contract’s checks and preserves prior state.</dd><dt>Execution could not finish</dt><dd>Inspect compiler/VM details and fix the program. It does not earn the validation checkpoint.</dd></dl><p>Use both positive and negative examples. Rejection alone is not a useful contract.</p>`
+    body:`<p>The simulator distinguishes assertion or panic rejections from missing entrypoints, type errors and exhausted instruction limits.</p><p>A deliberate assertion rejects an invalid request. A loop that exhausts the teaching budget does not demonstrate that rule, even if the count did not change. Native DuskVM gas limits are separate; the browser does not measure gas.</p>`,
+    panelTitle:'What the check needs', panel:`<dl class="concept-list"><dt>Valid call</dt><dd>Completes and leaves the expected new state.</dd><dt>Invalid business request</dt><dd>Rejects through the contract’s checks and preserves prior state.</dd><dt>Execution could not finish</dt><dd>Inspect runtime details and fix the program. It does not earn the validation checkpoint.</dd></dl><p>Use both positive and negative examples. Rejection alone is not a useful contract.</p>`
   },
   {
     id:'validation-learned', lesson:2, part:2, kind:'earned', short:'Input validation', title:'A failed call keeps the previous state',
     body:`<p><code>register(8)</code> failed at a count of 3. <code>register(7)</code> then succeeded and brought the count to 10.</p>
-    <p>DuskVM rolled back the failed call while keeping the changes from earlier successful calls.</p>`,
+    <p>The simulator rolled back failed calls while keeping earlier successful changes. A simulator check is not a native DuskVM run.</p>`,
     note:'Next, keep a record of each registration so it can be found and cancelled. Caller permissions come later.',
   },
   {
@@ -444,16 +444,16 @@ self.count -= removed.seats;</code></pre>
   {
     id:'records-learned', lesson:3, part:2, kind:'earned', short:'Learned', title:'The register remembers individual groups',
     body:`<p>Your contract now stores ID/seat records, returns newly allocated IDs, distinguishes missing records and cancels a specific registration.</p>
-    <p>The local DuskVM tests exercised a full lifecycle: create, read, reject, cancel and refill. Stored totals, record counts and ID allocation stayed consistent across calls.</p>
+    <p>The lifecycle checks exercised create, read, reject, cancel and refill. Stored totals, record counts and ID allocation stayed consistent across calls.</p>
     <p>No personal data, wallet signature or ownership rule was added. The next lesson adds caller permissions. These records are not proof of identity or access rights.</p>`,
   },
   {
     id:'permissions', lesson:4, part:0, kind:'intro', short:'Who may act?', title:'Give each record a contract owner',
     body:`<p>So far, anyone can cancel any registration. We’ll allow only its <strong>owning contract</strong> to change it.</p>
-    <p>Two local test contracts, <strong>A</strong> and <strong>B</strong>, act as booking agencies. DuskVM supplies their identities when they call your registry. A should not cancel B’s records.</p>
+    <p>Two simulated calling contracts, <strong>A</strong> and <strong>B</strong>, act as booking agencies. In DuskVM, the VM supplies the immediate caller identity. Here the simulator supplies fixed test identities. A should not cancel B’s records.</p>
     <p>This is contract-to-contract authorization, not wallet login. <code>abi::caller()</code> identifies the immediate calling contract. It is not Ethereum’s <code>msg.sender</code> and does not generally identify the wallet user.</p>
     <p>Moonlight transaction routing can put the Transfer contract in that position. Transaction sender metadata is a separate API. We will reject direct queries and Transfer as record creators instead of treating all routed wallets as one owner.</p>`,
-    task:'Observe the VM caller, save that identity, then guard cancellation and resizing.',
+    task:'Observe the simulated immediate caller, save that identity, then guard cancellation and resizing.',
     note:'A and B are open, test-only relays. A production contract owner must authenticate who can ask it to act. Do not deploy these fixtures as wallet authorization.',
   },
   {
@@ -556,7 +556,7 @@ self.records[index].seats = seats;</code></pre>
     question:'What has this permissions lesson actually implemented?',
     choices:[['wallets','Authenticated wallet ownership, signature verification and replay protection.'],['contracts','Contract-owned records with checked immediate-caller permissions.'],['identity','Verified personal identity for every registration.']], answer:'contracts',
     success:'The permission boundary is between contracts. Wallet users, signatures and replay policy still need their own implementation.',
-    error:'The tests use real contract callers, not authenticated wallet users. Do not claim signature or identity checks that were never added.'
+    error:'The tests simulate immediate contract callers, not authenticated wallet users. Do not claim signature or identity checks that were never added.'
   },
   {
     id:'permissions-learned', lesson:4, part:2, kind:'earned', short:'Learned', title:'Permission follows the stored contract owner',
@@ -681,7 +681,7 @@ abi::emit("confirmed", (id, seats));</code></pre>
     id:'testing', lesson:6, part:0, kind:'intro', short:'Test the workflow', title:'Check properties across a sequence of calls',
     body:`<p>A successful example is not enough. Tests should cover allowed operations, forbidden ones, boundaries and valid work after a failure.</p>
     <p>Your register has several <strong>invariants</strong> to check. The total equals active record seats, IDs stay stable and owners do not change. Confirmed seats must agree with the venue. Rejected registry calls must preserve both contracts’ state.</p>
-    <p>We’ll expose an independent seat sum, confirm two records in one operation, then compile the same source into contract and data-driver artifacts.</p>`,
+    <p>We’ll expose an independent seat sum, confirm two records in one operation, then check our public interface against a prebuilt data-driver and learn the separate native build commands.</p>`,
     task:'Test state relationships and nested rollback before building the final interface.',
     note:'A finite local test suite is not a security proof or a production audit. These are fixed trusted scenarios, not learner-supplied native tests or shell commands.',
   },
@@ -753,33 +753,33 @@ abi::emit("confirmed", (id, seats));</code></pre>
     <pre class="example"><code>dusk-forge check
 dusk-forge test
 dusk-forge build all</code></pre>
-    <p>Those project commands are for a trusted local checkout. This website never accepts manifests, test executables or commands: it compiles your source against prepared dependencies in isolation.</p>`,
+    <p>Those project commands are for a trusted local checkout. This website never executes those commands or compiles edited Rust. Native compilation is separate developer tooling, not a learner service.</p>`,
     panelTitle:'Execution and translation are different jobs', panel:`<dl class="concept-list"><dt>Contract WASM</dt><dd>Runs the contract’s logic and state operations in DuskVM.</dd><dt>Data-driver WASM</dt><dd>Translates typed inputs and outputs and exposes the method schema for a client such as Dusk Connect.</dd><dt>Deployment</dt><dd>A separate network operation. Producing either artifact does not perform it.</dd></dl>`,
-    task:'Keep your current file. Continue to build both targets and check the generated method ABI with Dusk Connect.',
+    task:'Keep your current file. Continue to compare its parsed interface with the prebuilt reference driver using Dusk Connect.',
     note:'The tuple events in this lesson are inspected as raw receipt data. A client event-decoding interface also needs registered event types and a schema, which the method driver alone does not supply.',
   },
   {
     id:'build-abi', lesson:6, part:2, kind:'guide', short:'Match the interface', title:'Build the client interface from the same source',
-    body:`<p>The contract WASM and method data-driver serve different consumers. A driver from an earlier version can have the right method name but the wrong argument or result type.</p><p>The final check loads the newly built driver through Dusk Connect and tests its actual schema and encoded arguments. A hash identifies an artifact without proving deployment or correctness.</p>`,
+    body:`<p>The contract WASM and method data-driver serve different consumers. A driver from an earlier version can have the right method name but the wrong argument or result type.</p><p>The final browser check compares your parsed public interface to a prebuilt reference driver and tests its real encoding through Dusk Connect. A native project must separately build both artifacts from matching source. A hash identifies an artifact without proving deployment or correctness.</p>`,
     panelTitle:'Signatures that evolved in this file', panel:`<dl class="concept-list"><dt>register</dt><dd>Now takes one u64 amount and returns a u64 record ID.</dd><dt>get_registration</dt><dd>Now returns Option&lt;u64&gt;, not the earlier bare u64.</dd><dt>resize</dt><dd>Takes an (id, seats) tuple and returns unit.</dd></dl><p>The method driver is not automatically a registered event schema. Signing, network deployment and upgrades remain separate from this build check.</p>`
   },
   {
-    id:'build-driver', lesson:6, part:2, kind:'code', check:'buildDriver', scenario:'build-driver', short:'Build and verify', title:'Check the built data-driver against this source',
-    body:`<p>No new business method is needed. Run your current contract to repeat the full VM workflow, compile both targets and load the generated driver through the genuine Dusk Connect SDK.</p>
-    <p>The isolated checker inspects the method schema and encodes real call arguments:</p>
+    id:'build-driver', lesson:6, part:2, kind:'code', check:'buildDriver', scenario:'build-driver', short:'Build and verify', title:'Check your interpreted contract interface',
+    body:`<p>No new business method is needed. Run your current contract to repeat the full 66-operation simulation, compare its parsed public signatures with the prebuilt reference driver and load that driver through the genuine Dusk Connect SDK.</p>
+    <p>The interface checker inspects the method schema and encodes real call arguments:</p>
     <pre class="example"><code>register(2)     → one u64
 resize(2, 4)    → an (id, seats) tuple</code></pre>
     <p>It also decodes the largest u64 as an exact decimal string. A JavaScript Number cannot represent every u64 without losing precision.</p>
-    <p>Open the build results to inspect artifact sizes, SHA-256 hashes and method signatures. These describe this run’s outputs, not a network deployment.</p>`,
-    task:'Run the full build check. Fix any contract or data-driver compilation error, then inspect the actual artifact and schema results.',
+    <p>Open the results to inspect source and prebuilt-driver sizes, SHA-256 hashes and method signatures. The interpreted source is not WASM. This check does not compile edited Rust or produce a deployable contract.</p>`,
+    task:'Run the simulation and inspect the reference-driver checks. Native compilation and release builds remain separate developer work.',
     hint:'Keep all public method signatures from the preceding chapters. The private owned_index helper is not a public ABI method. Building alone is not a deployment or an upgrade.',
     note:'This check does not export a deployable project, sign a transaction or register an event schema. Reproduce release artifacts from a pinned Forge project before any reviewed deployment.',
-    success:'The VM workflow passed. Both WASM targets built. The matching driver encoded typed arguments and preserved the exact largest u64.',
+    success:'The simulated workflow passed. Your parsed interface matched the reference driver, which encoded typed arguments and preserved the exact largest u64.',
   },
   {
     id:'building-learned', lesson:6, part:2, kind:'earned', short:'Learned', title:'The register passes a cumulative build check',
     body:`<p>You built state, typed arguments, validation, stable records, contract ownership, receipt events and cross-contract operations in the same file.</p>
-    <p>The final run checked state across both contracts, rejection and recovery, atomic pairs and the generated method data-driver.</p>
+    <p>The final run checked state, rejection and recovery, atomic pairs and the method interface. The browser interpreted the source and checked a prebuilt reference driver, without compiling edited Rust.</p>
     <p>This is still a local learning contract. End-user authentication, production event schemas, deployment and upgrade policy, gas budgets and independent review remain separate work.</p>`,
     note:'Your draft and earlier checkpoints are saved in this browser when storage is available. Use All paths to choose another specialization, or Back to review this one.',
   },
@@ -789,25 +789,26 @@ export const codeSteps = chapters.map((chapter, i) => chapter.kind === 'code' ? 
 export const stepsFor = lesson => chapters.map((chapter, i) => chapter.lesson === lesson ? i : -1).filter(i => i >= 0);
 export const partSteps = step => stepsFor(chapters[step].lesson).filter(i => chapters[i].part === chapters[step].part);
 
-export function unlocked(state, preview = false) {
-  if (preview) return chapters.length - 1;
+// Coding progression is separate from freely browsing the chapters.
+export function unlocked(state) {
   if (!state.started) return 0;
-  return codeSteps.find(step => !state.checks[chapters[step].check]) ?? chapters.length - 1;
+  return codeSteps.find(step => !state.checks[chapters[step].check] && !state.simulated?.[chapters[step].check]) ?? chapters.length - 1;
 }
 
 export function markChecked(state, step) {
   const check = chapters[step]?.check;
   if (!check) return;
-  state.checks[check] = state.source;
-  if (check === 'change' && !state.checks.initial) state.checks.initial = state.source;
+  const checks = state.simulated ??= {}; // Legacy native checks remain read-only.
+  checks[check] = state.source;
+  if (check === 'change' && !checks.initial) checks.initial = state.source;
 }
 
 const validCount = value => typeof value === 'string' && /^\d{1,20}$/.test(value);
-const invalid = () => { throw Error('The local runner returned an invalid result. Run npm run setup:forge and try again.'); };
+const invalid = () => { throw Error('The contract check returned an invalid result. Reload the page and try again.'); };
 
 export function assess(step, result) {
   if (chapters[step]?.kind !== 'code') invalid();
-  if (!result?.ok) return result?.phase === 'compile' ? `The ${result.target === 'data-driver' ? 'data-driver' : 'contract'} didn’t compile. Check the compiler details below.` : 'DuskVM couldn’t complete the run. Check the details below.';
+  if (!result?.ok) return result?.phase === 'compile' ? `The ${result.target === 'data-driver' ? 'data-driver' : 'contract'} didn’t compile. Check the compiler details below.` : 'The contract check couldn’t complete the run. Check the details below.';
   const scenario = chapters[step]?.scenario;
   if (!validCount(result.initial) || !validCount(result.fresh)) invalid();
   if (result.initial !== '0' || result.fresh !== '0') return `A new register starts at ${result.initial !== '0' ? result.initial : result.fresh}. Set count to 0 in new().`;
@@ -971,7 +972,7 @@ function assessAdvanced(scenario, result) {
   if (scenario === 'build-driver') {
     const b = result.build;
     if (!b || ![b.contract,b.driver].every(a => a && Number.isInteger(a.bytes) && a.bytes > 0 && a.bytes <= 1048576 && validId(a.sha256)) || !Array.isArray(b.functions) || b.functions.length > 40 || !b.functions.every(f => f && [f.name,f.input,f.output].every(s => typeof s === 'string' && s.length <= 160))) invalid();
-    if (b.encodedRegister !== '0200000000000000' || b.encodedResize !== '02000000000000000400000000000000' || b.decodedMax !== '18446744073709551615' || !['register','resize','cancel','confirm','confirm_pair','accounted_seats','get_registration'].every(name => b.functions.some(f => f.name === name))) return 'The built method driver did not match the contract ABI or preserve exact u64 values. Rebuild both targets from the current source.';
+    if (b.encodedRegister !== '0200000000000000' || b.encodedResize !== '02000000000000000400000000000000' || b.decodedMax !== '18446744073709551615' || !['register','resize','cancel','confirm','confirm_pair','accounted_seats','get_registration'].every(name => b.functions.some(f => f.name === name))) return 'The method driver did not match the contract ABI or preserve exact u64 values. Check the public signatures and matching driver.';
   }
   return null;
 }
@@ -983,10 +984,10 @@ export function serialize(state) {
   return JSON.stringify({...state, version:3, step:chapters[state.step].id, active:chapters[state.active].id});
 }
 
-export function restore(raw, preview = false) {
+export function restore(raw) {
   const fresh = {version:3, step:0, started:false, active:codeSteps[0], name:'', source:starter, checks:Object.fromEntries(codeSteps.map(step => [chapters[step].check, null])), answers:{}};
   try {
-    if (!raw || raw.length > (codeSteps.length + 1) * 48000 + 10000) return fresh; // Bounded 8 KB snapshots plus JSON escaping.
+    if (!raw || raw.length > (codeSteps.length * 2 + 1) * 48000 + 10000) return fresh; // Both runtime histories plus current source, including JSON escaping.
     const value = JSON.parse(raw);
     if (![1,2,3].includes(value?.version)) return fresh;
     const position = saved => chapters.findIndex(c => c.id === (value.version === 3 ? (typeof saved === 'string' ? saved : null) : Number.isInteger(saved) ? legacyIds[saved] : null));
@@ -1002,10 +1003,17 @@ export function restore(raw, preview = false) {
       fresh.active = step;
       fresh.started = true;
     }
-    const limit = unlocked(fresh, preview), step = position(value.step), active = position(value.active);
+    if (value.version === 3) for (const i of codeSteps) {
+      const check = chapters[i].check, source = value.simulated?.[check];
+      if (validSource(source) && source.trim()) {
+        (fresh.simulated ??= {})[check] = source; fresh.started = true;
+        fresh.active = Math.max(fresh.active, i);
+      } else if (!fresh.checks[check]) break;
+    }
+    const limit = Math.max(codeSteps[0], unlocked(fresh)), step = position(value.step), active = position(value.active);
     if (value.version !== 1 && codeSteps.includes(active) && active <= limit) fresh.active = Math.max(fresh.active, active);
-    if (step >= 0 && step <= limit) fresh.step = step;
-    if (chapters[fresh.step].kind === 'code') fresh.active = Math.max(fresh.active, fresh.step);
+    if (step >= 0) fresh.step = step;
+    if (chapters[fresh.step].kind === 'code' && fresh.step <= limit) fresh.active = Math.max(fresh.active, fresh.step);
     if (value.version === 3) for (const chapter of chapters) {
       if (chapter.choices?.some(([answer]) => answer === value.answers?.[chapter.id])) fresh.answers[chapter.id] = value.answers[chapter.id];
     }

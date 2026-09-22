@@ -1,11 +1,12 @@
-// Disposable worker. CSP permits only local fixture reads and their drivers.
+// Loaded only inside the opaque sandbox, after its read-only transport is installed.
 // No DOM, localStorage or injected wallet; checks are not tamper-proof certification.
 import {createDuskApp} from './vendor/dusk-connect.js';
 import {explorerScenarios, explorerIds, invalidRecordIds} from './courses.js';
+const origin = 'https://lesson.invalid'; // Synthetic transport address, never a network endpoint.
 const originalFetch = fetch;
 const reads = [];
 globalThis.fetch = async (...args) => {
-  const request = new Request(...args);
+  const request = new Request(typeof args[0] === 'string' ? new URL(args[0], origin) : args[0], args[1]);
   const url = new URL(request.url);
   const input = url.pathname.startsWith('/on/contracts:') ? new Uint8Array(await request.clone().arrayBuffer()) : null;
   const response = await originalFetch(request);
@@ -23,7 +24,7 @@ onmessage = async ({data:{source, scenario}}) => {
     url = URL.createObjectURL(new Blob([source], {type:'text/javascript'}));
     const learner = await import(url);
     async function client(value, driverPath) {
-      const dusk = learner.createApp(location.origin, '0x'+value.toString(16).padStart(2,'0').repeat(32), driverPath);
+      const dusk = learner.createApp(origin, '0x'+value.toString(16).padStart(2,'0').repeat(32), driverPath);
       if (!dusk?.readContract || !dusk?.prepareContractCall) throw Error('Return createDuskApp(...) from createApp.');
       clients.push(dusk); await dusk.ready(); return dusk;
     }
@@ -34,7 +35,7 @@ onmessage = async ({data:{source, scenario}}) => {
       if (scenario === 'prepare' || phase>=0) prepared.push(await learner.prepareRegistration(dusk, value));
     }
     // Independently decode prepared arguments with the genuine method driver.
-    const decoder = createDuskApp({pinnedNodeUrl:location.origin, wallet:{waitForProvider:false, rememberLastUsedProvider:false}, autoConnect:false});
+    const decoder = createDuskApp({pinnedNodeUrl:origin, wallet:{waitForProvider:false, rememberLastUsedProvider:false}, autoConnect:false});
     clients.push(decoder);
     const driver = await decoder.driver('/api/registry-driver');
     const writes = prepared.map(p => {
