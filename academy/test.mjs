@@ -101,7 +101,8 @@ test('v3 stable chapter saves, optional answers, bounds and snapshot continuity'
     markChecked(state,i);assert.equal(unlocked(state),codeSteps[index+1]??chapters.length-1);
     assert.deepEqual(restore(serialize(state)),state);
   }
-  assert.equal(state.checks.initial,'// draft at state');assert.equal(state.checks.change,'// draft at entrypoint');
+  assert.equal(state.simulated.initial,'// draft at state');assert.equal(state.simulated.change,'// draft at entrypoint');
+  assert.ok(Object.values(state.checks).every(v=>v===null),'new runs never write native credit');
   const raw=JSON.parse(serialize(state));assert.equal(raw.version,3);assert.equal(raw.step,'build-driver');assert.equal(raw.active,'build-driver');
   for(let i=0;i<chapters.length;i++) {
     state.step=i;
@@ -111,7 +112,7 @@ test('v3 stable chapter saves, optional answers, bounds and snapshot continuity'
   const largeSave={...state,source:escaped,checks:Object.fromEntries(Object.keys(state.checks).map(key=>[key,escaped]))};
   assert.deepEqual(restore(serialize(largeSave)),largeSave,'escaping must not discard valid-size snapshots');
   const incomplete=JSON.parse(serialize(fresh));incomplete.started=true;incomplete.step='building-learned';incomplete.active='build-driver';incomplete.checks.capacity=starter;
-  assert.equal(restore(JSON.stringify(incomplete)).step,0);assert.equal(restore(JSON.stringify(incomplete)).active,step('state'));assert.equal(restore(JSON.stringify(incomplete)).checks.capacity,null);
+  assert.equal(restore(JSON.stringify(incomplete)).step,chapters.length-1);assert.equal(restore(JSON.stringify(incomplete)).active,step('state'));assert.equal(restore(JSON.stringify(incomplete)).checks.capacity,null);
   assert.equal(restore(JSON.stringify({...raw,step:2,active:2})).step,0,'v3 numbers are not interpreted as either curriculum');
   assert.equal(restore(JSON.stringify({...raw,source:'x'.repeat(8001)})).source,starter);
   assert.equal(restore(JSON.stringify({...raw,source:'é'.repeat(4001)})).source,starter,'source limits are UTF-8 bytes');
@@ -143,39 +144,36 @@ test('all numeric v1/v2 bookmarks, drafts and earned checks migrate without repl
   assert.equal(inProgress.active,step('entrypoint'));assert.equal(inProgress.step,step('entrypoint'));assert.equal(unlocked(inProgress),step('entrypoint'));
 });
 
-test('preview bookmarks survive without granting checks or weakening local progression',async()=>{
+test('browsing bookmarks survive without granting checks or advancing the active ABI',async()=>{
   const draft={...restore(null),started:true,step:chapters.length-1,active:codeSteps.at(-1),source:'// preview draft'};
-  const raw=serialize(draft), preview=restore(raw,true), local=restore(raw);
-  assert.deepEqual(preview,draft);assert.equal(unlocked(preview,true),chapters.length-1);
-  assert.equal(local.step,0);assert.equal(local.active,codeSteps[0]);assert.equal(local.source,draft.source);
-  assert.equal(unlocked(local),codeSteps[0]);assert.ok(Object.values(preview.checks).every(check=>check===null));
+  const local=restore(serialize(draft));
+  assert.deepEqual(local,{...draft,active:codeSteps[0]});
+  assert.equal(unlocked(local),codeSteps[0]);assert.ok(Object.values(local.checks).every(check=>check===null));
   const {courses,restoreCourse,serializeCourse,courseLimit,courseComplete}=await import('./courses.js');
   for(const id of ['dapps','circuits']) {
     const course=courses[id], fresh=restoreCourse(id,null);
     const draft={...fresh,started:true,step:course.chapters.length-1,active:course.chapters.findLastIndex(c=>c.kind==='code'),source:'// preview draft'};
-    const raw=serializeCourse(course,draft), preview=restoreCourse(id,raw,true), local=restoreCourse(id,raw);
-    assert.deepEqual(preview,draft);assert.equal(courseLimit(course,preview,true),draft.step);
-    assert.equal(local.step,0);assert.equal(local.active,fresh.active);assert.equal(local.source,draft.source);
-    assert.deepEqual(preview.checks,{});assert.equal(courseComplete(course,preview),false);
+    const local=restoreCourse(id,serializeCourse(course,draft));
+    assert.deepEqual(local,{...draft,active:fresh.active});assert.equal(courseLimit(course,local),fresh.active);
+    assert.deepEqual(local.checks,{});assert.equal(courseComplete(course,local),false);
   }
   const dusk=restoreCourse('dusk',null);
-  assert.equal(courseLimit(courses.dusk,dusk,true),0,'knowledge gates remain real on Pages');
+  assert.equal(courseLimit(courses.dusk,dusk),0,'knowledge gates remain real on Pages');
   const knowledge=serializeCourse(courses.dusk,{...dusk,started:true,step:courses.dusk.chapters.length-1});
-  assert.equal(restoreCourse('dusk',knowledge,true).step,0,'preview cannot skip knowledge checks');
+  assert.equal(restoreCourse('dusk',knowledge).step,0,'browsing cannot skip knowledge checks');
 });
 
 test('simulator snapshots stay separate from native checks and survive shared-name restoration',()=>{
   const state=restore(null);state.started=true;
   const native=structuredClone(state.checks);
-  markChecked(state,step('contract-state'),true);markChecked(state,step('groups'),true);
+  markChecked(state,step('contract-state'));markChecked(state,step('groups'));
   assert.equal(state.simulated,undefined,'reading and practice may not record simulation');
-  state.source='// simulator initialization';markChecked(state,step('state'),true);
-  state.source='// simulator increment';markChecked(state,step('entrypoint'),true);
-  assert.deepEqual(state.checks,native);assert.equal(unlocked(state),step('state'),'no native gate was passed');
+  state.source='// simulator initialization';markChecked(state,step('state'));
+  state.source='// simulator increment';state.active=step('entrypoint');markChecked(state,state.active);
+  assert.deepEqual(state.checks,native);assert.equal(unlocked(state),step('arguments'),'browser credit unlocks the next task, not native credit');
   assert.deepEqual(state.simulated,{initial:'// simulator initialization',change:'// simulator increment'});
   const raw=JSON.parse(serialize(state));
   assert.deepEqual(restore(JSON.stringify(raw)),state);
-  assert.deepEqual(restore(JSON.stringify(raw),true),{...state,active:step('entrypoint')});
   const merged=restore(JSON.stringify(raw));merged.name='Mira';
   assert.deepEqual(restore(serialize(merged)).simulated,state.simulated);
   assert.equal(restore(JSON.stringify({...raw,simulated:{change:'// dangling'}})).simulated,undefined);

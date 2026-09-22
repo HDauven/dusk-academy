@@ -32,7 +32,7 @@ def signature():
 
 
 def prepare():
-    """Explicit trusted setup only; HTTP requests never invoke Cargo or fetch deps."""
+    """Explicit developer setup; compile/read helpers never install dependencies."""
     forge = os.environ.get('DUSK_FORGE_BIN') or shutil.which('dusk-forge')
     if not forge:
         raise SystemExit('Install Dusk Forge v0.3.0 first. See academy/README.md.')
@@ -107,7 +107,7 @@ def diagnostics(errors):
                 messages.append(item.get('rendered', item.get('message', '')))
         except ValueError:
             pass
-    return '\n'.join(messages)[:10000] or 'The isolated compiler could not finish. Check the local server setup.'
+    return '\n'.join(messages)[:10000] or 'The isolated compiler could not finish. Check the developer tool setup.'
 
 
 def prepared():
@@ -123,7 +123,7 @@ def prepared():
             raise OSError('Incomplete or stale Forge setup')
         return ready
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
-        raise OSError('Run npm run setup:forge, then restart npm run dev.') from error
+        raise OSError('Run npm run setup:forge, then retry the developer command.') from error
 
 
 def data_driver(explorer=False):

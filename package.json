@@ -5,9 +5,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "python3 -B tools/serve.py",
+    "dev": "python3 -m http.server 5173 --bind 127.0.0.1",
     "start": "npm run dev",
-    "test": "node --test academy/test.mjs academy/courses.test.mjs academy/counter-simulator.test.mjs academy/browser-runtime.test.mjs && python3 -B tools/test_server.py",
+    "test": "node --test academy/test.mjs academy/courses.test.mjs academy/counter-simulator.test.mjs academy/browser-runtime.test.mjs && python3 -B tools/test_setup.py",
+    "test:e2e": "node tools/test_pages.cjs",
     "test:forge": "python3 -B tools/test_forge_lesson.py",
     "test:circuits": "python3 -B tools/test_circuit_lesson.py",
     "build:browser": "python3 -B tools/build_browser.py",

@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#121622"><title>Dusk Academy</title>
   <link rel="icon" href="academy/assets/portrait-pixel.webp" type="image/webp">
   <link rel="stylesheet" href="academy/style.css">
-  <script type="module" src="academy/course-app.js?v=browser-1"></script>
+  <script type="module" src="academy/course-app.js?v=static-1"></script>
 </head>
 <body>
   <a class="skip-link" href="#lesson-title">Skip to lesson</a>
@@ -38,7 +38,6 @@
         <p class="aside" id="practice-note" hidden>Optional practice. These questions do not award skills or block the next chapter.</p>
         <form id="quiz"><fieldset><legend id="question"></legend><div id="choices"></div></fieldset><button class="run-button" type="submit">Check answer</button></form>
         <p class="feedback" id="quiz-feedback" role="status" hidden></p>
-        <section id="wallet-demo" aria-labelledby="wallet-title" hidden><h2 id="wallet-title">Try wallet discovery</h2><p>No connection happens until you choose a wallet and request access. No transaction will be sent.</p><button id="find-wallet" class="text-button" type="button">Find wallets</button><div id="wallet-picker" hidden><label for="wallet-provider">Installed wallet</label><select id="wallet-provider"></select><button id="connect-wallet" class="run-button" type="button">Request profile access</button></div><p id="wallet-status" role="status"></p></section>
       </section>
       <section class="editor" id="editor" aria-label="Code editor" hidden>
         <header class="filebar"><strong id="filename"></strong><span id="runtime"></span></header>

@@ -1,6 +1,6 @@
 // Execute learner ASTs against fixed call plans. Expected answers live only in lesson.js.
 import {createRuntime, Rejection, RuntimeLimit, U64_MAX, contractId} from './rust-runtime.js';
-import {contractIds} from './lesson.js?v=browser-1';
+import {contractIds} from './lesson.js?v=static-1';
 const advanced=['permissions-caller','permissions-owner','permissions-cancel','permissions-resize','events-register','events-changes','calls-quote','calls-confirm','tests-invariant','tests-atomic','build-driver'];
 const decimal=v=>{if(typeof v!=='bigint')throw Error('Lesson runtime expected a u64 return value.');return String(v);};
 const unwrap=v=>v===null?null:v?.kind==='some'?v.value:(()=>{throw Error('Lesson runtime expected Option.');})();

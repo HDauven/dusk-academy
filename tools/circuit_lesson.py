@@ -43,7 +43,7 @@ def compile_circuit(source):
             raise OSError('Incomplete or stale circuit setup')
         toolchain = Path(subprocess.check_output(['rustup', 'run', TOOLCHAIN, 'rustc', '--print', 'sysroot'], text=True, timeout=10).strip())
     except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError) as error:
-        raise OSError('Run npm run setup:circuits, then restart npm run dev.') from error
+        raise OSError('Run npm run setup:circuits, then retry the developer command.') from error
     with tempfile.TemporaryDirectory(prefix='dusk-circuit-') as tmp:
         work = Path(tmp)
         (work / 'circuit.rs').write_text(source, encoding='utf-8')

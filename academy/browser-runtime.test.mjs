@@ -61,22 +61,27 @@ test('browser gate programs configure real PLONK proofs, not solution-selected W
   }
 });
 
-test('simulated histories are bounded, separate and survive every path and native review',()=>{
+test('browser histories are bounded, unlock every path and never become legacy native credit',()=>{
   const dapp=courses.dapps,wallet=dapp.chapters.findIndex(c=>c.id==='wallet');
   assert.equal(lessonComplete(dapp,{checks:{[wallet]:'approval'}},dapp.lessons[0]),false,'a quiz alone cannot award a coding skill');
   const state=restore(null);state.started=true;
-  for(const step of codeSteps){state.active=step;state.source=sources[chapters[step].check==='initial'?'initial':chapters[step].scenario];markChecked(state,step,true);}
+  for(const step of codeSteps){state.active=step;state.source=sources[chapters[step].check==='initial'?'initial':chapters[step].scenario];markChecked(state,step);}
   state.step=chapters.length-1;
-  const browser=restore(serialize(state),true),native=restore(serialize(state));
-  assert.deepEqual(browser.simulated,state.simulated);assert.equal(browser.active,codeSteps.at(-1));assert.equal(unlocked(native),codeSteps[0]);assert.ok(Object.values(native.checks).every(v=>v===null));
+  const browser=restore(serialize(state));
+  assert.deepEqual(browser,state);assert.equal(browser.active,codeSteps.at(-1));assert.equal(unlocked(browser),chapters.length-1);assert.ok(Object.values(browser.checks).every(v=>v===null));
+  const legacy=restore(serialize({...state,checks:{initial:'// native initial',change:'// native increment'}}));
+  const native=structuredClone(legacy.checks);legacy.source+='\n// browser recheck';markChecked(legacy,legacy.active);
+  assert.deepEqual(restore(serialize(legacy)).checks,native,'browser rechecks preserve original native snapshots');
   for(const id of ['dapps','circuits']){
     const course=courses[id],s=restoreCourse(id,null);s.started=true;s.source='// current draft';s.simulated={};
     for(const i of exerciseSteps(course))s.simulated[i]=course.chapters[i].kind==='quiz'?course.chapters[i].answer:'// historical '+i;
     s.step=course.chapters.length-1;s.active=exerciseSteps(course).filter(i=>course.chapters[i].kind==='code').at(-1);
-    const encoded=serializeCourse(course,s);assert.deepEqual(restoreCourse(id,encoded,true),s);assert.deepEqual(restoreCourse(id,encoded).simulated,s.simulated);
-    assert.equal(courseLimit(course,restoreCourse(id,encoded)),exerciseSteps(course)[0]);
+    const encoded=serializeCourse(course,s);assert.deepEqual(restoreCourse(id,encoded),s);
+    assert.equal(courseLimit(course,restoreCourse(id,encoded)),course.chapters.length-1);
+    const first=exerciseSteps(course)[0],mixed={...s,checks:{[first]:'// native snapshot'}};
+    assert.deepEqual(restoreCourse(id,serializeCourse(course,mixed)),mixed,'mixed histories retain their provenance');
     const raw=JSON.parse(encoded);raw.simulated[course.chapters[exerciseSteps(course)[0]].id]='x'.repeat(8001);
-    assert.equal(restoreCourse(id,JSON.stringify(raw),true).simulated,undefined);
+    assert.equal(restoreCourse(id,JSON.stringify(raw)).simulated,undefined);
   }
 });
 

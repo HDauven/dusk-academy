@@ -1,4 +1,4 @@
-// Learner WASM gets only entropy and a bounded result channel. No DOM or network.
+// Trusted browser engine and offline native-conformance artifacts use bounded host APIs.
 export async function execute(bytes, programs = null) {
   if (!(bytes instanceof ArrayBuffer) || bytes.byteLength > 2 * 1024 * 1024) throw Error('Invalid circuit artifact.');
   const module = await WebAssembly.compile(bytes);
@@ -31,11 +31,9 @@ export async function execute(bytes, programs = null) {
 if (typeof WorkerGlobalScope !== 'undefined' && globalThis instanceof WorkerGlobalScope) {
   onmessage = async ({data}) => {
     try {
-      if(data?.source!==undefined) {
-        const {circuitProgram}=await import('./circuit-program.js');
-        const programs=circuitProgram(data.source);
-        postMessage({result:await execute(data.bytes,programs)});
-      } else postMessage({result:await execute(data)});
+      const {circuitProgram}=await import('./circuit-program.js');
+      const programs=circuitProgram(data.source);
+      postMessage({result:await execute(data.bytes,programs)});
     }
     catch (error) { postMessage({error:String(error.message || error).slice(0,3000)}); }
   };

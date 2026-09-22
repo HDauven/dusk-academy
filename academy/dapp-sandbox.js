@@ -32,9 +32,8 @@ onmessage=async({data})=>{
     // No child workers, shared workers, or persistent storage capabilities.
     Object.defineProperty(globalThis,'Worker',{value:undefined,writable:false,configurable:false});
     Object.defineProperty(globalThis,'SharedWorker',{value:undefined,writable:false,configurable:false});
-    const scoped='const location={origin:"https://lesson.invalid"};\\n';
     const runner=harness.replace("'./vendor/dusk-connect.js'",JSON.stringify(sdkUrl)).replace("'./courses.js'",JSON.stringify(metadataUrl));
-    await import(blob(scoped+runner));
+    await import(blob(runner));
     // Resolve the supplied SDK import locally, leaving all learner functions intact.
     // Other module imports remain subject to blob-only CSP, not a network fallback.
     const source=data.source.replace(/new\\s+URL\\(\\s*(["'])\\/academy\\/vendor\\/dusk-connect\\.js\\1\\s*,\\s*location\\.origin\\s*\\)\\.href/g,JSON.stringify(sdkUrl));
