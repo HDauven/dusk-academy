@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c0d1d">
+  <title>The Hatchery | Dusklings</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Dusk Academy home">DUSK<span>ACADEMY</span></a>
+      <button class="lesson-button" id="menu-button" aria-haspopup="dialog"><span class="kicker">Lesson 1</span> The Hatchery <span aria-hidden="true">▾</span></button>
+      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="count" aria-live="polite">1 / 14</span></div>
+    </header>
+
+    <main class="stage">
+      <section class="left">
+        <div class="scene-wrap">
+          <canvas id="scene" aria-label="The hatchery at dusk"></canvas>
+          <p class="scene-tag" id="scene-tag"></p>
+        </div>
+        <article class="chapter" id="chapter" tabindex="-1">
+          <p class="kicker" id="chapter-kicker"></p>
+          <h1 id="chapter-title"></h1>
+          <div class="wick" id="wick" hidden><canvas id="wick-face" width="64" height="64" aria-hidden="true"></canvas><p id="wick-line"></p></div>
+          <div class="prose" id="chapter-body"></div>
+          <section class="tasks" id="tasks" aria-labelledby="tasks-title" hidden>
+            <h2 id="tasks-title">Put it to the test</h2>
+            <ol id="task-list"></ol>
+          </section>
+        </article>
+      </section>
+
+      <section class="right" id="workbench" aria-label="Workbench">
+        <div class="pane" id="code-pane" hidden>
+          <div class="tabbar"><span class="tab">src/lib.rs</span><button class="info" id="runtime-info" aria-describedby="runtime-note">Runs in your browser</button><p id="runtime-note" role="tooltip" hidden>Checks run a Rust-subset interpreter in this tab. It models Forge contract state and calls. It isn't rustc or DuskVM.</p></div>
+          <div class="editor" id="editor">
+            <pre class="gutter" id="gutter" aria-hidden="true"></pre>
+            <div class="surface">
+              <div class="error-line" id="error-line" hidden></div>
+              <pre class="highlight" id="highlight" aria-hidden="true"></pre>
+              <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Contract source, src/lib.rs"></textarea>
+            </div>
+          </div>
+          <div class="console" id="console" role="status" aria-live="polite"><p class="muted">Press <kbd>Check</kbd> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>) to deploy and test your contract.</p></div>
+          <div class="actions">
+            <button class="ghost" id="hint-button">Hint</button>
+            <button class="ghost" id="answer-button">Show answer</button>
+            <button class="primary" id="check-button">Check <span aria-hidden="true">▶</span></button>
+          </div>
+        </div>
+
+        <div class="pane lab" id="lab-pane" hidden>
+          <h2 class="pane-title">DNA lab</h2>
+          <canvas id="lab-creature" width="256" height="256" aria-label="Duskling preview"></canvas>
+          <label class="dna-field"><span>DNA</span><input id="dna-input" inputmode="numeric" maxlength="16" autocomplete="off" spellcheck="false"></label>
+          <ol class="genes" id="genes"></ol>
+          <button class="ghost" id="shuffle">Shuffle DNA</button>
+        </div>
+
+        <div class="pane finale" id="finale-pane" hidden>
+          <form id="hatch-form" class="hatch-form">
+            <label for="name-input">Name your Duskling</label>
+            <div class="row"><input id="name-input" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Moonpaw" required><button class="primary">Hatch <span aria-hidden="true">✦</span></button></div>
+            <p class="muted" id="hatch-source"></p>
+          </form>
+          <div class="card" id="card" hidden>
+            <canvas id="card-creature" width="224" height="224" aria-hidden="true"></canvas>
+            <div>
+              <p class="kicker">Duskling #0</p>
+              <h2 id="card-name"></h2>
+              <p class="dna" id="card-dna"></p>
+              <dl class="traits" id="card-traits"></dl>
+              <p class="muted" id="card-seed"></p>
+            </div>
+          </div>
+          <div class="complete" id="complete" hidden>
+            <p class="kicker">Lesson 1 complete</p>
+            <ul class="skills" id="skills"></ul>
+            <div class="row"><button class="ghost" id="download">Save card</button><button class="primary" disabled>Lesson 2 · Keepers <small>soon</small></button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bottombar">
+      <button class="ghost" id="prev"><span aria-hidden="true">←</span> Back</button>
+      <p class="toast" id="toast" role="status" aria-live="polite"></p>
+      <button class="primary" id="next">Next <span aria-hidden="true">→</span></button>
+    </footer>
+  </div>
+
+  <dialog id="menu" aria-labelledby="menu-title">
+    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <h2 id="menu-title">Lesson 1 · The Hatchery</h2>
+    <ol id="menu-list"></ol>
+    <button class="ghost small" id="reset">Reset progress</button>
+  </dialog>
+
+  <dialog id="answer-dialog" aria-labelledby="answer-title">
+    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <h2 id="answer-title">The answer</h2>
+    <p class="muted">Lines to add are green; lines to remove are red.</p>
+    <pre class="diff" id="diff"></pre>
+    <div class="row end"><button class="primary" id="use-answer">Use this code</button></div>
+  </dialog>
+</body>
+</html>

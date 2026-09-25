@@ -26,7 +26,7 @@ const clone = value => structuredClone(checked(value));
 const operators = new Map([['..',1],['..=',1],['||',2],['&&',3],['==',4],['!=',4],['<',5],['<=',5],['>',5],['>=',5],['+',6],['-',6],['*',7],['/',7],['%',7]]);
 const keywords = new Set('as async await break const continue crate dyn else enum extern false fn for if impl in let loop match mod move mut pub ref return self static struct super trait true type unsafe use where while gen'.split(' '));
 
-export function parseRust(source) {
+export function parseRust(source, options={}) {
   if(typeof source!=='string'||source.length>8000||!source.trim()||new TextEncoder().encode(source).length>8000) throw Error('Keep the source between 1 and 8,000 UTF-8 bytes.');
   const tokens=[], pattern=/\s+|\/\/[^\r\n]*|0x[\da-fA-F_]+(?:u64|u32|usize|u8)?|\d[\d_]*(?:u64|u32|usize|u8)?|[A-Za-z_][A-Za-z0-9_]*|"(?:[^"\\]|\\.)*"|::|->|=>|\.\.=|\.\.|&&|\|\||==|!=|<=|>=|\+=|-=|\*=|\/=|%=|[{}()[\]#&!.,:;=+*/%<>|?\-]/y;
   const fail=(message,offset=tokens[p]?.offset??source.length)=>{
@@ -129,10 +129,10 @@ export function parseRust(source) {
       if(take('extern')){expect('crate');expect('alloc');expect(';');continue;}
       if(take('use')) {
         const parts=[];while(!take(';')){if(peek()==='<end>')fail('End the import.');parts.push(tokens[p++].text);}
-        if(!['alloc::vec::Vec','dusk_core::abi::{self,ContractId}','dusk_core::abi::{ContractId,self}','dusk_core::transfer::TRANSFER_CONTRACT','dusk_plonk::prelude::*'].includes(parts.join('')))fail('Only the supplied lesson imports are supported.');continue;
+        if(!['alloc::vec::Vec','dusk_core::abi','dusk_core::abi::{self,ContractId}','dusk_core::abi::{ContractId,self}','dusk_core::transfer::TRANSFER_CONTRACT','dusk_plonk::prelude::*'].includes(parts.join('')))fail('Only the supplied lesson imports are supported.');continue;
       }
       const pub=!!take('pub');
-      if(take('mod')){expect('registry');expect('{');declarations('}');expect('}');continue;}
+      if(take('mod')){expect(options.module??'registry');expect('{');declarations('}');expect('}');continue;}
       if(take('struct')) {
         const id=name();if(structs.has(id))fail('Duplicate struct.');const fields=new Map();structs.set(id,fields);expect('{');
         if(!take('}')){do{take('pub');const key=name();expect(':');if(fields.has(key))fail('Duplicate field.');fields.set(key,type());}while(take(',')&&peek()!=='}');expect('}');}continue;
@@ -160,7 +160,7 @@ export function parseRust(source) {
 }
 
 export function createRuntime(source, hosts={}) {
-  const program=parseRust(source), globals=new Map();let budget=200000,depth=0;
+  const program=parseRust(source,{module:hosts.module}), globals=new Map(), contract=hosts.contract??'Registry';let budget=200000,depth=0;
   const unsupported=message=>{throw Error('Not supported by this lesson runtime. '+message);};
   const tick=()=>{if(--budget<0)throw new RuntimeLimit('Lesson runtime instruction limit reached. This is not a successful contract rejection.');};
   const bool=x=>{if(typeof x!=='boolean')unsupported('A condition must be Boolean.');return x;};
@@ -209,7 +209,7 @@ export function createRuntime(source, hosts={}) {
   }
   function method(obj,id,args,mutable,env) {
     if(obj?.kind!=='struct'&&obj?.kind!=='host') {
-      const arity={len:0,is_empty:0,iter:0,iter_mut:0,get:1,push:1,remove:1,swap_remove:1,clear:0,position:1,find:1,map:1,sum:0,expect:1,unwrap:0,unwrap_or:1,is_some:0,is_none:0,is_ok:0,is_err:0,filter:1,checked_add:1,wrapping_add:1};
+      const arity={len:0,is_empty:0,iter:0,iter_mut:0,get:1,push:1,remove:1,swap_remove:1,clear:0,position:1,find:1,map:1,sum:0,expect:1,unwrap:0,unwrap_or:1,is_some:0,is_none:0,is_ok:0,is_err:0,filter:1,checked_add:1,wrapping_add:1,wrapping_mul:1,pow:1};
       if(!Object.hasOwn(arity,id)||args.length!==arity[id])unsupported('Arguments do not match '+id+'.');
     }
     if(obj?.kind==='struct')return invoke(obj,id,args,mutable);
@@ -245,6 +245,8 @@ export function createRuntime(source, hosts={}) {
     if(typeof obj==='bigint') {
       if(id==='checked_add'){try{return option(arithmetic('+',obj,args[0]));}catch(e){if(e instanceof Rejection)return null;throw e;}}
       if(id==='wrapping_add')return (obj+uint(args[0]))&U64_MAX;
+      if(id==='wrapping_mul')return (obj*uint(args[0]))&U64_MAX;
+      if(id==='pow'){let n=1n;for(let i=uint(args[0]);i>0n;i--){tick();n=arithmetic('*',n,obj);if(n<=1n)break;}return n;}
     }
     unsupported('Method '+id+' is unavailable for this value.');
   }
@@ -346,6 +348,6 @@ export function createRuntime(source, hosts={}) {
       return validate(result,m.output,owner);
     } finally {depth--;}
   }
-  for(const [id,c]of program.constants)globals.set(id,validate(value(c.value,{vars:new Map(),owner:'Registry'}),c.declared,'Registry'));
-  return {program,invoke,validate,create:()=>invoke(null,'new',[],true,'Registry')};
+  for(const [id,c]of program.constants)globals.set(id,validate(value(c.value,{vars:new Map(),owner:contract}),c.declared,contract));
+  return {program,invoke,validate,globals,create:()=>invoke(null,'new',[],true,contract)};
 }
