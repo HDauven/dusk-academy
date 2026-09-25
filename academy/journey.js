@@ -157,9 +157,21 @@ export const levels = [
 <p>So a contract that needs to know who called it has to decide, on purpose, what to do when the caller is private.</p>`,
         question: 'A contract calls abi::public_sender() during a shielded Phoenix transaction. What does it get?',
         choices: [
-          {id: 'none', right: true, text: 'Nothing, because there\'s no public sender to show.', why: 'Right. The contract has to handle that case deliberately.'},
+          {id: 'none', right: true, text: 'Nothing, because there\'s no public sender to show.', why: 'Right. The contract has to handle that case deliberately, and a private caller can still prove who they are, as the next question shows.'},
           {id: 'real', text: 'The sender\'s account, decrypted.', why: 'Contracts can\'t unshield a Phoenix transaction.'},
           {id: 'error', text: 'The transaction is always rejected.', why: 'It isn\'t rejected. The contract simply gets no public sender, and its own logic decides what happens next.'},
+        ],
+      },
+      {
+        id: 'signed', kind: 'quiz', title: 'Signed, not seen',
+        body: `<p>A shielded caller can still prove who they are. Instead of asking for the sender, the contract takes a <strong>signature</strong> as part of the call and checks it with a host function: <code>abi::verify_bls</code> for account keys, or <code>abi::verify_schnorr</code> for the one-time key of a Phoenix address.</p>
+<p>Dusk's own genesis contracts work this way. The stake contract never asks who sent a stake: every stake carries signatures from the stake's keys. And before the transfer contract pays out to a Phoenix address, it checks a Schnorr signature from that address's one-time key.</p>
+<p class="aside">Sign something that only works once, or anyone could replay an old signature. The transfer contract's signed message includes the transaction's nullifiers, or the Moonlight nonce.</p>`,
+        question: 'The Hatchery wants keepers on shielded transactions to prove they own their Duskling before it battles. How?',
+        choices: [
+          {id: 'reveal', text: 'Ask the network to reveal the shielded sender.', why: 'Nobody can unshield a Phoenix transaction, not even the network.'},
+          {id: 'sign', right: true, text: 'Take a signature from the keeper\'s key in the call, and check it with abi::verify_bls.', why: 'Right. That\'s how Dusk\'s stake and transfer contracts handle callers they can\'t see. The keeper proves they hold the key, and the rest of the transaction stays shielded.'},
+          {id: 'never', text: 'Nothing. Shielded callers can never be identified.', why: 'They can choose to prove who they are. A signature shows they hold the right key.'},
         ],
       },
       {
