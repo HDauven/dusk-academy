@@ -9,8 +9,8 @@ npm run dev   # then open http://localhost:5173/prototype/
 | Page | What it is |
 |---|---|
 | `index.html` | Home: harbor scene, the four paths with level maps and progress, and your Duskling wearing its gear |
-| `journey.html` | **Start with Dusk, the keeper's journey** (no code): 5 levels and 35 questions. Right answers light lanterns. Level 1 hatches your Duskling, and each later level earns it gear. |
-| `hatchery.html` | **Contracts, Lesson 1: The Hatchery**: 12 code chapters, each one small edit |
+| `journey.html` | **Start with Dusk, the keeper's journey** (no code): 5 levels and 36 questions. Right answers light lanterns. Level 1 hatches your Duskling, and each later level earns it gear. |
+| `hatchery.html` | **Contracts: the Hatchery**, five lessons and 40 code chapters on one growing `lib.rs`, each chapter one small edit, with a playground finale per lesson |
 | `creatures.html` | Developer sheet showing every creature trait and piece of gear |
 
 ## What changed from the current academy
@@ -29,7 +29,10 @@ Checks still run the real Rust-subset interpreter (`academy/rust-runtime.js`) an
 
 - `creature.js`: 16 DNA digits become a 32×32 pixel Duskling. Each digit pair picks a trait.
 - `scene.js`: 192×108 pixel scenes: the hatchery (nests and hatching eggs) and the harbor (lighthouse, lanterns, boats).
-- `lesson1.js` + `app.js`: Hatchery chapters, reference files, checks, error messages, and the lesson screen.
+- `lesson1.js` … `lesson5.js`: Hatchery chapters with reference files and behavioural checks. `course.js` joins them, and `app.js` is the lesson screen, including the playgrounds.
+- `hatchery-file.js`: builds each chapter's reference `lib.rs` from named parts, so the chapters stay consistent.
+- `contract.js`: runs a contract in the Rust-subset interpreter with simulated Dusk hosts: `abi::emit`, `abi::public_sender` (you, Rook, Fen, or shielded), `abi::block_height`, and `abi::call` to a Moth Nest contract. It also holds the learner-facing error messages.
+- `lessons.test.mjs`: part of `npm test`. Every answer passes, every start fails with a readable message, and each chapter chains onto the last.
 - `journey.js` + `quiz.js`: journey content and the quiz screen with its small diagrams (Moonlight/Phoenix, proof cards, Citadel flow, license disclosure, delivery versus payment, stake-weighted sortition, and others).
 - `home.js`: the home page.
 - `store.js`: per-browser progress (`dusk-academy:journey:v1` and `dusk-academy:hatchery:v1`) and one shared Duskling (`dusk-academy:keeper:v1`: name, DNA, gear). Any read or write can fail without breaking the page.
@@ -46,19 +49,26 @@ Checks still run the real Rust-subset interpreter (`academy/rust-runtime.js`) an
 
 Levels 1–3 follow the vetted classic "Start with Dusk" lesson. The level 5 network facts were checked against the rusk source (consensus README, `core/src/stake.rs`, stake contract slashing, `node-data` fault and label types). The Hatchery finale hatches the same Duskling for the same name, so the two paths share one creature.
 
-## Proposed course map
+## The Hatchery lessons
 
-1. **The Hatchery** (built): contracts, constants, u64 math, structs, vectors, methods, private helpers, return values, wrapping arithmetic, events.
-2. **Keepers**: who owns a Duskling. `abi::public_sender()` returns the sender of a public (Moonlight) transaction and `None` for a shielded (Phoenix) one, so ownership raises a real Dusk choice between public keepers and private hatching. Also covers `assert!` and one free hatch per keeper.
-3. **Moth hunt**: feeding on moths from another contract with `abi::call`, blending DNA, and a rare moth-born trait.
-4. **Night battles**: levels, cooldowns with `abi::block_height()`, and the limits of on-chain randomness.
-5. **Trading**: transfers, approvals and ownership events.
+| Lesson | Code chapters | Covers | Finale |
+|---|---:|---|---|
+| 1 · The Hatchery | 12 | `#[dusk_forge::contract]`, constants, u64 math and overflow checks, structs, `Vec`, methods, private helpers, return values, `wrapping_mul`, `abi::emit` | Name and hatch your Duskling |
+| 2 · Keepers | 7 | Getters, `Option`/`get`/closures, `abi::public_sender()` and shielded senders, `BlsPublicKey` owners, iterators, `assert!` and rollback | Playground: hatch as you, Rook, or a shielded account |
+| 3 · Moth hunt | 7 | `ContractId`, `abi::call::<_, u64>` to another contract, `Result`, blending DNA into moth-born Dusklings (DNA ending in 99), rollback across contracts | Playground: hunt moths |
+| 4 · Night battles | 8 | `abi::block_height()` cooldowns, an `only_keeper` helper, win/loss records, why on-chain rolls are predictable, `if`/`else` | Playground: battle and peek at the next roll |
+| 5 · Trading | 6 | Transfers, events carrying keys, `Option` approvals, `&mut` borrows, stale approvals | Playground: approve, collect, try the loophole |
+
+Every chapter's reference answer compiles with real dusk-forge 0.3 / dusk-core 1.6, both as a contract and as a data-driver: `npm run test:prototype-rust` (this needs the crate prepared by `npm run setup:forge`). The in-browser checks run the same code in the Rust-subset interpreter.
+
+## Still to build
+
 - **dApp path, The Almanac**: Dusk Connect reads Dusklings, listens for `hatched` events and prepares an unsigned `hatch` call.
 - **Circuit path, Secret stats**: prove a Duskling's hidden strength plus agility equals its public power score without revealing either. This is the existing PLONK sum circuit and engine with a new skin.
 
-## Not done yet
+## Known gaps
 
-- The Lesson 1 Rust hasn't been compiled with Forge. It follows the rules in `dusk-forge-contract` 0.2 (exactly one `pub struct`, private record types) and the `dusk-core` 1.6 host functions, but native conformance cases still need adding.
+- The Rust compiles natively, but native *execution* (running each chapter in DuskVM and comparing traces with the interpreter, as the classic academy does) isn't wired up yet. The Moth Nest also only exists as a simulated fixture.
 - No migration from the classic academy's saves. The new paths use their own storage keys.
-- The dApp and circuit paths, and contract lessons 2–5, appear on the home page as “soon”.
+- The dApp and circuit paths still show as “soon” on the home page.
 - Wick, the narrator, is a Duskling with fixed DNA, not bespoke art.

@@ -1,11 +1,6 @@
 // Lesson 1: The Hatchery. Every code chapter is one small edit, checked by running the contract.
-import {createRuntime, Rejection} from '../academy/rust-runtime.js';
-
-export const WICK = '0001010104060000';
-export const SAMPLE = ['8356281049284737', '1568560902483828', '2788147323984481'];
-const MIX = 0x9E3779B97F4A7C15n, MODULUS = 10n ** 16n;
-export const dnaFor = seed => ((BigInt(seed) * MIX) & ((1n << 64n) - 1n)) % MODULUS;
-export const pad16 = n => String(n).padStart(16, '0');
+import {WICK, SAMPLE, MODULUS, dnaFor, pad16, deploy, need, needMethod, stripComments as code, seedFromName, friendly} from './contract.js';
+export {WICK, SAMPLE, dnaFor, pad16, deploy, seedFromName, friendly};
 
 // Reference file after each code chapter.
 const HEAD = `#![no_std]
@@ -15,12 +10,15 @@ extern crate alloc;
 #[dusk_forge::contract]
 mod hatchery {
     use alloc::vec::Vec;
+    use dusk_core::abi;
 `;
 const step = {
   contract0: `#![no_std]
 
 #[dusk_forge::contract]
 mod hatchery {
+    use dusk_core::abi;
+
     // Declare the contract state here.
 
     impl Hatchery {
@@ -33,6 +31,8 @@ mod hatchery {
 
 #[dusk_forge::contract]
 mod hatchery {
+    use dusk_core::abi;
+
     pub struct Hatchery {}
 
     impl Hatchery {
@@ -45,6 +45,8 @@ mod hatchery {
 
 #[dusk_forge::contract]
 mod hatchery {
+    use dusk_core::abi;
+
     const DNA_DIGITS: u32 = 16;
 
     pub struct Hatchery {}
@@ -59,6 +61,8 @@ mod hatchery {
 
 #[dusk_forge::contract]
 mod hatchery {
+    use dusk_core::abi;
+
     const DNA_DIGITS: u32 = 16;
     const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);
 
@@ -74,6 +78,8 @@ mod hatchery {
 
 #[dusk_forge::contract]
 mod hatchery {
+    use dusk_core::abi;
+
     const DNA_DIGITS: u32 = 16;
     const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);
 
@@ -202,46 +208,8 @@ step.events = body(C3, `
             let dna = self.generate_dna(seed);
             self.create_duskling(dna);
         }
-`).replace('    use alloc::vec::Vec;\n', '    use alloc::vec::Vec;\n    use dusk_core::abi;\n');
+`);
 
-// ---- Running a contract ----------------------------------------------------------------------
-
-export class Hint extends Error {}
-const fail = message => { throw new Hint(message); };
-
-export function deploy(source) {
-  const events = [];
-  const functions = new Map([['abi::emit', args => {
-    if (args.length !== 2 || typeof args[0] !== 'string') throw Error('abi::emit expects a topic string and a payload.');
-    events.push({topic: args[0], data: args[1]?.kind === 'tuple' ? args[1].items : [args[1]]});
-  }]]);
-  const rt = createRuntime(source, {module: 'hatchery', contract: 'Hatchery', functions});
-  let state = rt.create();
-  return {
-    rt, events,
-    get state() { return state; },
-    method: name => rt.program.methods.get('Hatchery::' + name),
-    call(name, ...args) {
-      const before = structuredClone(state), mark = events.length;
-      try { return rt.invoke(state, name, args.map(BigInt), true); }
-      catch (e) { state = before; events.length = mark; throw e; }
-    },
-    dusklings: () => (state.fields.dusklings?.items ?? []).map(d => ({dna: d.fields.dna, level: d.fields.level})),
-  };
-}
-
-const code = source => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-const need = (cond, message) => { if (!cond) fail(message); };
-const needMethod = (c, name, {pub, mut, params, output}) => {
-  const m = c.method(name);
-  need(m, `Couldn't find a method named \`${name}\` in \`impl Hatchery\`.`);
-  if (pub !== undefined) need(m.exported === pub, pub ? `\`${name}\` should be public: start it with \`pub fn\`.` : `\`${name}\` is still public. Remove \`pub\` so only the contract can call it.`);
-  if (mut !== undefined) need(m.receiver && m.mutable === mut, mut ? `\`${name}\` changes state, so its first parameter should be \`&mut self\`.` : `\`${name}\` only reads, so take \`&self\` (without \`mut\`).`);
-  if (params) need(m.params.length === params.length && m.params.every((p, i) => p.name === params[i][0] && p.type === params[i][1]),
-    `\`${name}\` should take ${params.map(([n, t]) => `\`${n}: ${t}\``).join(' and ')}.`);
-  if (output) need(m.output === output, output === '()' ? `\`${name}\` shouldn't return anything.` : `\`${name}\` should return a \`${output}\`: add \`-> ${output}\` after the parameters.`);
-  return m;
-};
 const sceneOf = c => ({nests: 5, creatures: c.dusklings().map(d => pad16(d.dna))});
 
 // ---- Chapters -------------------------------------------------------------------------------
@@ -258,7 +226,7 @@ export const chapters = [
   {
     id: 'contract', kind: 'code', title: 'Contracts',
     body: `<p>Dusk contracts are Rust, compiled to WebAssembly and run by <strong>DuskVM</strong>. <strong>Dusk Forge</strong> turns an ordinary Rust module into a contract: mark a <code>mod</code> with <code>#[dusk_forge::contract]</code> and Forge wires up the rest.</p>
-<p>A contract module holds <strong>exactly one <code>pub struct</code></strong>. That struct <em>is</em> the contract's state: whatever it holds is stored on-chain between calls. <code>new()</code> builds that state when the contract is deployed.</p>
+<p>A contract module holds <strong>exactly one <code>pub struct</code></strong>. That struct <em>is</em> the contract's state: whatever it holds is stored on-chain between calls. <code>new()</code> describes the starting state. It's a <code>const fn</code>, so Rust works it out when the contract is compiled, and the contract starts life with that state.</p>
 <pre><code>#[dusk_forge::contract]
 mod lighthouse {
     pub struct Lighthouse {}
@@ -269,14 +237,14 @@ mod lighthouse {
         }
     }
 }</code></pre>
-<p class="aside"><code>#![no_std]</code> at the top means there's no Rust standard library. There's no operating system inside the VM.</p>`,
+<p class="aside"><code>#![no_std]</code> at the top means there's no Rust standard library, because there's no operating system inside the VM. The supplied <code>use dusk_core::abi;</code> brings in Dusk's contract interface, which you'll use later. Dusk's core library also supplies the memory allocator and panic handler that a <code>no_std</code> contract needs.</p>`,
     tasks: [`Inside <code>mod hatchery</code>, above the <code>impl</code> block, declare an empty public struct named <code>Hatchery</code>.`],
     hint: `One line: <code>pub struct Hatchery {}</code>. The <code>impl Hatchery</code> below is already waiting for it.`,
     start: step.contract0, answer: step.contract,
     check(source) {
       const c = deploy(source);
       need(/\bpub\s+struct\s+Hatchery\b/.test(code(source)), 'Forge needs the contract state to be public: `pub struct Hatchery {}`.');
-      return {log: ['deploy Hatchery  →  ok'], win: 'The Hatchery exists! It is empty, but it deploys.', scene: {nests: 0, creatures: []}};
+      return {log: ['Hatchery::new()  →  Hatchery {}'], win: 'The Hatchery has its state. It has no public methods yet, so there\'s nothing to call.', scene: {nests: 0, creatures: []}};
     },
   },
   {
@@ -300,7 +268,7 @@ mod lighthouse {
     id: 'math', kind: 'code', title: 'Math',
     body: `<p>Rust has the usual operators: <code>+ - * /</code>, and <code>%</code> for the remainder. <code>%</code> is how we'll trim a big number to 16 digits: <code>123456 % 1000</code> is <code>456</code>. It keeps the last three digits.</p>
 <p>To keep 16 digits we need 10 to the power of 16: <code>10u64.pow(DNA_DIGITS)</code>. The <code>u64</code> suffix tells Rust that this 10 is a u64.</p>
-<p class="aside">Dusk contracts are built with <strong>overflow checks on</strong>: math that goes past a type's limit makes the call fail instead of quietly wrapping around. 10¹⁶ fits easily in a u64, whose limit is about 1.8 × 10¹⁹.</p>`,
+<p class="aside">The Dusk Forge contract template builds with <strong>overflow checks on</strong>, and Forge's docs say never to turn them off. Math that goes past a type's limit makes the call fail instead of quietly wrapping around. 10¹⁶ fits easily in a u64, whose limit is about 1.8 × 10¹⁹.</p>`,
     tasks: [`Below <code>DNA_DIGITS</code>, declare a <code>u64</code> constant <code>DNA_MODULUS</code> equal to <code>10u64.pow(DNA_DIGITS)</code>.`],
     hint: `<code>const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);</code>`,
     start: step.constants, answer: step.math,
@@ -351,7 +319,7 @@ Self { eggs: Vec::new() }</code></pre>
       const c = deploy(source), s = c.rt.program.structs.get('Hatchery');
       need(s?.get('dusklings') === 'Vec<Duskling>', '`Hatchery` needs a field `dusklings: Vec<Duskling>`.');
       need(c.state.fields.dusklings?.kind === 'vec' && c.dusklings().length === 0, 'A freshly deployed Hatchery should start with an empty `dusklings` vector.');
-      return {log: ['deploy Hatchery  →  dusklings: []'], win: 'Five warm, empty nests. The hatchery is ready.', scene: {nests: 5, creatures: []}};
+      return {log: ['Hatchery::new()  →  dusklings: []'], win: 'Five warm, empty nests. The hatchery is ready.', scene: {nests: 5, creatures: []}};
     },
   },
   {
@@ -486,8 +454,8 @@ self.store_egg(size);</code></pre>`,
     id: 'events', kind: 'code', title: 'Events',
     body: `<p>When a Duskling hatches, the outside world should hear about it: wallets, explorers, and this very page. Contracts announce things with <strong>events</strong>:</p>
 <pre><code>abi::emit("warmed", (id, degrees));</code></pre>
-<p>An event is a receipt attached to the transaction. Apps listen for it, but it isn't contract state. <code>abi</code> is Dusk's contract interface: <code>use dusk_core::abi;</code> brings it in.</p>`,
-    tasks: [`Below the <code>Vec</code> import, add <code>use dusk_core::abi;</code>`, `In <code>create_duskling</code>, before pushing, save the new id: <code>let id = self.dusklings.len() as u64;</code>`, `After pushing, emit a <code>"hatched"</code> event with <code>(id, dna)</code>.`],
+<p>An event is a receipt attached to the transaction. Apps listen for it, but it isn't contract state. <code>abi::emit</code> comes from the <code>abi</code> module you've had imported since chapter 2.</p>`,
+    tasks: [`In <code>create_duskling</code>, before pushing, save the new id: <code>let id = self.dusklings.len() as u64;</code>`, `After pushing, emit a <code>"hatched"</code> event with <code>(id, dna)</code>.`],
     hint: `<pre><code>let id = self.dusklings.len() as u64;
 self.dusklings.push(Duskling { dna, level: 1 });
 abi::emit("hatched", (id, dna));</code></pre>`,
@@ -515,34 +483,3 @@ abi::emit("hatched", (id, dna));</code></pre>`,
 ];
 
 export const reference = step.events;
-
-// FNV-1a (64-bit) of the name's UTF-8 bytes: how the page turns a name into a seed.
-export function seedFromName(name) {
-  let h = 0xcbf29ce484222325n;
-  for (const b of new TextEncoder().encode(name)) { h ^= BigInt(b); h = (h * 0x100000001b3n) & ((1n << 64n) - 1n); }
-  return h;
-}
-
-export function friendly(error) {
-  const text = String(error?.message ?? error);
-  if (error instanceof Hint) return {text};
-  if (error instanceof Rejection) return {text: /overflow/.test(text)
-    ? 'Overflow! The result doesn\'t fit in a `u64`, so the call panicked. Dusk contracts run with overflow checks on.'
-    : `The contract call panicked: ${text}.`};
-  if (/Supply exactly the declared fields/.test(text)) return {text: 'When you build a struct, give every field a value. A `Duskling` needs both `dna` and `level`.'};
-  const at = text.match(/at line (\d+), column (\d+)\. (.*)$/s);
-  if (at) {
-    let msg = at[3];
-    if (/Implement a declared lesson struct/.test(msg)) msg = 'This `impl` block refers to a struct that isn\'t declared above it.';
-    if (/Type (\w+) is outside the lesson subset/.test(msg)) msg = `Unknown type \`${msg.match(/Type (\w+)/)[1]}\`. Is it declared above this line, and spelled the same way?`;
-    return {text: `Line ${at[1]}: ${msg}`, line: Number(at[1])};
-  }
-  if (/This method must return no value/.test(text)) return {text: 'A method returned a value where none was expected.'};
-  if (/Expected a u64 value/.test(text)) return {text: 'A method that should return a `u64` returned nothing. Did the last line end with a semicolon? Remove it to return the value.'};
-  const missing = text.match(/Missing method (\w+)/);
-  if (missing) return {text: `Couldn't find a method named \`${missing[1]}\`.`};
-  const binding = text.match(/Unknown binding (\w+)/);
-  if (binding) return {text: `\`${binding[1]}\` isn't defined here. Check the spelling, or whether it needs \`self.\` in front.`};
-  if (/Keep the supplied lesson structs and methods/.test(text)) return {text: 'The contract needs at least one struct and one method.'};
-  return {text: text.replace(/^Not supported by this lesson runtime\.\s*/, '')};
-}

@@ -71,12 +71,12 @@ export const levels = [
       {
         id: 'gas', kind: 'quiz', title: 'Gas and fees',
         body: `<p>Every transaction makes the network do work: checking signatures, running contract code and storing state. That work is measured in <strong>gas</strong> and paid for as a fee in <strong>DUSK</strong>, the network's token.</p>
-<p>The fee pays for the work, not for a good outcome. If a contract call fails partway, its changes are rolled back, but the work was still done.</p>`,
+<p>The fee pays for the work, not for a good outcome. If a contract call fails, its changes are rolled back, but you still pay. On Dusk, a failed call uses up its whole gas limit.</p>`,
         question: 'Your hatch() call fails halfway through. What happens?',
         choices: [
-          {id: 'rolled', right: true, text: 'Its changes are rolled back, but you still pay for the work that was done.', why: 'Right. Failed calls cost gas too, which is why good apps check things before sending.'},
-          {id: 'refund', text: 'Everything is undone, including the fee.', why: 'The state changes are undone, but the network still did the work, so the fee is still paid.'},
-          {id: 'half', text: 'Half a Duskling hatches.', why: 'Contract calls are all-or-nothing, so there are no half-hatched Dusklings.'},
+          {id: 'rolled', right: true, text: 'Its changes are rolled back, but you still pay the fee.', why: 'Right. A failed call uses up its whole gas limit, which is why good apps check things before sending.'},
+          {id: 'refund', text: 'Everything is undone, including the fee.', why: 'The state changes are undone, but the fee isn\'t. A failed call still pays, in fact for its whole gas limit.'},
+          {id: 'half', text: 'Half a Duskling hatches.', why: 'A failed call rolls back all of its changes, so there are no half-hatched Dusklings.'},
         ],
       },
       {
@@ -143,7 +143,7 @@ export const levels = [
       {
         id: 'phoenix', kind: 'quiz', title: 'Phoenix: shielded notes', visual: 'transfer-phoenix',
         body: `<p><strong>Phoenix</strong> is Dusk's shielded model. Instead of a public balance, you hold <strong>notes</strong>: pieces of value that only you can spend. A Phoenix transfer hides who paid whom and how much.</p>
-<p>Each transfer carries a <strong>zero-knowledge proof</strong> that it follows the rules: the notes exist, they haven't been spent before, and the amounts add up.</p>`,
+<p>Each transfer carries a <strong>zero-knowledge proof</strong> that it follows the rules: the notes being spent exist and belong to the sender, and the amounts add up. The network also checks that no note is ever spent twice.</p>`,
         question: 'If a Phoenix transfer hides the amounts, how does the network know you aren\'t spending DUSK you don\'t have?',
         choices: [
           {id: 'trust', text: 'It trusts your wallet.', why: 'No wallet is trusted blindly. The rules are checked mathematically.'},
@@ -179,7 +179,7 @@ export const levels = [
         body: `<p>Zero-knowledge proofs aren't only for Dusk's own transfers. Developers can use them too, which is what makes privacy-preserving dApps possible on Dusk.</p>
 <ul><li>You write a <strong>circuit</strong> with <code>dusk-plonk</code> describing what must be true.</li>
 <li>The user's device creates a <strong>proof</strong> from their private data.</li>
-<li>Your contract checks it with the <code>abi::verify_plonk</code> host function. Hash functions such as <code>abi::poseidon_hash</code> are designed to be cheap inside circuits.</li></ul>
+<li>Your contract checks it with the <code>abi::verify_plonk</code> host function. Poseidon, the hash behind <code>abi::poseidon_hash</code>, is designed to be cheap inside circuits, so contracts and circuits can agree on the same hashes.</li></ul>
 <p>That covers things like private voting, sealed bids, eligibility checks and secret game moves: the contract enforces the rule, and the private data never goes on-chain.</p>`,
         question: 'A game wants keepers to prove their Duskling\'s power is at least 50 without revealing its stats. How can that work on Dusk?',
         choices: [
@@ -222,7 +222,7 @@ export const levels = [
         choices: [
           {id: 'credential', right: true, text: 'A credential from an issuer the arena trusts, which the keeper can prove they hold.', why: 'Right. The Guild vouches for it, and the keeper proves it.'},
           {id: 'wallet', text: 'Connecting a wallet.', why: 'A wallet shows you control a key. It doesn\'t show that the Guild licensed you.'},
-          {id: 'signed', text: 'Signing the claim with their own key.', why: 'A signature shows who made the claim, not that anyone trustworthy agrees with it.'},
+          {id: 'signed', text: 'Signing the claim with their own key.', why: 'A signature shows which key made the claim, not that anyone trustworthy agrees with it.'},
         ],
       },
       {
@@ -363,13 +363,14 @@ export const levels = [
       },
       {
         id: 'atomic', kind: 'quiz', title: 'Both sides or neither', visual: 'dvp',
-        body: `<p>A trade has two sides: the asset goes to the buyer and the payment goes to the seller. If both happen in one contract call, they succeed or fail together.</p>
-<p>This is called <strong>delivery versus payment</strong>. It removes the risk of one side delivering while the other doesn't.</p>`,
+        body: `<p>A trade has two sides: the asset goes to the buyer and the payment goes to the seller. If both happen in one contract call, and a failure on either side fails the whole call, they succeed or fail together.</p>
+<p>This is called <strong>delivery versus payment</strong>. It removes the risk of one side delivering while the other doesn't.</p>
+<p class="aside">The contract has to treat a failed payment as fatal, for example with <code>expect</code>. If it ignored the error from another contract, the bond could still move.</p>`,
         question: 'A single contract call moves the bond to the buyer and DUSK to the seller. The payment fails. What happens to the bond?',
         choices: [
           {id: 'moved', text: 'The buyer keeps it.', why: 'Then the seller would lose the bond without being paid.'},
-          {id: 'rollback', right: true, text: 'Its transfer is rolled back too, because the whole call is all-or-nothing.', why: 'Right. Either both sides move or neither does.'},
-          {id: 'split', text: 'It\'s split between them.', why: 'Contract calls don\'t split outcomes. They succeed or roll back as a whole.'},
+          {id: 'rollback', right: true, text: 'Its transfer is rolled back too, because the failed payment fails the whole call.', why: 'Right. Either both sides move or neither does.'},
+          {id: 'split', text: 'It\'s split between them.', why: 'Nothing gets split. A call that fails rolls back all of its changes.'},
         ],
       },
       {
@@ -405,7 +406,7 @@ export const levels = [
         question: 'What does a Dusk node do?',
         choices: [
           {id: 'copy', right: true, text: 'Keeps a copy of the chain, checks blocks against the rules and relays messages.', why: 'Right.'},
-          {id: 'wallet', text: 'Stores everyone\'s private keys.', why: 'Keys stay in wallets. Nodes never need them.'},
+          {id: 'wallet', text: 'Stores everyone\'s private keys.', why: 'Your keys stay in your wallet. Nodes never need them.'},
           {id: 'website', text: 'Hosts dApp websites.', why: 'Websites live elsewhere. Nodes keep and check the ledger.'},
         ],
       },
@@ -433,7 +434,7 @@ export const levels = [
       },
       {
         id: 'sortition', kind: 'quiz', title: 'Drawing the committee', visual: 'sortition',
-        body: `<p>For each step of each round, a committee of provisioners is chosen by <strong>deterministic sortition</strong>: a lottery weighted by stake, seeded so that every node computes the same result.</p>
+        body: `<p>For each step of consensus, a committee of provisioners is chosen by <strong>deterministic sortition</strong>: a lottery weighted by stake, seeded so that every node computes the same result.</p>
 <p>More stake means more chances. Nobody picks the committee by hand.</p>`,
         question: 'How are committee members chosen?',
         choices: [
@@ -444,8 +445,8 @@ export const levels = [
       },
       {
         id: 'attestation', kind: 'quiz', title: 'Succinct Attestation', visual: 'steps',
-        body: `<p><strong>Succinct Attestation</strong> is Dusk's consensus protocol. Each round has three steps: a chosen provisioner <strong>proposes</strong> a block, a committee <strong>validates</strong> it, and another committee <strong>ratifies</strong> the result.</p>
-<p>Votes are signed with BLS signatures and combined into one compact attestation. A block with enough stake-weighted votes is attested. It then becomes confirmed and finally <strong>final</strong> as the chain builds on it.</p>`,
+        body: `<p><strong>Succinct Attestation</strong> is Dusk's consensus protocol. Each attempt to add a block, called an <strong>iteration</strong>, has three steps: one chosen provisioner <strong>proposes</strong> a block, a committee <strong>validates</strong> it, and another committee <strong>ratifies</strong> the result. If an attempt fails, a new one starts with fresh committees.</p>
+<p>Votes are signed with BLS signatures and combined into one compact attestation. A block that gets enough stake-weighted votes on the first attempt is attested. As more blocks are built on top of it, it becomes confirmed and then <strong>final</strong>.</p>`,
         question: 'What happens after a block is proposed in Succinct Attestation?',
         choices: [
           {id: 'final', text: 'It\'s final immediately.', why: 'A proposal is only a candidate until the committees vote on it.'},
@@ -455,13 +456,13 @@ export const levels = [
       },
       {
         id: 'faults', kind: 'quiz', title: 'Missing a turn',
-        body: `<p>Provisioners are rewarded for doing their job and penalised for failing it. If a provisioner chosen to propose a block produces nothing, it gets a <strong>soft</strong> penalty: a warning first, then suspension and cut rewards.</p>
-<p>Serious faults, like proposing an invalid block or voting twice, are <strong>hard</strong> faults that cut into the stake itself.</p>`,
+        body: `<p>Provisioners are rewarded for doing their job and penalised for failing it. If a provisioner chosen to propose a block produces nothing, that's a <strong>soft</strong> fault. The first one is only a warning. After that, the provisioner is suspended for a while and part of its stake is <strong>locked</strong>.</p>
+<p>Serious faults, like proposing an invalid block or voting twice, are <strong>hard</strong> faults: the provisioner is suspended and part of its stake is <strong>burned</strong>.</p>`,
         question: 'A provisioner is chosen to propose a block several times and never does. What happens?',
         choices: [
           {id: 'nothing', text: 'Nothing. Missing a turn is free.', why: 'A missed turn costs the network time, so it\'s penalised.'},
-          {id: 'soft', right: true, text: 'After a warning, it\'s suspended for a while and loses rewards.', why: 'Right, that\'s a soft penalty. Hard faults, like invalid blocks, cut the stake itself.'},
-          {id: 'banned', text: 'It\'s banned forever and loses all its stake.', why: 'Missed turns lead to suspension and lost rewards. Cutting the stake is for serious faults.'},
+          {id: 'soft', right: true, text: 'After a warning, it\'s suspended for a while and part of its stake is locked.', why: 'Right, that\'s a soft fault. Hard faults, like invalid blocks, burn part of the stake.'},
+          {id: 'banned', text: 'It\'s banned forever and loses all its stake.', why: 'Missed turns lead to suspension and locked stake. Burning stake is for serious faults.'},
         ],
       },
       {

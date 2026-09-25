@@ -33,12 +33,15 @@ export function genes(dna) {
   const pair = i => Number(digits.slice(i * 2, i * 2 + 2));
   const g = {digits};
   TRAITS.forEach((t, i) => { g[t.key] = pair(i) % t.names.length; });
+  // Moth-born: DNA ending in 99 always hatches with moth wings and antennae.
+  if (digits.endsWith('99')) Object.assign(g, {mothborn: true, wings: 1, crown: 1});
   return g;
 }
 
 export const traitNames = dna => {
   const g = genes(dna);
-  return TRAITS.map(t => ({label: t.label, value: t.names[g[t.key]]}));
+  const list = TRAITS.map(t => ({label: t.label, value: t.names[g[t.key]]}));
+  return g.mothborn ? [...list, {label: 'Rare', value: 'Moth-born ✦'}] : list;
 };
 
 // Body silhouettes, evaluated at pixel centres. dx is measured from the vertical axis.

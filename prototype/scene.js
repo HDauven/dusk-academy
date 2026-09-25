@@ -114,13 +114,15 @@ export function eggSprite(dna) {
   return c;
 }
 
+const dnaOf = x => typeof x === 'string' ? x : x.dna;
+
 export function createScene(canvas, {kind = 'hatchery'} = {}) {
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   const backdrop = kind === 'harbor' ? paintHarbor() : paintHatchery();
   const r = rng(99), twinkles = Array.from({length: 10}, () => [Math.floor(r() * W), Math.floor(r() * 36), r() * 6]);
-  let state = {creatures: [], nests: 0, solo: null, keeper: null, companion: null, egg: false, gear: [], lanterns: 0, lit: [], flash: null, wobbleAt: -Infinity};
+  let state = {creatures: [], nests: 0, moths: 0, solo: null, keeper: null, companion: null, egg: false, gear: [], lanterns: 0, lit: [], flash: null, wobbleAt: -Infinity};
   let born = new Map(), sparks = [], running = false;
   const burst = (x, y, n = 10) => { for (let k = 0; k < n; k++) sparks.push({x, y, vx: Math.cos(k * 2.4) * 0.9, vy: -Math.abs(Math.sin(k * 2.4)) * 1.2 - 0.3, life: 30}); };
 
@@ -159,6 +161,14 @@ export function createScene(canvas, {kind = 'hatchery'} = {}) {
     if (age < hatchAt + 60 && !sparks.some(s => s.from === i)) burst(x, ground - 10 * scale);
     const jump = age < hatchAt + 320 ? Math.round(Math.sin((age - hatchAt) / 320 * Math.PI) * 6) : 0;
     ctx.drawImage(face, x - w / 2, top - jump * scale, w, w);
+  }
+
+  // A small pale moth drifting over the hatchery: V-shaped wings around a dark body.
+  const MOTH = [['W.....W', 'WW.B.WW', '.WWBWW.', '...B...'], ['.......', 'WW.B.WW', 'WWWBWWW', '.W.B.W.']];
+  function drawMoth(t, k) {
+    const x = Math.round(118 + Math.sin(t / 1700 + k * 2.1) * 52), y = Math.round(30 + Math.sin(t / 650 + k * 1.3) * 8 + k * 7);
+    const frame = MOTH[!reduced && Math.floor(t / 150 + k) % 2 ? 1 : 0];
+    frame.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === '.') return; ctx.fillStyle = ch === 'W' ? '#e9e1f6' : '#3b2e4f'; ctx.fillRect(x - 3 + c, y - 2 + r, 1, 1); }));
   }
 
   function drawLantern(x, y, lit, t, i) {
@@ -225,7 +235,8 @@ export function createScene(canvas, {kind = 'hatchery'} = {}) {
     if (state.solo) { drawNest(118); drawCreature(state.solo, 118, t, 0, {scale: 2, gear: state.gear}); return; }
     const count = Math.max(state.nests, state.creatures.length), xs = slots(Math.min(count, 5));
     const shown = state.creatures.slice(-5);
-    xs.forEach((x, i) => { drawNest(x); if (shown[i]) drawCreature(shown[i], x, t, i + Math.max(0, state.creatures.length - 5)); });
+    xs.forEach((x, i) => { drawNest(x); if (shown[i]) drawCreature(dnaOf(shown[i]), x, t, i + Math.max(0, state.creatures.length - 5)); });
+    for (let k = 0; k < state.moths; k++) drawMoth(t, k);
   }
 
   function render(t) {
@@ -245,11 +256,11 @@ export function createScene(canvas, {kind = 'hatchery'} = {}) {
     show(next = {}) {
       const now = performance.now(), {animate = true} = next;
       const merged = {...state, ...next};
-      const creatures = merged.creatures ?? [], map = new Map();
+      const creatures = (merged.creatures ?? []).map(dnaOf), map = new Map(), old = state.creatures.map(dnaOf);
       creatures.forEach((dna, i) => {
         const key = i + ':' + dna;
         if (born.has(key)) map.set(key, born.get(key));
-        else if (animate && state.creatures[i] !== dna) map.set(key, now);
+        else if (animate && old[i] !== dna) map.set(key, now);
       });
       if (merged.solo) {
         const key = '0:' + merged.solo;
@@ -263,6 +274,12 @@ export function createScene(canvas, {kind = 'hatchery'} = {}) {
       if (animate && next.lit) { const i = next.lit.findIndex((on, k) => on && !state.lit[k]); if (i >= 0) { merged.flash = {i, at: now}; merged.wobbleAt = now; } }
       state = merged;
       if (reduced) render(now);
+    },
+    // Where the visible hatchery creatures stand, as percentages of the canvas, for HTML labels.
+    layout() {
+      if (kind !== 'hatchery' || state.solo) return [];
+      const shown = state.creatures.slice(-5), xs = slots(Math.min(Math.max(state.nests, state.creatures.length), 5));
+      return shown.map((c, i) => ({creature: c, index: i + Math.max(0, state.creatures.length - 5), x: xs[i] / W * 100, y: (GROUND - 34) / H * 100}));
     },
   };
 }

@@ -1,4 +1,6 @@
-import {chapters, deploy, friendly, seedFromName, reference, pad16, WICK} from './lesson1.js';
+import {lessons, chapters, lessonCode} from './course.js';
+import {deploy, friendly, seedFromName, pad16, WICK, KEEPERS} from './contract.js';
+import {Rejection} from '../academy/rust-runtime.js';
 import {createScene} from './scene.js';
 import {drawCreature, genes, traitNames, TRAITS, sprite, GENE_COLORS} from './creature.js';
 import {load, store, favicon, loadKeeper, saveKeeper} from './store.js';
@@ -16,13 +18,15 @@ drawCreature($('#wick-face'), WICK, {scale: 2});
 
 let at = 0;
 const chapter = () => chapters[at];
+const lessonOf = c => lessons[c.lesson];
+const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+const codeHtml = s => escapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 
 // ---- Editor ---------------------------------------------------------------------------------
 const code = $('#code');
-const escapeHtml = s => s.replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
-const TOKEN = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(#!?\[[^\]\n]*\])|\b(pub|fn|impl|mod|struct|let|mut|self|Self|const|use|extern|crate|as|return|if|else|for|in|while|loop|match|true|false)\b|\b(u8|u16|u32|u64|u128|usize|bool|Vec|Option|Result|String)\b|\b(0x[\da-fA-F_]+(?:u\d+)?|\d[\d_]*(?:u\d+)?)\b|\b([a-z_]\w*)(?=!)|\b([a-z_]\w*)(?=\s*\()/g;
+const TOKEN = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(#!?\[[^\]\n]*\])|\b(pub|fn|impl|mod|struct|let|mut|self|Self|const|use|extern|crate|as|return|if|else|for|in|while|loop|match|true|false|Some|None)\b|\b(u8|u16|u32|u64|u128|usize|bool|Vec|Option|Result|String|BlsPublicKey|ContractId)\b|\b(0x[\da-fA-F_]+(?:u\d+)?|\d[\d_]*(?:u\d+)?)\b|\b([a-z_]\w*)(?=!)|\b([a-z_]\w*)(?=\s*(?:\(|::<))/g;
 const CLASSES = [null, 't-com', 't-str', 't-attr', 't-kw', 't-ty', 't-num', 't-mac', 't-fn'];
-export function highlight(source) {
+function highlight(source) {
   let html = '', end = 0;
   for (const m of source.matchAll(TOKEN)) {
     const cls = CLASSES[m.findIndex((g, i) => i > 0 && g !== undefined)];
@@ -65,14 +69,35 @@ code.addEventListener('keydown', e => {
   }
 });
 
+// ---- Scene ----------------------------------------------------------------------------------
+function paintScene(sc, animate) {
+  scene.show({creatures: sc.creatures ?? [], nests: sc.nests ?? 0, moths: sc.moths ?? 0, solo: null, gear: [], animate});
+  const n = sc.creatures?.length ?? 0;
+  $('#scene-tag').textContent = n ? `Hatchery · ${n} Duskling${n === 1 ? '' : 's'}` : sc.nests ? 'Hatchery · nests ready' : '';
+  renderTags();
+}
+// Small labels over each Duskling: keeper, level and record, pending approval.
+function renderTags() {
+  $('#scene-tags').innerHTML = scene.layout().filter(p => typeof p.creature === 'object' && p.creature.owner).map(({creature: d, x, y}, i) => {
+    const who = KEEPERS[d.owner] ?? {name: d.owner, tone: 'rival'};
+    const detail = d.wins !== undefined && d.wins !== null ? `Lv${d.level} ${d.wins}–${d.losses}` : d.approved ? `→ ${KEEPERS[d.approved]?.name ?? d.approved}` : '';
+    return `<span class="tag ${who.tone}" style="left:${x}%;top:${y - (i % 2) * 7}%">${who.name}${detail ? `<small>${detail}</small>` : ''}</span>`;
+  }).join('');
+}
+
 // ---- Chapter rendering ----------------------------------------------------------------------
+const done = c => c.kind === 'code' ? !!save.passed[c.id] : c.kind === 'intro' ? true : c.playground ? !!save.played?.[c.id] : !!save.name;
+
 function renderProgress() {
-  const done = c => c.kind === 'code' ? !!save.passed[c.id] : c.kind === 'intro' ? true : !!save.name;
-  $('#pips').innerHTML = chapters.map((c, i) => `<li class="${done(c) ? 'done' : ''} ${i === at ? 'here' : ''}"></li>`).join('');
-  $('#count').textContent = `${at + 1} / ${chapters.length}`;
-  $('#menu-list').innerHTML = chapters.map((c, i) => {
-    const done = c.kind === 'code' ? !!save.passed[c.id] : false;
-    return `<li class="${done ? 'done' : ''} ${i === at ? 'here' : ''}"><button data-go="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span>${c.title}<span class="s">${c.kind === 'code' ? (done ? '✓ passed' : 'code') : c.kind === 'intro' ? 'story' : 'finale'}</span></button></li>`;
+  const c = chapter(), list = chapters.filter(x => x.lesson === c.lesson), l = lessonOf(c);
+  $('#pips').innerHTML = list.map(x => `<li class="${done(x) ? 'done' : ''} ${x === c ? 'here' : ''}"></li>`).join('');
+  $('#count').textContent = `${list.indexOf(c) + 1} / ${list.length}`;
+  $('#lesson-kicker').textContent = `Lesson ${l.n}`;
+  $('#lesson-title').textContent = l.title;
+  $('#menu-list').innerHTML = lessons.map((lesson, i) => {
+    const code = lessonCode(i), passed = code.filter(x => save.passed[x.id]).length;
+    return `<li class="menu-level ${passed === code.length ? 'done' : ''}"><strong>Lesson ${lesson.n} · ${lesson.title}</strong><span>${passed} / ${code.length} checks passed</span></li>`
+      + chapters.map((x, k) => x.lesson !== i ? '' : `<li class="${x.kind === 'code' && done(x) ? 'done' : ''} ${k === at ? 'here' : ''}"><button data-go="${k}"><span class="n">${x.kind === 'code' ? '◆' : x.kind === 'intro' ? '▸' : '★'}</span>${x.title}<span class="s">${x.kind === 'code' ? (done(x) ? '✓ passed' : 'code') : x.kind === 'intro' ? 'story' : 'finale'}</span></button></li>`).join('');
   }).join('');
 }
 
@@ -81,19 +106,16 @@ function setNext() {
   $('#next').hidden = last;
   $('#next').disabled = !ok;
   $('#next').classList.toggle('ready', ok && c.kind === 'code');
+  $('#next').innerHTML = c.kind === 'finale' && !last ? `Lesson ${lessonOf(c).n + 1} <span aria-hidden="true">→</span>` : 'Next <span aria-hidden="true">→</span>';
   $('#prev').disabled = at === 0;
-}
-
-function sceneTag(creatures, nests) {
-  $('#scene-tag').textContent = creatures ? `Hatchery · ${creatures} Duskling${creatures === 1 ? '' : 's'}` : nests ? 'Hatchery · nests ready' : '';
 }
 
 function show(i, {focus = true} = {}) {
   at = Math.max(0, Math.min(chapters.length - 1, i));
   save.at = at; persist();
-  const c = chapter();
+  const c = chapter(), l = lessonOf(c), list = chapters.filter(x => x.lesson === c.lesson);
   history.replaceState(null, '', '#' + c.id);
-  $('#chapter-kicker').textContent = `Chapter ${at + 1}`;
+  $('#chapter-kicker').textContent = `Lesson ${l.n} · chapter ${list.indexOf(c) + 1}`;
   $('#chapter-title').textContent = c.title;
   $('#wick').hidden = !c.wick;
   $('#wick-line').innerHTML = c.wick ?? '';
@@ -101,15 +123,12 @@ function show(i, {focus = true} = {}) {
   $('#tasks').hidden = !c.tasks;
   $('#task-list').innerHTML = (c.tasks ?? []).map(t => `<li>${t}</li>`).join('');
   $('#tasks .hint')?.remove();
-  $('#code-pane').hidden = c.kind !== 'code';
-  $('#lab-pane').hidden = c.kind !== 'intro';
-  $('#finale-pane').hidden = c.kind !== 'finale';
+  const pane = c.kind === 'code' ? 'code' : c.id === 'dusk-falls' ? 'lab' : c.kind === 'intro' ? 'overview' : c.playground ? 'play' : 'finale';
+  for (const p of ['code', 'lab', 'overview', 'play', 'finale']) $(`#${p}-pane`).hidden = p !== pane;
   $('#toast').textContent = '';
   const passedScene = c.kind === 'code' && save.passed[c.id] ? safeScene(c, save.passed[c.id]) : null;
-  const sc = passedScene ?? c.scene ?? defaultScene(c);
-  scene.show({creatures: sc.creatures ?? [], nests: sc.nests ?? 0, solo: null, animate: false});
-  sceneTag(sc.creatures?.length ?? 0, sc.nests);
-  if (c.kind === 'code') {
+  if (pane !== 'finale' && pane !== 'play') paintScene(passedScene ?? c.scene ?? defaultScene(c), false);
+  if (pane === 'code') {
     code.value = save.drafts[c.id] ?? c.start;
     paintEditor(); markError(null);
     code.scrollTop = 0;
@@ -117,8 +136,16 @@ function show(i, {focus = true} = {}) {
       ? '<p class="ok">✓ You passed this chapter. Edit and check again any time.</p>'
       : '<p class="muted">Press <kbd>Check</kbd> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>) to deploy and test your contract.</p>';
   }
-  if (c.kind === 'intro') setDna($('#dna-input').value || '8356281049284737');
-  if (c.kind === 'finale') prepareFinale();
+  if (pane === 'lab') setDna($('#dna-input').value || '8356281049284737');
+  if (pane === 'overview') {
+    $('#overview-kicker').textContent = `Lesson ${l.n}`;
+    $('#overview-title').textContent = l.title;
+    $('#overview-learn').innerHTML = (c.learn ?? []).map(x => `<li>${x}</li>`).join('');
+    const code = lessonCode(c.lesson), passed = code.filter(x => save.passed[x.id]).length;
+    $('#overview-count').textContent = `${code.length} code chapters · ${passed} passed. Each one is a single small edit.`;
+  }
+  if (pane === 'play') preparePlayground(c);
+  if (pane === 'finale') prepareFinale();
   renderProgress(); setNext();
   $('#chapter').scrollTop = 0;
   if (focus) $('#chapter').focus({preventScroll: true});
@@ -137,15 +164,14 @@ function check() {
   try { result = c.check(source); }
   catch (error) {
     const f = friendly(error);
-    out.innerHTML = `<p class="bad">✗ ${escapeHtml(f.text).replace(/`([^`]+)`/g, '<code>$1</code>')}</p><p class="muted">Stuck? Try the Hint, or Show answer to compare.</p>`;
+    out.innerHTML = `<p class="bad">✗ ${codeHtml(f.text)}</p><p class="muted">Stuck? Try the Hint, or Show answer to compare.</p>`;
     markError(f.line);
     $('#toast').textContent = '';
     return;
   }
   out.innerHTML = result.log.map(l => `<p class="log"><span class="ok">✓</span> ${escapeHtml(l)}</p>`).join('') + `<p class="win">★ ${escapeHtml(result.win)}</p>`;
   save.passed[c.id] = source; save.drafts[c.id] = source; persist();
-  scene.show({creatures: result.scene.creatures ?? [], nests: result.scene.nests ?? 0, solo: null, animate: true});
-  sceneTag(result.scene.creatures?.length ?? 0, result.scene.nests);
+  paintScene(result.scene, true);
   $('#toast').textContent = 'Chapter complete!';
   renderProgress(); setNext();
   $('#next').focus({preventScroll: true});
@@ -186,6 +212,8 @@ $('#use-answer').addEventListener('click', () => {
 // ---- Navigation -----------------------------------------------------------------------------
 $('#next').addEventListener('click', () => show(at + 1));
 $('#prev').addEventListener('click', () => show(at - 1));
+$('#overview-start').addEventListener('click', () => show(at + 1));
+$('#to-next-lesson').addEventListener('click', () => show(at + 1));
 $('#menu-button').addEventListener('click', () => { renderProgress(); $('#menu').showModal(); });
 $('#menu-list').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) { $('#menu').close(); show(Number(b.dataset.go)); } });
 $('#reset').addEventListener('click', () => { save = structuredClone(DEFAULTS); persist(); $('#menu').close(); show(0); });
@@ -193,7 +221,7 @@ $('#runtime-info').addEventListener('mouseenter', () => { $('#runtime-note').hid
 $('#runtime-info').addEventListener('mouseleave', () => { $('#runtime-note').hidden = true; });
 $('#runtime-info').addEventListener('click', () => { $('#runtime-note').hidden = !$('#runtime-note').hidden; });
 
-// ---- DNA lab (chapter 1) --------------------------------------------------------------------
+// ---- DNA lab (lesson 1, chapter 1) ----------------------------------------------------------
 function dnaHtml(digits) {
   return [...Array(8)].map((_, i) => `<b style="color:${GENE_COLORS[i]}">${digits.slice(i * 2, i * 2 + 2)}</b>`).join('');
 }
@@ -210,7 +238,7 @@ $('#shuffle').addEventListener('click', () => {
   setDna([...r].map(n => n % 10).join(''));
 });
 
-// ---- Finale ---------------------------------------------------------------------------------
+// ---- Lesson 1 finale: hatch your own Duskling ------------------------------------------------
 function prepareFinale() {
   const own = save.passed.events;
   $('#hatch-source').textContent = own
@@ -219,13 +247,13 @@ function prepareFinale() {
   const name = save.name || loadKeeper().name;
   $('#name-input').value = name;
   if (save.name) hatch(save.name, false);
-  else { $('#card').hidden = true; $('#complete').hidden = true; }
+  else { scene.show({creatures: [], nests: 1, solo: null, animate: false}); renderTags(); $('#card').hidden = true; $('#complete').hidden = true; }
 }
 function hatch(name, animate = true) {
   const seed = seedFromName(name);
   let dna;
   try {
-    const c = deploy(save.passed.events ?? reference);
+    const c = deploy(save.passed.events ?? lessons[0].reference);
     c.call('hatch', seed);
     const e = c.events.at(-1);
     dna = pad16(e ? e.data[1] : c.dusklings().at(-1).dna);
@@ -237,7 +265,8 @@ function hatch(name, animate = true) {
   save.name = name; save.duskling = {name, dna}; persist();
   saveKeeper({...keeper, name, dna});
   scene.show({solo: dna, gear: keeper.gear, animate});
-  sceneTag(1, 1);
+  renderTags();
+  $('#scene-tag').textContent = 'Hatchery · 1 Duskling';
   const reveal = () => {
     drawCreature($('#card-creature'), dna, {scale: 7, gear: keeper.gear});
     $('#card-name').textContent = name;
@@ -263,6 +292,47 @@ $('#download').addEventListener('click', () => {
   g.fillStyle = '#a2a4cf'; g.font = '13px Manrope, sans-serif'; g.fillText('Hatched on Dusk Academy', 40, 118);
   const a = document.createElement('a'); a.download = `${$('#card-name').textContent || 'duskling'}.png`; a.href = c.toDataURL('image/png'); a.click();
 });
+
+// ---- Lessons 2–5 finales: play with your own contract ---------------------------------------
+let play = null;
+function preparePlayground(c) {
+  const lesson = lessonOf(c), code = lessonCode(c.lesson), last = code.at(-1), own = save.passed[last.id];
+  const keeper = loadKeeper();
+  $('#play-source').textContent = own ? `Running the contract you finished in “${last.title}”.` : `You haven’t passed “${last.title}” yet, so this runs the reference contract.`;
+  $('#play-next').hidden = at === chapters.length - 1;
+  $('#play-next').innerHTML = `Lesson ${lesson.n + 1} <span aria-hidden="true">→</span>`;
+  const start = () => {
+    const contract = deploy(own ?? lesson.reference);
+    try { c.playground.setup?.(contract, keeper); } catch (error) { return log('bad', 'Setup failed: ' + friendly(error).text); }
+    play = {c, contract, keeper};
+    $('#play-log').innerHTML = '<p class="muted">Pick an action. Every call runs your contract. Panics roll back, just like on chain.</p>';
+    repaint(false);
+  };
+  $('#play-actions').innerHTML = c.playground.actions.map((a, i) => `<button class="ghost" data-act="${i}">${a.label}</button>`).join('');
+  start();
+  $('#play-reset').onclick = start;
+}
+function log(kind, text) {
+  $('#play-log').insertAdjacentHTML('beforeend', `<p class="${kind}">${kind === 'ok' ? '✓' : kind === 'refused' ? '↺' : '✗'} ${codeHtml(text)}</p>`);
+  $('#play-log').scrollTop = $('#play-log').scrollHeight;
+}
+function repaint(animate) {
+  const ds = play.contract.dusklings();
+  paintScene({nests: 5, moths: play.c.playground.moths ?? (play.c.lesson === 2 ? 3 : 0), creatures: ds.map(d => ({dna: pad16(d.dna), owner: d.owner, level: d.level, wins: d.wins, losses: d.losses, approved: d.approved}))}, animate);
+}
+$('#play-actions').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || !play) return;
+  const action = play.c.playground.actions[Number(b.dataset.act)];
+  try { log('ok', action.run(play.contract, play.keeper)); }
+  catch (error) {
+    if (error instanceof Rejection) log('refused', `Refused: “${error.message}”. The call rolled back.`);
+    else log('bad', friendly(error).text);
+  }
+  save.played = {...save.played, [play.c.id]: true}; persist();
+  repaint(true); renderProgress();
+});
+$('#play-next').addEventListener('click', () => show(at + 1));
 
 // ---- Start ----------------------------------------------------------------------------------
 const fromHash = chapters.findIndex(c => '#' + c.id === location.hash);

@@ -56,7 +56,7 @@ export function parseRust(source, options={}) {
     if(take('(')) { const args=[];if(!take(')')){do{args.push(type());}while(take(',')&&peek()!==')');expect(')');}types--;return '('+args.join(',')+')'; }
     let t=name();
     if(take('<')){const args=[];do{args.push(type());}while(take(','));expect('>');t+='<'+args.join(',')+'>';}
-    if(!['u64','u32','usize','u8','bool','Self','ContractId','BlsScalar','Composer','Constraint','Error','_'].includes(t)&&!structs.has(t)&&!/^Vec<|^Option<|^Result</.test(t))fail(`Type ${t} is outside the lesson subset.`);
+    if(!['u64','u32','usize','u8','bool','Self','ContractId','BlsPublicKey','BlsScalar','Composer','Constraint','Error','_'].includes(t)&&!structs.has(t)&&!/^Vec<|^Option<|^Result</.test(t))fail(`Type ${t} is outside the lesson subset.`);
     types--;return t;
   };
   function args(close) { const list=[];if(!take(close)){do{list.push(expr());}while(take(',')&&peek()!==close);expect(close);}return list; }
@@ -129,7 +129,7 @@ export function parseRust(source, options={}) {
       if(take('extern')){expect('crate');expect('alloc');expect(';');continue;}
       if(take('use')) {
         const parts=[];while(!take(';')){if(peek()==='<end>')fail('End the import.');parts.push(tokens[p++].text);}
-        if(!['alloc::vec::Vec','dusk_core::abi','dusk_core::abi::{self,ContractId}','dusk_core::abi::{ContractId,self}','dusk_core::transfer::TRANSFER_CONTRACT','dusk_plonk::prelude::*'].includes(parts.join('')))fail('Only the supplied lesson imports are supported.');continue;
+        if(!['alloc::vec::Vec','dusk_core::abi','dusk_core::abi::{self,ContractId}','dusk_core::signatures::bls::PublicKeyasBlsPublicKey','dusk_core::abi::{ContractId,self}','dusk_core::transfer::TRANSFER_CONTRACT','dusk_plonk::prelude::*'].includes(parts.join('')))fail('Only the supplied lesson imports are supported.');continue;
       }
       const pub=!!take('pub');
       if(take('mod')){expect(options.module??'registry');expect('{');declarations('}');expect('}');continue;}
@@ -172,6 +172,7 @@ export function createRuntime(source, hosts={}) {
     else if(['u64','usize','u32','u8'].includes(t)){uint(v);if(t!=='u64'&&v>(1n<<BigInt(t==='u8'?8:32))-1n)unsupported('Value exceeds '+t+'.');}
     else if(t==='bool')bool(v);
     else if(t==='ContractId'){if(v?.kind!=='id')unsupported('Expected a ContractId.');}
+    else if(t==='BlsPublicKey'){if(v?.kind!=='key')unsupported('Expected a BlsPublicKey.');}
     else if(t==='BlsScalar'){if(v?.kind!=='scalar')unsupported('Expected a scalar field value.');}
     else if(t.startsWith('&'))validate(v,t.replace(/^&(?:mut )?/,''),owner);
     else if(t.startsWith('Option<')){if(v!==null){if(v?.kind!=='some')unsupported('Expected Some or None.');validate(v.value,t.slice(7,-1),owner);}}
@@ -209,7 +210,7 @@ export function createRuntime(source, hosts={}) {
   }
   function method(obj,id,args,mutable,env) {
     if(obj?.kind!=='struct'&&obj?.kind!=='host') {
-      const arity={len:0,is_empty:0,iter:0,iter_mut:0,get:1,push:1,remove:1,swap_remove:1,clear:0,position:1,find:1,map:1,sum:0,expect:1,unwrap:0,unwrap_or:1,is_some:0,is_none:0,is_ok:0,is_err:0,filter:1,checked_add:1,wrapping_add:1,wrapping_mul:1,pow:1};
+      const arity={len:0,is_empty:0,iter:0,iter_mut:0,get:1,push:1,remove:1,swap_remove:1,clear:0,position:1,find:1,map:1,sum:0,expect:1,unwrap:0,unwrap_or:1,is_some:0,is_none:0,is_ok:0,is_err:0,filter:1,count:0,any:1,checked_add:1,wrapping_add:1,wrapping_mul:1,pow:1};
       if(!Object.hasOwn(arity,id)||args.length!==arity[id])unsupported('Arguments do not match '+id+'.');
     }
     if(obj?.kind==='struct')return invoke(obj,id,args,mutable);
@@ -232,6 +233,9 @@ export function createRuntime(source, hosts={}) {
       if(id==='position'||id==='find'){for(let i=0;i<obj.items.length;i++){tick();if(bool(closure(args[0],[obj.items[i]])))return option(id==='position'?BigInt(i):obj.items[i]);}return null;}
       if(id==='map')return {kind:'iterator',items:obj.items.map(item=>{tick();return closure(args[0],[item]);})};
       if(id==='sum')return obj.items.reduce((n,item)=>arithmetic('+',n,item),0n);
+      if(id==='filter')return {kind:'iterator',items:obj.items.filter(item=>{tick();return bool(closure(args[0],[item]));})};
+      if(id==='count')return BigInt(obj.items.length);
+      if(id==='any'){for(const item of obj.items){tick();if(bool(closure(args[0],[item])))return true;}return false;}
     }
     if(obj===null||['some','ok','err'].includes(obj?.kind)) {
       const present=obj!==null&&obj.kind!=='err';
@@ -317,7 +321,7 @@ export function createRuntime(source, hosts={}) {
   function statements(body,env) {
     for(const s of body) {
       tick();if(!env.owner)env.owner=env.parent?.owner;
-      if(s.kind==='let'){const v=value(s.value,env);if(s.declared)validate(v,s.declared,env.owner);if(s.id!=='_')env.vars.set(s.id,{value:v,mutable:s.mut});}
+      if(s.kind==='let'){const v=value(s.value,env);if(s.declared)validate(v,s.declared,env.owner);if(s.id!=='_')env.vars.set(s.id,{value:v,mutable:s.mut||(s.value.kind==='unary'&&s.value.op==='&'&&s.value.mut)});}
       else if(s.kind==='assign'){const ref=reference(s.left,env),v=value(s.value,env);ref.set(s.op==='='?v:arithmetic(s.op[0],ref.get(),v));}
       else if(s.kind==='return')throw {control:'return',value:value(s.value,env)};
       else if(s.kind==='tail')return value(s.value,env);

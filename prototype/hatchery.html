@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c0d1d">
-  <title>The Hatchery | Dusklings</title>
+  <title>The Hatchery | Dusk Academy</title>
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
 </head>
@@ -12,7 +12,7 @@
   <div class="app">
     <header class="topbar">
       <a class="brand" href="./" aria-label="Dusk Academy home">DUSK<span>ACADEMY</span></a>
-      <button class="lesson-button" id="menu-button" aria-haspopup="dialog"><span class="kicker">Lesson 1</span> The Hatchery <span aria-hidden="true">▾</span></button>
+      <button class="lesson-button" id="menu-button" aria-haspopup="dialog"><span class="kicker" id="lesson-kicker">Lesson 1</span> <span id="lesson-title">The Hatchery</span> <span aria-hidden="true">▾</span></button>
       <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="count" aria-live="polite">1 / 14</span></div>
     </header>
 
@@ -20,6 +20,7 @@
       <section class="left">
         <div class="scene-wrap">
           <canvas id="scene" aria-label="The hatchery at dusk"></canvas>
+          <div class="scene-tags" id="scene-tags" aria-hidden="true"></div>
           <p class="scene-tag" id="scene-tag"></p>
         </div>
         <article class="chapter" id="chapter" tabindex="-1">
@@ -61,6 +62,28 @@
           <button class="ghost" id="shuffle">Shuffle DNA</button>
         </div>
 
+        <div class="pane overview" id="overview-pane" hidden>
+          <div class="panel">
+            <p class="kicker" id="overview-kicker">Lesson 2</p>
+            <h2 id="overview-title"></h2>
+            <p class="muted">In this lesson</p>
+            <ul class="learn" id="overview-learn"></ul>
+            <p class="muted" id="overview-count"></p>
+          </div>
+          <button class="primary" id="overview-start">Start the lesson <span aria-hidden="true">→</span></button>
+        </div>
+
+        <div class="pane play" id="play-pane" hidden>
+          <div class="panel">
+            <p class="kicker">Playground</p>
+            <h2>Your contract, live</h2>
+            <p class="muted" id="play-source"></p>
+            <div class="play-actions" id="play-actions"></div>
+          </div>
+          <div class="console play-log" id="play-log" role="status" aria-live="polite"></div>
+          <div class="row"><button class="ghost small" id="play-reset">Start over</button><button class="primary" id="play-next" hidden></button></div>
+        </div>
+
         <div class="pane finale" id="finale-pane" hidden>
           <form id="hatch-form" class="hatch-form">
             <label for="name-input">Name your Duskling</label>
@@ -80,7 +103,7 @@
           <div class="complete" id="complete" hidden>
             <p class="kicker">Lesson 1 complete</p>
             <ul class="skills" id="skills"></ul>
-            <div class="row"><button class="ghost" id="download">Save card</button><button class="primary" disabled>Lesson 2 · Keepers <small>soon</small></button></div>
+            <div class="row"><button class="ghost" id="download">Save card</button><button class="primary" id="to-next-lesson">Lesson 2 · Keepers <span aria-hidden="true">→</span></button></div>
           </div>
         </div>
       </section>
@@ -95,7 +118,7 @@
 
   <dialog id="menu" aria-labelledby="menu-title">
     <form method="dialog"><button class="close" aria-label="Close">×</button></form>
-    <h2 id="menu-title">Lesson 1 · The Hatchery</h2>
+    <h2 id="menu-title">Contracts · The Hatchery</h2>
     <ol id="menu-list"></ol>
     <button class="ghost small" id="reset">Reset progress</button>
   </dialog>
