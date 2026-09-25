@@ -21,7 +21,6 @@ code, kbd { font-family: var(--mono); }
 /* Top bar */
 .topbar { display: flex; align-items: center; gap: 20px; padding: 0 20px; border-bottom: 2px solid var(--line); background: #0e1024; }
 .brand { font-family: var(--pixel); font-size: 20px; letter-spacing: .12em; color: var(--accent); text-decoration: none; }
-.brand span { font-size: 10px; letter-spacing: .3em; color: var(--muted); margin-left: 10px; }
 .lesson-button { background: none; border: 0; padding: 6px 8px; font-weight: 700; cursor: pointer; border-radius: 4px; }
 .lesson-button:hover { background: var(--panel-2); }
 .kicker { font-family: var(--pixel); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0; }

@@ -59,7 +59,7 @@ function hatchLab(c, ctx) {
       log.innerHTML = `<p class="ok">✓ seed for “${ctx.codeHtml(who)}”: ${s.value}n</p>
         <p class="log">contractId: ${call.contractId.slice(0, 18)}…</p><p class="log">fnName: "${call.fnName}"</p><p class="log">fnArgs: ${call.fnArgs}</p>
         <p class="log">privacy: "${call.privacy}" · amount: "${call.amount}" · deposit: "${call.deposit}"</p>
-        <p class="refused">A wallet would now show this to the keeper, ask for approval, then sign and send it. The academy stops here: nothing was sent.</p>`;
+        <p class="refused">A wallet would now show this to the keeper, ask for approval, then sign and send it. This page stops here: nothing was sent.</p>`;
       ctx.played();
     } catch (error) { if (error.name !== 'AbortError') log.innerHTML = `<p class="bad">✗ ${ctx.codeHtml(error.message)}</p>`; }
   };

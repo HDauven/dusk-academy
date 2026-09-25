@@ -271,7 +271,7 @@ dusklings.push({ id, dna, owner: await readOwner(dusk, id), exact: Number.isSafe
         id: 'web-intro', kind: 'intro', title: 'From reading to writing',
         wick: `Reading is free. Hatching changes the Hatchery, and that means a transaction the keeper signs.`,
         body: `<p>A dApp never signs anything itself. It <strong>prepares</strong> a contract call: which contract, which function, the encoded arguments and the options. Then it hands that to the keeper's <strong>wallet</strong>, which asks the keeper to approve, signs and sends it.</p>
-<p>The academy has no wallet and sends nothing. You'll prepare calls and look at exactly what a wallet would be asked to sign.</p>`,
+<p>This course has no wallet and sends nothing. You'll prepare calls and look at exactly what a wallet would be asked to sign.</p>`,
         learn: ['<code>prepareContractCall</code>', 'Public vs. shielded calls', 'BigInt hashing in JavaScript', 'Exact arguments with <code>JSON.rawJSON</code>', 'Calls with several arguments'],
       },
       {
@@ -295,7 +295,7 @@ dusklings.push({ id, dna, owner: await readOwner(dusk, id), exact: Number.isSafe
       },
       {
         id: 'seed-name', kind: 'code', title: 'A seed from a name',
-        body: `<p>The academy turns your Duskling's name into its seed with <strong>FNV-1a</strong>, a small, well-known hash. You can do the same in the app, so the page knows the seed before anyone hatches.</p>
+        body: `<p>This site turns your Duskling's name into its seed with <strong>FNV-1a</strong>, a small, well-known hash. You can do the same in the app, so the page knows the seed before anyone hatches.</p>
 <p>For each byte: XOR it into the hash (<code>^=</code>), multiply by the FNV prime, and keep 64 bits by masking (<code>&amp; 0xffffffffffffffffn</code>). The <code>n</code> suffix makes a BigInt, so nothing rounds.</p>`,
         tasks: ['Inside the loop in <code>seedFromName</code>, add <code>hash ^= BigInt(byte);</code>', 'Then <code>hash = (hash * 0x100000001b3n) &amp; 0xffffffffffffffffn;</code>'],
         hint: `<pre><code>hash ^= BigInt(byte);
@@ -344,7 +344,7 @@ hash = (hash * 0x100000001b3n) &amp; 0xffffffffffffffffn;</code></pre>`,
       {
         id: 'hatch-lab', kind: 'finale', title: 'Your hatch request',
         wick: `Here's what your Almanac would hand a wallet if you asked it to hatch your Duskling.`,
-        body: `<p>This is your own <code>seedFromName</code> and <code>prepareHatch</code> at work. A wallet would show this request, ask you to approve it, then sign and send it. The academy stops here: nothing is sent.</p>
+        body: `<p>This is your own <code>seedFromName</code> and <code>prepareHatch</code> at work. A wallet would show this request, ask you to approve it, then sign and send it. This page stops here: nothing is sent.</p>
 <p class="aside">In this practice Hatchery you already keep two Dusklings. A keeper who has one can't hatch another, so the contract would refuse this call.</p>`,
         lab: 'hatch',
       },

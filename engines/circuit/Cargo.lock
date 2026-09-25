@@ -116,17 +116,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dusk-academy-circuit"
-version = "0.2.0"
-dependencies = [
- "dusk-bytes",
- "dusk-plonk",
- "rand_chacha",
- "rand_core",
- "serde_json",
-]
-
-[[package]]
 name = "dusk-bls12_381"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -185,6 +174,17 @@ dependencies = [
  "msgpacker",
  "rand_core",
  "sha2",
+]
+
+[[package]]
+name = "dusklings-circuit"
+version = "0.2.0"
+dependencies = [
+ "dusk-bytes",
+ "dusk-plonk",
+ "rand_chacha",
+ "rand_core",
+ "serde_json",
 ]
 
 [[package]]

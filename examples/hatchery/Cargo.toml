@@ -1,4 +1,4 @@
-# The Hatchery contract from the Dusk Academy contract lessons, as a real Dusk Forge crate.
+# The Hatchery contract from the Dusklings contract lessons, as a real Dusk Forge crate.
 [package]
 name = "dusk-hatchery"
 version = "0.1.0"

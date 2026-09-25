@@ -1,8 +1,8 @@
-# Dusk Academy
+# Dusklings
 
 Learn Dusk by raising Dusklings: pixel creatures made from 16 digits of DNA.
 
-**[Open Dusk Academy](https://hdauven.github.io/dusk-academy/)** · [Source on GitHub](https://github.com/HDauven/dusk-academy)
+**[Open Dusklings](https://hdauven.github.io/dusklings/)** · [Source on GitHub](https://github.com/HDauven/dusklings)
 
 | Path | Size | What you do |
 |---|---|---|
@@ -16,8 +16,8 @@ Everything runs from static files in your browser: no server, wallet, RPC node o
 ## Run locally
 
 ```sh
-git clone https://github.com/HDauven/dusk-academy.git
-cd dusk-academy
+git clone https://github.com/HDauven/dusklings.git
+cd dusklings
 npm run dev        # python3 -m http.server 5173 --bind 127.0.0.1
 ```
 
@@ -73,7 +73,7 @@ The classic registration-counter academy was replaced by this one. It's preserve
 
 ## License
 
-Academy code and lesson text are available under the [MIT License](LICENSE). Separately licensed material keeps its own terms:
+Dusklings code and lesson text are available under the [MIT License](LICENSE). Separately licensed material keeps its own terms:
 
 - [`examples/hatchery`](examples/hatchery) follows the Dusk Forge contract template, and [`engines/circuit`](engines/circuit) derives from the classic academy's dusk-plonk harness. Both are provided under MPL-2.0.
 - Dusk Connect ([`academy/vendor/dusk-connect.js`](academy/vendor/dusk-connect.js)) is bundled from [dusk-network/connect](https://github.com/dusk-network/connect) at commit `67b37ab`, under the [MIT License](academy/vendor/dusk-connect.LICENSE).

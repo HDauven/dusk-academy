@@ -47,7 +47,7 @@ fn run() -> Result<Value, String> {
     let mut rng = ChaCha20Rng::from_seed(seed);
     // Fresh local parameters for learning, not a production setup ceremony.
     let parameters = PublicParameters::setup(1 << 9, &mut rng).map_err(|e| format!("{e:?}"))?;
-    let (prover, verifier) = Compiler::compile::<student::SecretStats>(&parameters, b"dusk-academy-secret-stats")
+    let (prover, verifier) = Compiler::compile::<student::SecretStats>(&parameters, b"dusklings-secret-stats")
         .map_err(|e| format!("Compiling the circuit failed: {e:?}"))?;
     let mut cases = Vec::new();
     for &[strength, agility, power] in &list[1..] {

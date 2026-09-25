@@ -24,7 +24,7 @@ export function buildEngine(circuit, {target} = {}) {
     });
     if (run.error) throw run.error;
     if (run.status !== 0) return {error: run.stderr.split('\n').filter(l => /error/.test(l)).slice(0, 8).join('\n')};
-    return {wasm: readFileSync(join(target ?? join(work, 'target'), 'wasm32-unknown-unknown/release/dusk_academy_circuit.wasm'))};
+    return {wasm: readFileSync(join(target ?? join(work, 'target'), 'wasm32-unknown-unknown/release/dusklings_circuit.wasm'))};
   } finally {
     rmSync(work, {recursive: true, force: true});
   }

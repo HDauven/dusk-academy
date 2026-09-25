@@ -1,7 +1,7 @@
-# The academy's PLONK engine. Built with src/gates.rs as the circuit for the browser, or with a
+# The Dusklings PLONK engine. Built with src/gates.rs as the circuit for the browser, or with a
 # learner's real circuit to compare it with the browser engine (npm run test:rust).
 [package]
-name = "dusk-academy-circuit"
+name = "dusklings-circuit"
 version = "0.2.0"
 edition = "2024"
 license = "MPL-2.0"

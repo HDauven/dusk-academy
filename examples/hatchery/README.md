@@ -1,6 +1,6 @@
 # The Hatchery, natively
 
-`src/lib.rs` is the contract you build in the five Hatchery lessons of Dusk Academy: hatching, keepers, the moth hunt, night battles and trading. Here it's a real [Dusk Forge](https://github.com/dusk-network/forge) crate that you can compile yourself.
+`src/lib.rs` is the contract you build in the five Hatchery lessons of Dusklings: hatching, keepers, the moth hunt, night battles and trading. Here it's a real [Dusk Forge](https://github.com/dusk-network/forge) crate that you can compile yourself.
 
 You need Rust with the `wasm32-unknown-unknown` target. `rust-toolchain.toml` pins 1.98.0, and rustup installs it on first use.
 
@@ -21,7 +21,7 @@ The contract WASM ends up in `target/wasm32-unknown-unknown/release/dusk_hatcher
 - **The Moth Nest.** The lesson's other contract is only simulated in the browser. `MOTH_NEST` is a placeholder ID (`[7; 32]`), so a real deployment needs the real contract's ID.
 - **Tests and deployment.** There are no VM tests or deploy scripts here. For those, start from the `contract-template` directory in the [Forge repository](https://github.com/dusk-network/forge), which includes a Makefile and a test setup.
 
-The academy's `npm run test:rust` compiles every chapter's reference answer in a copy of this crate. That's how the lessons stay real Rust.
+Dusklings' `npm run test:rust` compiles every chapter's reference answer in a copy of this crate. That's how the lessons stay real Rust.
 
 ## License
 

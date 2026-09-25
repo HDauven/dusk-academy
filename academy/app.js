@@ -234,7 +234,7 @@ $('#download').addEventListener('click', () => {
   g.fillStyle = 'rgba(10,9,26,.82)'; g.fillRect(24, 24, 250, 108);
   g.fillStyle = '#ffc86b'; g.font = '28px Silkscreen'; g.fillText($('#card-name').textContent, 40, 66);
   g.fillStyle = '#ece9f7'; g.font = '16px ui-monospace, monospace'; g.fillText(dna.replace(/(\d{4})(?=\d)/g, '$1 '), 40, 96);
-  g.fillStyle = '#a2a4cf'; g.font = '13px Manrope, sans-serif'; g.fillText('Hatched on Dusk Academy', 40, 118);
+  g.fillStyle = '#a2a4cf'; g.font = '13px Manrope, sans-serif'; g.fillText('Hatched in the Dusklings Hatchery', 40, 118);
   const a = document.createElement('a'); a.download = `${$('#card-name').textContent || 'duskling'}.png`; a.href = c.toDataURL('image/png'); a.click();
 });
 

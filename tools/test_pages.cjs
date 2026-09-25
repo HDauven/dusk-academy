@@ -1,4 +1,4 @@
-// End-to-end: the whole academy over real static HTTP at a project subpath, like GitHub Pages.
+// End-to-end: the whole site over real static HTTP at a project subpath, like GitHub Pages.
 // Walks every journey chapter and every Hatchery chapter, plays each playground, checks narrow
 // layouts, and runs axe accessibility audits when @axe-core/playwright is installed.
 //
@@ -18,8 +18,8 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
   const {chapters: stats} = await import('../academy/stats-lessons.js');
   const {chapters: almanac} = await import('../academy/almanac-lessons.js');
   const root = path.resolve(__dirname, '..');
-  const web = await mkdtemp(path.join(tmpdir(), 'academy-static-'));
-  await symlink(root, path.join(web, 'dusk-academy'));
+  const web = await mkdtemp(path.join(tmpdir(), 'dusklings-static-'));
+  await symlink(root, path.join(web, 'dusklings'));
   const server = spawn('python3', ['-u', '-m', 'http.server', '0', '--bind', '127.0.0.1', '--directory', web], {stdio: ['ignore', 'pipe', 'ignore']});
   let browser;
   const errors = [], outside = [];
@@ -28,7 +28,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
       server.stdout.once('data', d => { const m = String(d).match(/port (\d+)/); m ? resolve(m[1]) : reject(Error(String(d))); });
       server.once('exit', c => reject(Error('Static server exited: ' + c)));
     });
-    const base = `http://127.0.0.1:${port}/dusk-academy/`;
+    const base = `http://127.0.0.1:${port}/dusklings/`;
     browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox']});
     const context = await browser.newContext({viewport: {width: 1440, height: 900}});
     await context.route('**/*', route => {
@@ -49,6 +49,14 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
       assert.deepEqual(serious.map(v => `${v.id}: ${v.nodes.length}`), [], `${label}: accessibility violations`);
       audits++;
     };
+
+    // Progress saved under the old name moves to the new keys.
+    await go('');
+    await page.evaluate(() => localStorage.setItem('dusk-academy:almanac:v1', '{"migrated":true}'));
+    await go('');
+    assert.deepEqual(await page.evaluate(() => [localStorage.getItem('dusklings:almanac:v1'), localStorage.getItem('dusk-academy:almanac:v1')]),
+      ['{"migrated":true}', null], 'old progress moves to the dusklings keys');
+    await page.evaluate(() => localStorage.clear());
 
     // Home, fresh.
     await go('');
@@ -73,7 +81,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
       }
       if (c.id === 'hatch') { await page.fill('#name-input', 'Moonpaw'); await page.click('[data-hatch] .primary'); await page.waitForTimeout(1500); }
     }
-    const keeper = await page.evaluate(() => JSON.parse(localStorage.getItem('dusk-academy:keeper:v1')));
+    const keeper = await page.evaluate(() => JSON.parse(localStorage.getItem('dusklings:keeper:v1')));
     assert.equal(keeper.name, 'Moonpaw');
     assert.deepEqual([...keeper.gear].sort(), ['badge', 'cloak', 'lantern', 'satchel']);
 
