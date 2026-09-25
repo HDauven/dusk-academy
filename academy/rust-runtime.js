@@ -241,7 +241,10 @@ export function createRuntime(source, hosts={}) {
     }
     if(obj===null||['some','ok','err'].includes(obj?.kind)) {
       const present=obj!==null&&obj.kind!=='err';
-      if(['expect','unwrap'].includes(id)){if(!present)throw new Rejection(typeof args[0]==='string'?args[0]:'called unwrap on an absent or failed value');return obj.value;}
+      if(['expect','unwrap'].includes(id)){
+        // Rust's messages: Result adds the error's Debug text, Option doesn't.
+        if(!present){const detail=obj?.kind==='err'?': '+debugText(obj.value):'';throw new Rejection(id==='expect'&&typeof args[0]==='string'?args[0]+detail:obj===null?'called `Option::unwrap()` on a `None` value':'called `Result::unwrap()` on an `Err` value'+detail);}
+        return obj.value;}
       if(id==='unwrap_or')return present?obj.value:args[0];
       if(id==='is_some'||id==='is_ok')return present;
       if(id==='is_none'||id==='is_err')return !present;
@@ -341,6 +344,7 @@ export function createRuntime(source, hosts={}) {
       }
     }
   }
+  const debugText=v=>typeof v==='bigint'?String(v):typeof v==='string'?JSON.stringify(v):v?.kind==='contract-error'?v.debug:'…';
   function invoke(self,id,args=[],mutable=true,owner=self?.type) {
     tick();if(++depth>48){depth--;throw new RuntimeLimit('Lesson call-depth limit reached.');}
     try {

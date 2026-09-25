@@ -10,6 +10,7 @@
     "test": "node --test academy/runtime.test.mjs academy/lessons.test.mjs academy/paths.test.mjs",
     "test:e2e": "node tools/test_pages.cjs",
     "test:rust": "node tools/check_rust.mjs",
+    "test:vm": "node tools/check_vm.mjs",
     "build:circuit": "node tools/circuit_engine.mjs",
     "build:almanac": "node tools/build_almanac.mjs"
   }

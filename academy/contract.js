@@ -32,6 +32,10 @@ export function fnSource(source, name) {
 }
 export const stripComments = source => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
+// Tools can follow every contract a check deploys and every call it makes: tools/check_vm.mjs
+// replays them in Dusk's VM. Nothing is recorded unless a recorder is registered.
+export const recorders = new Set();
+
 export function deploy(source, {sender = 'you', height = 1000} = {}) {
   const events = [], calls = [], ctx = {sender, height};
   const functions = new Map([
@@ -54,11 +58,15 @@ export function deploy(source, {sender = 'you', height = 1000} = {}) {
       if (method !== 'moth_dna') throw Error(`The Moth Nest has no function called "${method}".`);
       if (generic.join(',') !== '_,u64' || typeof input !== 'bigint') throw Error('moth_dna takes a u64 moth id and returns a u64: abi::call::<_, u64>(…).');
       calls.push({method, input});
-      return input < BigInt(MOTHS.length) ? {kind: 'ok', value: MOTHS[Number(input)]} : {kind: 'err', value: 'Panic: no such moth'};
+      // An unknown moth panics inside the Moth Nest, and abi::call hands back its ContractError.
+      return input < BigInt(MOTHS.length) ? {kind: 'ok', value: MOTHS[Number(input)]}
+        : {kind: 'err', value: {kind: 'contract-error', debug: `Panic("index out of bounds: the len is ${MOTHS.length} but the index is ${input}")`}};
     }],
   ]);
   const rt = createRuntime(source, {module: 'hatchery', contract: 'Hatchery', functions});
   let state = rt.create();
+  const record = recorders.size ? {source, rt, state: structuredClone(state), steps: []} : null;
+  recorders.forEach(r => r(record));
   const plain = v => typeof v === 'bigint' ? v : v?.kind === 'key' ? v.id : v?.kind === 'some' ? plain(v.value) : v === null ? null : v;
   return {
     rt, events, calls, ctx,
@@ -69,8 +77,16 @@ export function deploy(source, {sender = 'you', height = 1000} = {}) {
     call(name, ...args) {
       const before = structuredClone(state), mark = events.length;
       const values = args.map(a => typeof a === 'number' || typeof a === 'string' && /^\d+$/.test(a) ? BigInt(a) : typeof a === 'string' ? key(a) : a);
-      try { return rt.invoke(state, name, values, true); }
-      catch (e) { state = before; events.length = mark; throw e; }
+      const step = record && {fn: name, args: values, sender: ctx.sender, height: ctx.height, exported: this.method(name)?.exported};
+      try {
+        const value = rt.invoke(state, name, values, true);
+        record?.steps.push({...step, ok: true, value: structuredClone(value), events: events.slice(mark), state: structuredClone(state)});
+        return value;
+      } catch (e) {
+        state = before; events.length = mark;
+        record?.steps.push({...step, ok: false, panic: e instanceof Rejection, error: e.message, state: structuredClone(state)});
+        throw e;
+      }
     },
     // Expect a call to panic; returns the panic message. Anything else is a Hint for the learner.
     panics(name, ...args) {

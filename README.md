@@ -27,7 +27,12 @@ Then open **http://localhost:5173/**. Any static host works, including from a su
 
 In the browser, the Hatchery runs your edited contract in a **Rust-subset interpreter** (`academy/rust-runtime.js`). It evaluates the source as data: no `eval`, and no JavaScript or host access. Dusk's host functions are simulated: `abi::emit`, `abi::public_sender` (you, Rook, Fen or a shielded sender), `abi::block_height`, and `abi::call` to a Moth Nest contract. Checks grade what the contract *does*: calls, state, events, panics and rollback.
 
-The interpreter isn't rustc or DuskVM. To keep the lessons honest, **every chapter's reference answer also compiles with real Dusk Forge 0.3 and dusk-core 1.6**, as a contract and as a data-driver (`npm run test:rust`). The finished contract lives in [`examples/hatchery`](examples/hatchery), ready to build yourself.
+The interpreter isn't rustc or DuskVM. To keep the lessons honest, two checks run the real thing:
+
+- `npm run test:rust`: **every chapter's reference answer compiles with real Dusk Forge 0.3 and dusk-core 1.6**, as a contract and as a data-driver.
+- `npm run test:vm`: **every chapter's answer, and every lesson playground, runs in Dusk's VM** (dusk-vm 1.7, built on piecrust). It sits next to a real Moth Nest contract. Every call a lesson check or playground makes in the interpreter is replayed with the same sender and block height. The return values, panic messages, events and the whole contract state after every call must match. Each answer's own data-driver encodes and decodes the values.
+
+The finished contract lives in [`examples/hatchery`](examples/hatchery), ready to build yourself.
 
 **Secret stats** interprets your circuit into gates. A real dusk-plonk 0.22.1 engine, compiled to WebAssembly from [`engines/circuit`](engines/circuit), proves and verifies them in a worker, with fresh demonstration parameters. `npm run test:rust` also compiles every chapter's answer as real Rust inside that engine and checks that its proofs come out the same as in the browser.
 
@@ -41,10 +46,11 @@ Dusk facts in the journey were checked against the Dusk sources: `dusk-core` hos
 npm test            # interpreter limits and rollback; every chapter passes with its answer and fails from its start
 npm run test:e2e    # the whole site over static HTTP in Chromium: every chapter, playgrounds, narrow screens, axe audits
 npm run test:rust   # every contract and circuit answer, compiled for real; vendored artifacts rebuilt byte for byte
+npm run test:vm     # every contract answer and playground, replayed call by call in Dusk's VM
 ```
 
 - **`test:e2e`** needs Playwright (and optionally `@axe-core/playwright`). `CHROMIUM_PATH` picks a Chromium and `NODE_PATH` points at an external `node_modules`.
-- **`test:rust`** needs Rust with the `wasm32-unknown-unknown` target. `RUST_TOOLCHAIN=stable` swaps the pinned 1.98.0 for an installed toolchain, and `CARGO_NET_OFFLINE=true` builds from cached crates only.
+- **`test:rust`** and **`test:vm`** need Rust with the `wasm32-unknown-unknown` target. `RUST_TOOLCHAIN=stable` swaps the pinned 1.98.0 for an installed toolchain, and `CARGO_NET_OFFLINE=true` builds from cached crates only.
 
 ## Layout
 
@@ -60,7 +66,7 @@ npm run test:rust   # every contract and circuit answer, compiled for real; vend
   - The Almanac: `almanac-lessons.js`, `almanac-app.js`, `almanac-sandbox.js`, `almanac-harness.js`, `almanac-transport.js`
   - `vendor/`: Dusk Connect, the circuit engine, the Hatchery data-driver and the practice-node fixture, with hashes in `circuit-engine.json` and `almanac.json`. Rebuild them with `npm run build:circuit` and `npm run build:almanac`.
 - `examples/hatchery/`: the finished contract as a Forge crate.
-- `engines/circuit/`: the browser's PLONK engine. `engines/almanac-fixture/` generates the practice node's answers.
+- `engines/circuit/`: the browser's PLONK engine. `engines/almanac-fixture/` generates the practice node's answers. `engines/vm-runner/` replays calls in Dusk's VM for `test:vm`, with the Moth Nest contract in `moth_nest.rs`.
 - `tools/`: builds for the vendored artifacts, the end-to-end test and the Rust checks.
 
 The classic registration-counter academy was replaced by this one. It's preserved at the git tag `classic-academy`.
