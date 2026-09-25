@@ -1,344 +1,340 @@
-import {chapters, lessons, codeSteps, stepsFor, partSteps, storageKey, restore, serialize, assess, markChecked, contractIds, cleanName} from './lesson.js?v=static-1';
-import {courses, courseKey, lastPathKey, restoreCourse, courseComplete, lessonComplete} from './courses.js?v=static-1';
-import {highlight, syncScroll} from './editor.js';
-import {uncheckedRecap} from './hosting.js?v=static-1';
-import {simulateContract, inspectInterface} from './contract-simulator.js';
+import {lessons, chapters, lessonCode} from './course.js';
+import {deploy, friendly, seedFromName, pad16, WICK, KEEPERS} from './contract.js';
+import {Rejection} from './rust-runtime.js';
+import {createScene} from './scene.js';
+import {drawCreature, genes, traitNames, TRAITS, sprite, GENE_COLORS} from './creature.js';
+import {load, store, favicon, loadKeeper, saveKeeper} from './store.js';
 
-const $ = selector => document.querySelector(selector);
-let state;
-try { state = restore(localStorage.getItem(storageKey)); }
-catch { state = restore(null); }
-const checked = check => state.checks[check] || state.simulated?.[check];
-const simulatedCredit = check => !state.checks[check] && state.simulated?.[check];
-const availableTask = () => codeSteps.find(i => !checked(chapters[i].check)) ?? codeSteps.at(-1);
-let controller = null, ticket = 0, busy = false;
-const activeChapter = () => chapters[state.active];
+const $ = s => document.querySelector(s);
+const DEFAULTS = {at: 0, passed: {}, drafts: {}, name: '', duskling: null};
 
-function save() {
-  try { localStorage.setItem(storageKey, serialize(state)); localStorage.setItem(lastPathKey, 'contracts'); $('#save-error').hidden = true; }
-  catch { $('#save-error').hidden = false; }
-}
+let save = load('hatchery', DEFAULTS);
+const persist = () => store('hatchery', save);
+favicon(sprite(WICK));
 
-function character() {
-  document.querySelectorAll('.character-name').forEach(node => { node.textContent = state.name.trim() || 'Apprentice'; });
-  const current = lessons[chapters[state.step].lesson];
-  $('#character-skill').textContent = checked(current.check) ? `${current.skill}${simulatedCredit(current.check) ? ' · simulator' : ' learned'}` : `Learning ${current.skill.toLowerCase()}`;
-  $('#lesson-skills').replaceChildren(...lessons.map((lesson, i) => {
-    const steps = stepsFor(i), complete = Boolean(checked(lesson.check));
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'skill-button'; button.dataset.lesson = i;
-    if (i === 0) button.id = 'return-to-lesson';
-    const icon = document.createElement('span'); icon.textContent = complete ? '✓' : '◇'; icon.setAttribute('aria-hidden', 'true');
-    const status = document.createElement('small');
-    status.textContent = complete ? (simulatedCredit(lesson.check) ? 'Simulator check passed' : 'Learned') : chapters[state.step].lesson === i ? 'Current lesson' : 'Available';
-    if (i === 0) { icon.id = 'skill-state'; status.id = 'skill-status'; }
-    button.append(icon, document.createTextNode(lesson.skill), status);
-    button.addEventListener('click', () => {
-      $('#skills').close();
-      go(complete ? steps.at(-1) : steps.includes(state.active) ? state.active : steps[0]);
-    });
-    return button;
-  }));
-}
+const scene = createScene($('#scene'));
+scene.show({keeper: WICK, animate: false});
+drawCreature($('#wick-face'), WICK, {scale: 2});
 
-function showPaths(focus = true) {
-  cancel();
-  $('#skills').close(); $('#about').close();
-  $('#paths').hidden = false; $('#contract-path').hidden = true;
-  $('#course').hidden = true; $('#lesson-controls').hidden = true; $('#path-profile').hidden = false;
-  $('.skip-link').href = '#paths-title'; $('.skip-link').textContent = 'Skip to learning paths';
-  const completed = lessons.filter(lesson => checked(lesson.check)).length;
-  const target = '#' + chapters[state.step].id;
-  $('#open-contracts').href = target;
-  $('#open-contracts').textContent = (completed === lessons.length ? 'Review lessons' : state.started ? 'Continue lesson' : 'Open path') + ' →';
-  $('#resume-path').href = target; $('#resume-path').hidden = !state.started;
-  $('#resume-label').textContent = completed === lessons.length ? 'Review contracts' : 'Continue contracts';
-  $('#resume-chapter').textContent = chapters[state.step].title;
-  $('#contracts-first-count').textContent = stepsFor(0).length;
-  $('#contracts-size').textContent = `${lessons.length} lessons · ${chapters.length} chapters`;
-  $('#contracts-progress').textContent = `${completed} of ${lessons.length} lessons completed${lessons.some(lesson => simulatedCredit(lesson.check)) ? ' · includes simulated checks' : ''}`;
-  $('#contracts-progress').hidden = !state.started;
-  let last = 'contracts';
-  try { last = localStorage.getItem(lastPathKey) || last; } catch { /* Storage is optional. */ }
-  const available = [];
-  for (const [id, course] of Object.entries(courses)) {
-    let progress;
-    try { progress = restoreCourse(id, localStorage.getItem(courseKey(id))); } catch { progress = restoreCourse(id, null); }
-    const browserChecked = progress.simulated && Object.keys(progress.simulated).length;
-    const complete = courseComplete(course, progress), link = $(`#open-${id}`);
-    link.href = `course.html?path=${id}#${course.chapters[progress.step].id}`;
-    link.textContent = (complete ? `Review lesson${course.lessons.length === 1 ? '' : 's'}` : progress.started ? 'Continue lesson' : 'Open path') + ' →';
-    const learned=course.lessons.filter(lesson=>lessonComplete(course,progress,lesson)).length;
-    $(`#${id}-size`).textContent = `${course.lessons.length} lesson${course.lessons.length === 1 ? '' : 's'} · ${course.chapters.length} chapters`;
-    $(`#${id}-progress`).textContent = course.lessons.length > 1 ? `${learned} of ${course.lessons.length} lessons completed` : complete ? 'Opening lesson completed' : `Chapter ${progress.step + 1} of ${course.chapters.length}`;
-    if (browserChecked) $(`#${id}-progress`).textContent += ' · browser checked';
-    $(`#${id}-progress`).hidden = !progress.started;
-    if (progress.started) available.push({id, course, progress, complete, href:link.href});
+let at = 0;
+const chapter = () => chapters[at];
+const lessonOf = c => lessons[c.lesson];
+const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+const codeHtml = s => escapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+
+// ---- Editor ---------------------------------------------------------------------------------
+const code = $('#code');
+const TOKEN = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(#!?\[[^\]\n]*\])|\b(pub|fn|impl|mod|struct|let|mut|self|Self|const|use|extern|crate|as|return|if|else|for|in|while|loop|match|true|false|Some|None)\b|\b(u8|u16|u32|u64|u128|usize|bool|Vec|Option|Result|String|BlsPublicKey|ContractId)\b|\b(0x[\da-fA-F_]+(?:u\d+)?|\d[\d_]*(?:u\d+)?)\b|\b([a-z_]\w*)(?=!)|\b([a-z_]\w*)(?=\s*(?:\(|::<))/g;
+const CLASSES = [null, 't-com', 't-str', 't-attr', 't-kw', 't-ty', 't-num', 't-mac', 't-fn'];
+function highlight(source) {
+  let html = '', end = 0;
+  for (const m of source.matchAll(TOKEN)) {
+    const cls = CLASSES[m.findIndex((g, i) => i > 0 && g !== undefined)];
+    html += escapeHtml(source.slice(end, m.index)) + `<span class="${cls}">${escapeHtml(m[0])}</span>`;
+    end = m.index + m[0].length;
   }
-  const resume = available.find(p => p.id === last) || (!state.started ? available[0] : null);
-  if (resume) {
-    $('#resume-path').hidden = false; $('#resume-path').href = resume.href;
-    $('#resume-label').textContent = (resume.complete ? 'Review ' : 'Continue ') + ({dusk:'Dusk basics',dapps:'dApps',circuits:'circuits'}[resume.id]);
-    $('#resume-chapter').textContent = resume.course.chapters[resume.progress.step].title;
+  return html + escapeHtml(source.slice(end));
+}
+function paintEditor() {
+  $('#highlight').innerHTML = highlight(code.value) + '\n';
+  $('#gutter').textContent = code.value.split('\n').map((_, i) => i + 1).join('\n');
+  syncScroll();
+}
+function syncScroll() {
+  $('#highlight').style.transform = `translate(${-code.scrollLeft}px, ${-code.scrollTop}px)`;
+  $('#gutter').scrollTop = code.scrollTop;
+  const err = $('#error-line');
+  if (!err.hidden) err.style.top = `${14 + (Number(err.dataset.line) - 1) * 22 - code.scrollTop}px`;
+}
+function markError(line) {
+  const err = $('#error-line');
+  err.hidden = !line;
+  if (line) { err.dataset.line = line; syncScroll(); }
+}
+let draftTimer;
+code.addEventListener('input', () => {
+  paintEditor(); markError(null);
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => { save.drafts[chapter().id] = code.value; persist(); }, 300);
+});
+code.addEventListener('scroll', syncScroll);
+code.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); check(); return; }
+  const {selectionStart: a, selectionEnd: b, value} = code;
+  if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); code.setRangeText('    ', a, b, 'end'); code.dispatchEvent(new Event('input')); }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const lineStart = value.lastIndexOf('\n', a - 1) + 1, line = value.slice(lineStart, a);
+    const indent = line.match(/^\s*/)[0] + (/[{(]\s*$/.test(line) ? '    ' : '');
+    e.preventDefault(); code.setRangeText('\n' + indent, a, b, 'end'); code.dispatchEvent(new Event('input'));
   }
-  character();
-  history.replaceState(null, '', '#paths');
-  document.title = 'Learning paths | Dusk Academy';
-  if (focus) $('#paths-title').focus();
+});
+
+// ---- Scene ----------------------------------------------------------------------------------
+function paintScene(sc, animate) {
+  scene.show({creatures: sc.creatures ?? [], nests: sc.nests ?? 0, moths: sc.moths ?? 0, solo: null, gear: [], animate});
+  const n = sc.creatures?.length ?? 0;
+  $('#scene-tag').textContent = n ? `Hatchery · ${n} Duskling${n === 1 ? '' : 's'}` : sc.nests ? 'Hatchery · nests ready' : '';
+  renderTags();
+}
+// Small labels over each Duskling: keeper, level and record, pending approval.
+function renderTags() {
+  $('#scene-tags').innerHTML = scene.layout().filter(p => typeof p.creature === 'object' && p.creature.owner).map(({creature: d, x, y}, i) => {
+    const who = KEEPERS[d.owner] ?? {name: d.owner, tone: 'rival'};
+    const detail = d.wins !== undefined && d.wins !== null ? `Lv${d.level} ${d.wins}–${d.losses}` : d.approved ? `→ ${KEEPERS[d.approved]?.name ?? d.approved}` : '';
+    return `<span class="tag ${who.tone}" style="left:${x}%;top:${y - (i % 2) * 7}%">${who.name}${detail ? `<small>${detail}</small>` : ''}</span>`;
+  }).join('');
 }
 
-function navigation() {
-  const chapter = chapters[state.step], lesson = lessons[chapter.lesson], lessonSteps = stepsFor(chapter.lesson), steps = partSteps(state.step);
-  $('#part-title').textContent = `Part ${chapter.part + 1} of ${lesson.parts.length} · ${lesson.parts[chapter.part]}`;
-  $('#chapter-menu').replaceChildren(...lessons.map((item, i) => {
-    const group = document.createElement('optgroup'); group.label = `${i + 1}. ${item.title}`;
-    group.append(...stepsFor(i).map((step, index) => {
-      const option = document.createElement('option'); option.value = step; option.textContent = `${index + 1}. ${chapters[step].short}`;
-      return option;
-    }));
-    return group;
-  }));
-  $('#chapter-menu').value = state.step; $('#chapter-menu').disabled = busy;
-  $('#quiz fieldset').disabled = busy; $('#quiz button').disabled = busy;
-  $('#chapters').style.setProperty('--chapters', steps.length);
-  $('#chapters').replaceChildren(...steps.map(step => {
-    const button = document.createElement('button'); button.type = 'button'; button.dataset.step = step;
-    const number = document.createElement('span'); number.className = 'chapter-index'; number.textContent = String(lessonSteps.indexOf(step) + 1).padStart(2, '0');
-    const label = document.createElement('span'); label.textContent = chapters[step].short;
-    button.append(number, label); button.disabled = busy;
-    if (step === state.step) button.setAttribute('aria-current', 'step');
-    button.addEventListener('click', () => go(step)); return button;
-  }));
-  $('#previous').hidden = state.step === 0;
-  $('#previous').disabled = busy;
-  $('#page-count').textContent = `${lessonSteps.indexOf(state.step) + 1} / ${lessonSteps.length}`;
-  $('#next').hidden = state.step === chapters.length - 1;
-  $('#all-paths').hidden = !$('#next').hidden;
-  $('#next').disabled = busy || (chapter.kind === 'code' && state.checks[activeChapter().check] !== state.source && state.simulated?.[activeChapter().check] !== state.source);
-  $('#next').textContent = chapter.kind === 'intro' ? 'Begin lesson →' : chapter.kind === 'earned' ? 'Next lesson →' : chapters[state.step + 1]?.kind === 'earned' ? 'Finish lesson →' : 'Continue →';
-  $('#run').disabled = false;
-  $('#run').textContent = busy ? 'Cancel run' : '▶ Simulate contract';
-  $('#code').setAttribute('aria-busy', String(busy));
+// ---- Chapter rendering ----------------------------------------------------------------------
+const done = c => c.kind === 'code' ? !!save.passed[c.id] : c.kind === 'intro' ? true : c.playground ? !!save.played?.[c.id] : !!save.name;
+
+function renderProgress() {
+  const c = chapter(), list = chapters.filter(x => x.lesson === c.lesson), l = lessonOf(c);
+  $('#pips').innerHTML = list.map(x => `<li class="${done(x) ? 'done' : ''} ${x === c ? 'here' : ''}"></li>`).join('');
+  $('#count').textContent = `${list.indexOf(c) + 1} / ${list.length}`;
+  $('#lesson-kicker').textContent = `Lesson ${l.n}`;
+  $('#lesson-title').textContent = l.title;
+  $('#menu-list').innerHTML = lessons.map((lesson, i) => {
+    const code = lessonCode(i), passed = code.filter(x => save.passed[x.id]).length;
+    return `<li class="menu-level ${passed === code.length ? 'done' : ''}"><strong>Lesson ${lesson.n} · ${lesson.title}</strong><span>${passed} / ${code.length} checks passed</span></li>`
+      + chapters.map((x, k) => x.lesson !== i ? '' : `<li class="${x.kind === 'code' && done(x) ? 'done' : ''} ${k === at ? 'here' : ''}"><button data-go="${k}"><span class="n">${x.kind === 'code' ? '◆' : x.kind === 'intro' ? '▸' : '★'}</span>${x.title}<span class="s">${x.kind === 'code' ? (done(x) ? '✓ passed' : 'code') : x.kind === 'intro' ? 'story' : 'finale'}</span></button></li>`).join('');
+  }).join('');
 }
 
-function cancel() {
-  ticket++;
-  controller?.abort(); controller = null; busy = false;
+function setNext() {
+  const c = chapter(), last = at === chapters.length - 1, ok = c.kind !== 'code' || !!save.passed[c.id];
+  $('#next').hidden = last;
+  $('#next').disabled = !ok;
+  $('#next').classList.toggle('ready', ok && c.kind === 'code');
+  $('#next').innerHTML = c.kind === 'finale' && !last ? `Lesson ${lessonOf(c).n + 1} <span aria-hidden="true">→</span>` : 'Next <span aria-hidden="true">→</span>';
+  $('#prev').disabled = at === 0;
 }
 
-function clearResults(message = 'Run the contract to see the call results.') {
-  $('#call-results').hidden = true; $('#trace-results').hidden = true;
-  $('#trace-details').hidden = true; $('#trace-details').open = false;
-  $('#build-results').hidden = true; $('#build-results').open = false; $('#build-detail').textContent = '';
-  $('#test-empty').hidden = false; $('#test-empty').textContent = message;
-  $('#feedback').hidden = true;
-}
-
-function render(focus) {
-  $('#paths').hidden = true; $('#contract-path').hidden = false;
-  $('#course').hidden = false; $('#lesson-controls').hidden = false; $('#path-profile').hidden = true;
-  $('.skip-link').href = '#lesson-title'; $('.skip-link').textContent = 'Skip to lesson';
-  const {step} = state, chapter = chapters[step], lesson = lessons[chapter.lesson];
-  const coding = !['intro','earned'].includes(chapter.kind), earned = chapter.kind === 'earned';
-  $('#lesson').dataset.step = step;
-  $('#course-title').textContent = lesson.title;
-  $('#chapter-label').textContent = earned ? `Lesson ${chapter.lesson + 1} complete` : chapter.kind === 'intro' ? `Lesson ${String(chapter.lesson + 1).padStart(2, '0')} · Dusk Forge` : `Chapter ${stepsFor(chapter.lesson).indexOf(step) + 1} · ${lesson.skill}`;
-  $('#lesson-title').textContent = chapter.title;
-  $('#story-copy').innerHTML = chapter.body;
-  $('.task').hidden = !chapter.task;
-  $('#task-label').textContent = chapter.kind === 'intro' ? 'The goal' : 'Your turn';
-  $('#task-copy').textContent = chapter.task || '';
-  $('#lesson-note').textContent = chapter.note || '';
-  $('#lesson-note').hidden = !chapter.note;
-  $('#hint').hidden = !chapter.hint; $('#hint').open = false; $('#hint-copy').textContent = chapter.hint || '';
-  $('#editor').hidden = !coding; $('#character-card').hidden = !coding; $('#scene').hidden = coding;
-  $('#reading-panel').hidden = chapter.kind !== 'guide';
-  $('#reading-title').textContent = chapter.panelTitle || ''; $('#reading-copy').innerHTML = chapter.panel || '';
-  $('#quiz-panel').hidden = chapter.kind !== 'practice'; $('#quiz-feedback').hidden = true;
-  if (chapter.kind === 'practice') {
-    $('#question').textContent = chapter.question;
-    $('#choices').replaceChildren(...chapter.choices.map(([value, text]) => {
-      const label = document.createElement('label'), input = document.createElement('input'), copy = document.createElement('span');
-      input.type = 'radio'; input.name = 'answer'; input.value = value; input.required = true;
-      input.checked = state.answers[chapter.id] === value; copy.textContent = text;
-      input.onchange = () => { state.answers[chapter.id] = value; $('#quiz-feedback').hidden = true; save(); };
-      label.append(input, copy); return label;
-    }));
+function show(i, {focus = true} = {}) {
+  at = Math.max(0, Math.min(chapters.length - 1, i));
+  save.at = at; persist();
+  const c = chapter(), l = lessonOf(c), list = chapters.filter(x => x.lesson === c.lesson);
+  history.replaceState(null, '', '#' + c.id);
+  $('#chapter-kicker').textContent = `Lesson ${l.n} · chapter ${list.indexOf(c) + 1}`;
+  $('#chapter-title').textContent = c.title;
+  $('#wick').hidden = !c.wick;
+  $('#wick-line').innerHTML = c.wick ?? '';
+  $('#chapter-body').innerHTML = c.body;
+  $('#tasks').hidden = !c.tasks;
+  $('#task-list').innerHTML = (c.tasks ?? []).map(t => `<li>${t}</li>`).join('');
+  $('#tasks .hint')?.remove();
+  const pane = c.kind === 'code' ? 'code' : c.id === 'dusk-falls' ? 'lab' : c.kind === 'intro' ? 'overview' : c.playground ? 'play' : 'finale';
+  for (const p of ['code', 'lab', 'overview', 'play', 'finale']) $(`#${p}-pane`).hidden = p !== pane;
+  $('#toast').textContent = '';
+  const passedScene = c.kind === 'code' && save.passed[c.id] ? safeScene(c, save.passed[c.id]) : null;
+  if (pane !== 'finale' && pane !== 'play') paintScene(passedScene ?? c.scene ?? defaultScene(c), false);
+  if (pane === 'code') {
+    code.value = save.drafts[c.id] ?? c.start;
+    paintEditor(); markError(null);
+    code.scrollTop = 0;
+    $('#console').innerHTML = save.passed[c.id]
+      ? '<p class="ok">✓ You passed this chapter. Edit and check again any time.</p>'
+      : '<p class="muted">Press <kbd>Check</kbd> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>) to deploy and test your contract.</p>';
   }
-  $('#character-setup').hidden = step !== 0; $('#earned').hidden = coding || step === 0;
-  $('#earned-label').textContent = earned ? (simulatedCredit(lesson.check) ? 'Simulator check passed' : 'Skill learned') : 'Next skill';
-  $('#earned-title').textContent = lesson.skill; $('#earned-summary').textContent = lesson.summary;
-  $('#earned .skill-emblem').textContent = earned ? '✓' : '◇';
-  $('#earned').dataset.earned = String(earned && Boolean(checked(lesson.check)));
-  if (earned) {
-    if (checked(lesson.check)) $('#chapter-label').textContent = simulatedCredit(lesson.check) ? 'Lesson checked in the browser simulator' : 'Lesson checked in local DuskVM';
-    else uncheckedRecap(lesson.skill);
+  if (pane === 'lab') setDna($('#dna-input').value || '8356281049284737');
+  if (pane === 'overview') {
+    $('#overview-kicker').textContent = `Lesson ${l.n}`;
+    $('#overview-title').textContent = l.title;
+    $('#overview-learn').innerHTML = (c.learn ?? []).map(x => `<li>${x}</li>`).join('');
+    const code = lessonCode(c.lesson), passed = code.filter(x => save.passed[x.id]).length;
+    $('#overview-count').textContent = `${code.length} code chapters · ${passed} passed. Each one is a single small edit.`;
   }
-  $('#code-context').hidden = !coding;
-  $('#code-context').textContent = `Simulator checks: “${activeChapter().short}”. The file is interpreted, not compiled. Browsing ahead does not skip unchecked coding tasks.`;
-  $('#character-name-input').value = state.name;
-  $('#code').value = state.source;
-  $('#code').scrollTop = $('#code').scrollLeft = 0;
-  highlight(); clearResults(); character(); navigation();
-  document.title = `${chapter.short} | Dusk Academy`;
-  if (focus) {
-    $('#lesson-title').focus({preventScroll:true});
-    (earned && matchMedia('(max-width:900px)').matches ? $('#scene') : $('#lesson-title')).scrollIntoView({block:'nearest'});
-  }
+  if (pane === 'play') preparePlayground(c);
+  if (pane === 'finale') prepareFinale();
+  renderProgress(); setNext();
+  $('#chapter').scrollTop = 0;
+  if (focus) $('#chapter').focus({preventScroll: true});
 }
 
-function go(step, focus = true) {
-  if (!Number.isInteger(step) || step < 0 || step >= chapters.length) return;
-  cancel(); state.step = step;
-  if (step > 0) state.started = true;
-  if (chapters[step].kind === 'code' && step <= availableTask()) state.active = Math.max(state.active, step);
-  history.replaceState(null, '', '#' + chapters[step].id);
-  render(focus); save();
+function defaultScene(c) {
+  try { const d = deploy(c.start); return {nests: d.state.fields.dusklings ? 5 : 0, creatures: []}; } catch { return {nests: 0, creatures: []}; }
 }
+function safeScene(c, source) { try { return c.check(source).scene; } catch { return null; } }
 
-function feedback(message, tone, diagnostic = '') {
-  $('#feedback').hidden = false; $('#feedback').dataset.tone = tone; $('#feedback-text').textContent = message;
-  $('#diagnostics').hidden = !diagnostic; $('#diagnostics').open = Boolean(diagnostic); $('#error-detail').textContent = diagnostic;
-}
-
-function showResults(result, step) {
-  if (result.calls) {
-    $('#test-empty').hidden = true; $('#trace-results').hidden = false;
-    const records = result.scenario.startsWith('records-') || result.advanced;
-    const principal = id => Object.keys(contractIds).find(name => contractIds[name] === id) || id;
-    const table = $('#trace-results');
-    if (result.advanced) {
-      $('#trace-details').hidden = false; $('#trace-summary').textContent = `View ${result.calls.length} calls, state reads and receipt events`;
-      $('#trace-details').append(table);
-    } else $('#test-panel').insertBefore(table, $('#trace-details'));
-    $('#trace-results thead th:last-child').textContent = records ? 'Seats before → after' : 'Before → after';
-    $('#trace-results tbody').replaceChildren(...result.calls.map(call => {
-      const row = document.createElement('tr'); row.dataset.status = call.status;
-      const label = document.createElement('th'); label.scope = 'row';
-      const code = document.createElement('code'); code.textContent = call.call;
-      if (call.fresh || call.actor) {
-        const note = document.createElement('small');
-        note.textContent = call.fresh ? 'Fresh deployment' : call.actor === 'Query' ? 'Direct query' : call.actor === 'Fixture' ? 'Venue test setup' : `${call.actor} → Registry`;
-        label.append(note);
-      }
-      label.append(code);
-      const status = document.createElement('td'); status.textContent = call.status === 'accepted' ? 'Accepted' : 'Rejected';
-      const count = document.createElement('td'); count.textContent = `${call.before} → ${call.after}`;
-      if (records) {
-        const value = document.createElement('small'); value.textContent = `Returned: ${call.value ?? 'no value'}`; label.append(value);
-        const stored = document.createElement('small'); stored.textContent = `${call.size} record${call.size === '1' ? '' : 's'}${call.next === null ? '' : ` · next ID ${call.next}`}`; count.append(stored);
-      }
-      if (result.advanced) {
-        const info = document.createElement('small');
-        info.textContent = `Venue: ${call.booked} seats${call.accounted === null ? '' : ` · sum: ${call.accounted}`}`;
-        count.append(info);
-        const details = document.createElement('details'), summary = document.createElement('summary'), data = document.createElement('pre');
-        summary.textContent = `Records / ${call.events.length} event${call.events.length === 1 ? '' : 's'}`;
-        const stored = call.records.filter(r => r.seats !== null).map(r => `#${r.id}: ${r.seats} seats · owner ${principal(r.owner)}${r.confirmed === null ? '' : r.confirmed ? ' · confirmed' : ' · pending'}`);
-        const emitted = call.events.map(e => {
-          const bytes = Uint8Array.from(e.data), view = new DataView(bytes.buffer);
-          const payload = bytes.length === 16 ? `${view.getBigUint64(0,true)}, ${view.getBigUint64(8,true)}` : bytes.join(', ');
-          return `${principal(e.source)}: ${e.topic}(${payload})`;
-        });
-        data.textContent = [...stored,...emitted].join('\n') || 'No stored records or events.';
-        details.append(summary,data); label.append(details);
-      }
-      row.append(label, status, count); return row;
-    }));
-    if (result.build) {
-      $('#build-results').hidden = false;
-      const {contract,driver,functions} = result.build;
-      $('#build-detail').textContent = `Interpreted source (not WASM): ${contract.bytes} bytes\nSHA-256: ${contract.sha256}\n\nPrebuilt reference data-driver WASM: ${driver.bytes} bytes\nSHA-256: ${driver.sha256}\n\nMethod schema:\n${functions.map(f => `${f.name}: ${f.input} → ${f.output}`).join('\n')}\n\nEncoded register(2): ${result.build.encodedRegister}\nEncoded resize(2, 4): ${result.build.encodedResize}\nDecoded u64::MAX: ${result.build.decodedMax}\n\nParsed interface matched a prebuilt driver. No Rust compilation. No network deployment or signature.`;
-    }
+// ---- Checking -------------------------------------------------------------------------------
+function check() {
+  const c = chapter(), source = code.value, out = $('#console');
+  out.innerHTML = '<p class="log">› deploying Hatchery…</p>';
+  let result;
+  try { result = c.check(source); }
+  catch (error) {
+    const f = friendly(error);
+    out.innerHTML = `<p class="bad">✗ ${codeHtml(f.text)}</p><p class="muted">Stuck? Try the Hint, or Show answer to compare.</p>`;
+    markError(f.line);
+    $('#toast').textContent = '';
     return;
   }
-  const calls = chapters[step].check === 'initial' ? [['New contract', result.initial], ['Read again', result.initial]] : [
-    ['New contract', result.initial], ['register() × 1', result.after[0]], ['register() × 2', result.after[1]], ['register() × 3', result.after[2]],
-  ];
-  $('#test-empty').hidden = true; $('#call-results').hidden = false;
-  $('#call-results').replaceChildren(...calls.map(([name, value]) => {
-    const item = document.createElement('li'), label = document.createElement('small'), number = document.createElement('strong');
-    label.textContent = name; number.textContent = value; item.append(label, number); return item;
-  }));
+  out.innerHTML = result.log.map(l => `<p class="log"><span class="ok">✓</span> ${escapeHtml(l)}</p>`).join('') + `<p class="win">★ ${escapeHtml(result.win)}</p>`;
+  save.passed[c.id] = source; save.drafts[c.id] = source; persist();
+  paintScene(result.scene, true);
+  $('#toast').textContent = 'Chapter complete!';
+  renderProgress(); setNext();
+  $('#next').focus({preventScroll: true});
 }
 
-async function run() {
-  if (busy) { cancel(); clearResults('Run cancelled.'); navigation(); return; }
-  if (['intro','earned'].includes(chapters[state.step].kind)) return;
-  cancel();
-  const thisTicket = ticket, source = state.source, step = state.active;
-  const chapter = chapters[step];
-  controller = new AbortController(); const active = controller;
-  const timeout = setTimeout(() => active.abort(), 45000);
-  busy = true; clearResults('Interpreting your contract in the browser…'); navigation();
-  try {
-    if (new TextEncoder().encode(source).length > 8000) throw Error('The source limit is 8,000 UTF-8 bytes. Shorten the file and run it again.');
-    const result = simulateContract(source, chapter.scenario);
-    if (chapter.scenario === 'build-driver') result.build = await inspectInterface(source, active.signal);
-    if (thisTicket !== ticket) return;
-    const error = assess(step, result);
-    if (result.ok) showResults(result, step);
-    else $('#test-empty').textContent = 'No call results.';
-    if (error) feedback(error, 'bad', result.error || '');
-    else {
-      markChecked(state, step);
-      feedback('Simulator check passed. Your source passed this checkpoint without Rust compilation.', 'good');
-      character(); save();
-    }
-  } catch (error) {
-    if (thisTicket === ticket) {
-      $('#test-empty').textContent = 'No call results.';
-      feedback(error.name === 'AbortError' ? 'The run timed out. Try again or reload the page.' : error.message, 'bad');
-    }
-  } finally {
-    clearTimeout(timeout);
-    if (thisTicket === ticket) {
-      controller = null; busy = false; navigation(); save();
-      if (chapter.scenario !== 'state' || matchMedia('(max-width:900px)').matches) $('#feedback').scrollIntoView({block:'nearest'});
-    }
+$('#check-button').addEventListener('click', check);
+$('#hint-button').addEventListener('click', () => {
+  const c = chapter();
+  if ($('#tasks .hint')) { $('#tasks .hint').remove(); return; }
+  const p = document.createElement('div'); p.className = 'hint'; p.innerHTML = '<strong>Hint:</strong> ' + c.hint;
+  $('#tasks').append(p); p.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+});
+
+// ---- Show answer: a line diff between the editor and the reference -------------------------
+function diff(a, b) {
+  const x = a.split('\n'), y = b.split('\n'), n = x.length, m = y.length;
+  const L = Array.from({length: n + 1}, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = x[i].trimEnd() === y[j].trimEnd() ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = [];
+  let i = 0, j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && x[i].trimEnd() === y[j].trimEnd()) { out.push(['same', y[j]]); i++; j++; }
+    else if (j < m && (i === n || L[i][j + 1] >= L[i + 1][j])) out.push(['add', y[j++]]);
+    else out.push(['del', x[i++]]);
   }
+  return out;
 }
+$('#answer-button').addEventListener('click', () => {
+  $('#diff').innerHTML = diff(code.value, chapter().answer).map(([k, l]) => `<span class="${k}">${k === 'add' ? '+ ' : k === 'del' ? '- ' : '  '}${escapeHtml(l) || ' '}</span>`).join('');
+  $('#answer-dialog').showModal();
+});
+$('#use-answer').addEventListener('click', () => {
+  code.value = chapter().answer; code.dispatchEvent(new Event('input'));
+  $('#answer-dialog').close();
+  code.setSelectionRange(0, 0); code.focus({preventScroll: true}); code.scrollTop = 0; syncScroll();
+});
 
-$('#code').addEventListener('input', () => {
-  cancel(); state.source = $('#code').value;
-  highlight(); clearResults('Run again to check your changes.'); navigation(); save();
+// ---- Navigation -----------------------------------------------------------------------------
+$('#next').addEventListener('click', () => show(at + 1));
+$('#prev').addEventListener('click', () => show(at - 1));
+$('#overview-start').addEventListener('click', () => show(at + 1));
+$('#to-next-lesson').addEventListener('click', () => show(at + 1));
+$('#menu-button').addEventListener('click', () => { renderProgress(); $('#menu').showModal(); });
+$('#menu-list').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) { $('#menu').close(); show(Number(b.dataset.go)); } });
+$('#reset').addEventListener('click', () => { save = structuredClone(DEFAULTS); persist(); $('#menu').close(); show(0); });
+$('#runtime-info').addEventListener('mouseenter', () => { $('#runtime-note').hidden = false; });
+$('#runtime-info').addEventListener('mouseleave', () => { $('#runtime-note').hidden = true; });
+$('#runtime-info').addEventListener('click', () => { $('#runtime-note').hidden = !$('#runtime-note').hidden; });
+
+// ---- DNA lab (lesson 1, chapter 1) ----------------------------------------------------------
+function dnaHtml(digits) {
+  return [...Array(8)].map((_, i) => `<b style="color:${GENE_COLORS[i]}">${digits.slice(i * 2, i * 2 + 2)}</b>`).join('');
+}
+function setDna(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 16);
+  $('#dna-input').value = digits;
+  const g = genes(digits.padEnd(16, '0'));
+  drawCreature($('#lab-creature'), g.digits, {scale: 8});
+  $('#genes').innerHTML = TRAITS.map((t, i) => `<li><b style="background:${GENE_COLORS[i]}">${g.digits.slice(i * 2, i * 2 + 2)}</b><span>${t.label}</span>${t.names[g[t.key]]}</li>`).join('');
+}
+$('#dna-input').addEventListener('input', e => setDna(e.target.value));
+$('#shuffle').addEventListener('click', () => {
+  const r = crypto.getRandomValues(new Uint8Array(16));
+  setDna([...r].map(n => n % 10).join(''));
 });
-$('#code').addEventListener('scroll', syncScroll);
-$('#code').addEventListener('keydown', event => {
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); run(); }
+
+// ---- Lesson 1 finale: hatch your own Duskling ------------------------------------------------
+function prepareFinale() {
+  const own = save.passed.events;
+  $('#hatch-source').textContent = own
+    ? 'Hatching with the contract you wrote in chapter 13.'
+    : 'You haven’t passed chapter 13 yet, so this uses the reference Hatchery.';
+  const name = save.name || loadKeeper().name;
+  $('#name-input').value = name;
+  if (save.name) hatch(save.name, false);
+  else { scene.show({creatures: [], nests: 1, solo: null, animate: false}); renderTags(); $('#card').hidden = true; $('#complete').hidden = true; }
+}
+function hatch(name, animate = true) {
+  const seed = seedFromName(name);
+  let dna;
+  try {
+    const c = deploy(save.passed.events ?? lessons[0].reference);
+    c.call('hatch', seed);
+    const e = c.events.at(-1);
+    dna = pad16(e ? e.data[1] : c.dusklings().at(-1).dna);
+  } catch (error) {
+    $('#hatch-source').textContent = 'Your contract failed to hatch: ' + friendly(error).text;
+    return;
+  }
+  const keeper = loadKeeper(), same = keeper.dna === dna;
+  save.name = name; save.duskling = {name, dna}; persist();
+  saveKeeper({...keeper, name, dna});
+  scene.show({solo: dna, gear: keeper.gear, animate});
+  renderTags();
+  $('#scene-tag').textContent = 'Hatchery · 1 Duskling';
+  const reveal = () => {
+    drawCreature($('#card-creature'), dna, {scale: 7, gear: keeper.gear});
+    $('#card-name').textContent = name;
+    $('#card-dna').innerHTML = dnaHtml(dna);
+    $('#card-traits').innerHTML = traitNames(dna).map(t => `<dt>${t.label}</dt><dd>${t.value}</dd>`).join('');
+    $('#card-seed').textContent = `seed ${seed} → hatch(seed) → DNA ${dna}` + (same && animate && save.passed.events ? '. Same DNA Wick\'s Hatchery gave it: your contract follows the same rules.' : '');
+    $('#card').hidden = false; $('#complete').hidden = false;
+    $('#skills').innerHTML = ['Forge contracts', 'Constants', 'u64 math', 'Structs', 'Vectors', 'Methods', 'Private helpers', 'Return values', 'Wrapping arithmetic', 'Events'].map(s => `<li>${s}</li>`).join('');
+    $('#toast').textContent = animate ? `${name} hatched!` : '';
+  };
+  if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) { $('#card').hidden = true; setTimeout(reveal, 1300); } else reveal();
+}
+$('#hatch-form').addEventListener('submit', e => { e.preventDefault(); const n = $('#name-input').value.trim(); if (n) hatch(n); });
+$('#download').addEventListener('click', () => {
+  const dna = genes($('#card-dna').textContent).digits, c = document.createElement('canvas');
+  c.width = 640; c.height = 360;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.drawImage($('#scene'), 0, 0, 640, 360);
+  g.fillStyle = 'rgba(10,9,26,.82)'; g.fillRect(24, 24, 250, 108);
+  g.fillStyle = '#ffc86b'; g.font = '28px Silkscreen'; g.fillText($('#card-name').textContent, 40, 66);
+  g.fillStyle = '#ece9f7'; g.font = '16px ui-monospace, monospace'; g.fillText(dna.replace(/(\d{4})(?=\d)/g, '$1 '), 40, 96);
+  g.fillStyle = '#a2a4cf'; g.font = '13px Manrope, sans-serif'; g.fillText('Hatched on Dusk Academy', 40, 118);
+  const a = document.createElement('a'); a.download = `${$('#card-name').textContent || 'duskling'}.png`; a.href = c.toDataURL('image/png'); a.click();
 });
-$('#run').addEventListener('click', run);
-$('#next').addEventListener('click', () => {
-  if ($('#next').hidden || $('#next').disabled) return;
-  if (state.step === 0) state.started = true;
-  go(state.step + 1);
+
+// ---- Lessons 2–5 finales: play with your own contract ---------------------------------------
+let play = null;
+function preparePlayground(c) {
+  const lesson = lessonOf(c), code = lessonCode(c.lesson), last = code.at(-1), own = save.passed[last.id];
+  const keeper = loadKeeper();
+  $('#play-source').textContent = own ? `Running the contract you finished in “${last.title}”.` : `You haven’t passed “${last.title}” yet, so this runs the reference contract.`;
+  $('#play-next').hidden = at === chapters.length - 1;
+  $('#play-next').innerHTML = `Lesson ${lesson.n + 1} <span aria-hidden="true">→</span>`;
+  const start = () => {
+    const contract = deploy(own ?? lesson.reference);
+    try { c.playground.setup?.(contract, keeper); } catch (error) { return log('bad', 'Setup failed: ' + friendly(error).text); }
+    play = {c, contract, keeper};
+    $('#play-log').innerHTML = '<p class="muted">Pick an action. Every call runs your contract. Panics roll back, just like on chain.</p>';
+    repaint(false);
+  };
+  $('#play-actions').innerHTML = c.playground.actions.map((a, i) => `<button class="ghost" data-act="${i}">${a.label}</button>`).join('');
+  start();
+  $('#play-reset').onclick = start;
+}
+function log(kind, text) {
+  $('#play-log').insertAdjacentHTML('beforeend', `<p class="${kind}">${kind === 'ok' ? '✓' : kind === 'refused' ? '↺' : '✗'} ${codeHtml(text)}</p>`);
+  $('#play-log').scrollTop = $('#play-log').scrollHeight;
+}
+function repaint(animate) {
+  const ds = play.contract.dusklings();
+  paintScene({nests: 5, moths: play.c.playground.moths ?? (play.c.lesson === 2 ? 3 : 0), creatures: ds.map(d => ({dna: pad16(d.dna), owner: d.owner, level: d.level, wins: d.wins, losses: d.losses, approved: d.approved}))}, animate);
+}
+$('#play-actions').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || !play) return;
+  const action = play.c.playground.actions[Number(b.dataset.act)];
+  try { log('ok', action.run(play.contract, play.keeper)); }
+  catch (error) {
+    if (error instanceof Rejection) log('refused', `Refused: “${error.message}”. The call rolled back.`);
+    else log('bad', friendly(error).text);
+  }
+  save.played = {...save.played, [play.c.id]: true}; persist();
+  repaint(true); renderProgress();
 });
-$('#previous').addEventListener('click', () => go(state.step - 1));
-$('#chapter-menu').onchange = event => go(Number(event.target.value), false);
-$('#quiz').onsubmit = event => {
-  event.preventDefault();
-  const chapter = chapters[state.step];
-  if (chapter.kind !== 'practice' || busy) return;
-  const correct = state.answers[chapter.id] === chapter.answer;
-  $('#quiz-feedback').hidden = false; $('#quiz-feedback').dataset.tone = correct ? 'good' : 'bad';
-  $('#quiz-feedback').textContent = correct ? chapter.success : chapter.error;
-  save(); $('#quiz-feedback').scrollIntoView({block:'nearest'});
-};
-$('#character-name-input').addEventListener('input', event => {
-  state.name = cleanName(event.target.value);
-  event.target.value = state.name; character(); save();
-});
-$('#skills-button').addEventListener('click', () => $('#skills').showModal());
-$('#about-button').addEventListener('click', () => $('#about').showModal());
-$('.skip-link').addEventListener('click', event => { event.preventDefault(); $(event.currentTarget.getAttribute('href')).focus(); });
-window.addEventListener('hashchange', () => {
-  const step = chapters.findIndex(chapter => '#' + chapter.id === location.hash);
-  if (step < 0) showPaths();
-  else go(step);
-});
-window.addEventListener('pagehide', cancel);
-window.addEventListener('beforeunload', event => {
-  if (!$('#save-error').hidden) { event.preventDefault(); event.returnValue = ''; }
-});
-const initial = chapters.findIndex(chapter => '#' + chapter.id === location.hash);
-if (initial < 0) showPaths(false);
-else go(initial, false);
+$('#play-next').addEventListener('click', () => show(at + 1));
+
+// ---- Start ----------------------------------------------------------------------------------
+const fromHash = chapters.findIndex(c => '#' + c.id === location.hash);
+show(fromHash >= 0 ? fromHash : save.at ?? 0, {focus: false});
+window.addEventListener('hashchange', () => { const i = chapters.findIndex(c => '#' + c.id === location.hash); if (i >= 0 && i !== at) show(i); });

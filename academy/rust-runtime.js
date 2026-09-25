@@ -97,6 +97,7 @@ export function parseRust(source, options={}) {
     else if(take('false'))n={kind:'literal',value:false};
     else {
       let id=name(),generic=[];
+      if(['match','unsafe','async','await','dyn','move','ref','static','trait','type','where','enum','super','loop','while','for'].includes(id))fail(`\`${id}\` isn't supported in these lessons.`,tokens[p-1].offset);
       while(take('::')){if(take('<')){do{generic.push(type());}while(take(','));expect('>');break;}id+='::'+name();}
       if(take('!')) {if(!['assert','assert_eq','panic','vec'].includes(id))fail(`Macro ${id}! is unavailable.`);const bracket=take('[');if(!bracket)expect('(');n={kind:'macro',id,args:args(bracket?']':')')};}
       else if((id==='Self'||structs.has(id))&&peek()==='{') {

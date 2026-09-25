@@ -7,13 +7,8 @@
   "scripts": {
     "dev": "python3 -m http.server 5173 --bind 127.0.0.1",
     "start": "npm run dev",
-    "test": "node --test academy/test.mjs academy/courses.test.mjs academy/counter-simulator.test.mjs academy/browser-runtime.test.mjs prototype/lessons.test.mjs && python3 -B tools/test_setup.py",
+    "test": "node --test academy/runtime.test.mjs academy/lessons.test.mjs",
     "test:e2e": "node tools/test_pages.cjs",
-    "test:forge": "python3 -B tools/test_forge_lesson.py",
-    "test:circuits": "python3 -B tools/test_circuit_lesson.py",
-    "build:browser": "python3 -B tools/build_browser.py",
-    "setup:forge": "python3 -B tools/forge_lesson.py",
-    "setup:circuits": "python3 -B tools/circuit_lesson.py",
-    "test:prototype-rust": "node tools/check_prototype_rust.mjs"
+    "test:rust": "node tools/check_rust.mjs"
   }
 }
