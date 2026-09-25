@@ -141,14 +141,42 @@ export const levels = [
         ],
       },
       {
+        id: 'proofs', kind: 'quiz', title: 'Proving without showing', visual: 'proof',
+        body: `<p>A <strong>zero-knowledge proof</strong> shows that a statement is true without revealing the private inputs behind it.</p>
+<p>Say your Duskling has a secret <strong>strength</strong>, a secret <strong>agility</strong> and a public <strong>power</strong> of 9. You can prove that strength + agility = 9 without revealing either number.</p>
+<p class="aside">A proof only covers its own statement. It doesn't show that the numbers came from somewhere trustworthy; Level 3 deals with that.</p>`,
+        question: 'The arena verifies your proof that strength + agility = 9. What does it learn?',
+        choices: [
+          {id: 'numbers', text: 'Your exact strength and agility.', why: 'Those stay private. That\'s the whole point of the proof.'},
+          {id: 'statement', right: true, text: 'That your hidden scores add up to 9, and nothing more about them.', why: 'Right. The statement is shown to be true while the inputs stay secret.'},
+          {id: 'fair', text: 'That the scores were earned fairly.', why: 'The proof only covers the sum. Where the numbers came from is a separate question.'},
+        ],
+      },
+      {
         id: 'phoenix', kind: 'quiz', title: 'Phoenix: shielded notes', visual: 'transfer-phoenix',
         body: `<p><strong>Phoenix</strong> is Dusk's shielded model. Instead of a public balance, you hold <strong>notes</strong>: pieces of value that only you can spend. A Phoenix transfer hides who paid whom and how much.</p>
-<p>Each transfer carries a <strong>zero-knowledge proof</strong> that it follows the rules: the notes being spent exist and belong to the sender, and the amounts add up. The network also checks that no note is ever spent twice.</p>`,
+<p>So each transfer carries a zero-knowledge proof. Without revealing which notes you spend or how much they hold, it shows that:</p>
+<ul><li>every note you spend exists: it's in the tree of all notes on the chain,</li>
+<li>you own it: you hold its secret key,</li>
+<li>each spent note's <strong>nullifier</strong> is worked out correctly (more on that next),</li>
+<li>the new notes are made correctly, and</li>
+<li>the amounts add up: what goes in equals what comes out, plus the fee and anything paid into a contract.</li></ul>`,
         question: 'If a Phoenix transfer hides the amounts, how does the network know you aren\'t spending DUSK you don\'t have?',
         choices: [
           {id: 'trust', text: 'It trusts your wallet.', why: 'No wallet is trusted blindly. The rules are checked mathematically.'},
           {id: 'later', text: 'It checks the amounts later, in secret.', why: 'Nothing is checked later in secret. The proof is verified before the transfer is accepted.'},
           {id: 'proof', right: true, text: 'The transfer carries a zero-knowledge proof that it follows the rules.', why: 'Right. The network checks the proof instead of the private details.'},
+        ],
+      },
+      {
+        id: 'spent-once', kind: 'quiz', title: 'Spent once',
+        body: `<p>Nobody can see which note you spend, so the chain can't simply mark it as spent. Instead, spending a note reveals its <strong>nullifier</strong>: a tag worked out from the note's secret key and its place in the tree of notes.</p>
+<p>Only the note's owner can compute it, and nobody else can tell which note it belongs to. The proof shows it was worked out correctly, so each note has exactly one. The transfer contract keeps every nullifier it has seen and rejects any transaction that repeats one.</p>`,
+        question: 'Nobody can see which note you spent. What stops you from spending it again?',
+        choices: [
+          {id: 'mark', text: 'The chain marks that note as spent.', why: 'That would reveal which note you spent. Phoenix never points at the note.'},
+          {id: 'nullifier', right: true, text: 'Its nullifier: the transfer contract rejects any nullifier it has already seen.', why: 'Right. The same note always gives the same nullifier, and nobody can link that nullifier back to the note.'},
+          {id: 'wallet', text: 'Your wallet remembers it and refuses.', why: 'A wallet can be changed or bypassed. The chain enforces the rule.'},
         ],
       },
       {
@@ -172,18 +200,6 @@ export const levels = [
           {id: 'reveal', text: 'Ask the network to reveal the shielded sender.', why: 'Nobody can unshield a Phoenix transaction, not even the network.'},
           {id: 'sign', right: true, text: 'Take a signature from the keeper\'s key in the call, and check it with abi::verify_bls.', why: 'Right. That\'s how Dusk\'s stake and transfer contracts handle callers they can\'t see. The keeper proves they hold the key, and the rest of the transaction stays shielded.'},
           {id: 'never', text: 'Nothing. Shielded callers can never be identified.', why: 'They can choose to prove who they are. A signature shows they hold the right key.'},
-        ],
-      },
-      {
-        id: 'proofs', kind: 'quiz', title: 'Proving without showing', visual: 'proof',
-        body: `<p>A <strong>zero-knowledge proof</strong> shows that a statement is true without revealing the private inputs behind it.</p>
-<p>Say your Duskling has a secret <strong>strength</strong>, a secret <strong>agility</strong> and a public <strong>power</strong> of 9. You can prove that strength + agility = 9 without revealing either number.</p>
-<p class="aside">A proof only covers its own statement. It doesn't show that the numbers came from somewhere trustworthy; Level 3 deals with that.</p>`,
-        question: 'The arena verifies your proof that strength + agility = 9. What does it learn?',
-        choices: [
-          {id: 'numbers', text: 'Your exact strength and agility.', why: 'Those stay private. That\'s the whole point of the proof.'},
-          {id: 'statement', right: true, text: 'That your hidden scores add up to 9, and nothing more about them.', why: 'Right. The statement is shown to be true while the inputs stay secret.'},
-          {id: 'fair', text: 'That the scores were earned fairly.', why: 'The proof only covers the sum. Where the numbers came from is a separate question.'},
         ],
       },
       {
