@@ -1,5 +1,5 @@
 // Lesson 3: Moth hunt. Contract IDs, cross-contract calls, Result, blending DNA and rollback.
-import {file, evolve} from './hatchery-file.js';
+import {file, evolve, HATCHED, HUNTED} from './hatchery-file.js';
 import {PARTS as L2} from './lesson2.js';
 import {deploy, need, needMethod, pad16, MOTHS, MOTH_NEST, seedFromName} from './contract.js';
 
@@ -31,13 +31,16 @@ P.feed = evolve(P.hunt, {methods: {hunt: `pub fn hunt(&mut self, id: u64, moth_i
     let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
     self.create_duskling(dna, keeper);
 }`}});
-P.hunted = evolve(P.feed, {methods: {hunt: `pub fn hunt(&mut self, id: u64, moth_id: u64) {
+// The second event type arrives with its fields; the learner implements ContractEvent and registers it.
+P.huntedType0 = evolve(P.feed, {events: [HATCHED, {...HUNTED, topics: null}]});
+P.huntedType = evolve(P.feed, {events: [HATCHED, HUNTED], registered: ['Hatched', 'Hunted']});
+P.hunted = evolve(P.huntedType, {methods: {hunt: `pub fn hunt(&mut self, id: u64, moth_id: u64) {
     let keeper = abi::public_sender().expect("Hunt from a public Moonlight account");
     let hunter = self.dusklings.get(id as usize).expect("No such Duskling");
     assert!(hunter.owner == keeper, "Only its keeper can send a Duskling hunting");
     let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
     self.create_duskling(dna, keeper);
-    abi::emit("hunted", (id, moth_id));
+    abi::emit("hunted", crate::Hunted { id, moth_id });
 }`}});
 export const PARTS = P.hunted;
 const S = Object.fromEntries(Object.entries(P).map(([k, v]) => [k, file(v)]));
@@ -54,7 +57,7 @@ export const lesson = {
       wick: `Dusklings get hungry after dark. Across the harbor, the Moth Nest contract keeps a colony of moths, and each one has DNA of its own.`,
       body: `<p>In this lesson your Hatchery calls <strong>another contract</strong>. When a Duskling hunts a moth from the Moth Nest, a new moth-born Duskling hatches that mixes both DNAs.</p>
 <p>You'll learn contract IDs, cross-contract calls with <code>abi::call</code>, <code>Result</code>, and why a failed call undoes everything.</p>`,
-      learn: ['<code>ContractId</code> and byte arrays', 'Calling another contract with <code>abi::call</code>', '<code>Result</code> and <code>expect</code>', 'Arithmetic with <code>%</code>', 'Ownership checks', 'Rollback across contracts'],
+      learn: ['<code>ContractId</code> and byte arrays', 'Calling another contract with <code>abi::call</code>', '<code>Result</code> and <code>expect</code>', 'Arithmetic with <code>%</code>', 'Ownership checks', 'Rollback across contracts', 'Writing an event type of your own'],
       scene: {nests: 5, moths: 3, creatures: ['8356281049284737', '1568560902483828']},
     },
     {
@@ -166,18 +169,39 @@ assert!(hunter.owner == keeper, "Only its keeper can send a Duskling hunting");<
       },
     },
     {
+      id: 'hunted-type', kind: 'code', title: 'A second event type',
+      body: `<p>Apps want to hear about hunts too, so the Hatchery needs a second event type. <code>Hunted</code> is already at the top of the file, with the hunter's id and the moth's id.</p>
+<p>This time, write its <code>ContractEvent</code> impl yourself, then register it next to <code>Hatched</code>. The events list takes as many types as you like:</p>
+<pre><code>#[dusk_forge::contract(events = [crate::Warmed, crate::Cooled])]</code></pre>`,
+      tasks: ['Below <code>Hunted</code>, implement <code>ContractEvent</code> with one topic, <code>"hunted"</code>. Follow the shape of <code>Hatched</code>\'s impl.', 'Register it: add <code>crate::Hunted</code> to the events list.'],
+      hint: `<pre><code>impl ContractEvent for Hunted {
+    const TOPICS: &amp;'static [&amp;'static str] = &amp;["hunted"];
+}
+
+#[dusk_forge::contract(events = [crate::Hatched, crate::Hunted])]</code></pre>`,
+      start: S.huntedType0, answer: S.huntedType,
+      check(source) {
+        const c = deploy(source), {events, registered} = c.rt.program;
+        need(events.has('Hunted'), 'Implement `ContractEvent` for `Hunted`, just below the struct.');
+        need(events.get('Hunted').topics.join() === 'hunted', '`Hunted` should have one topic: `&["hunted"]`.');
+        need(registered.includes('crate::Hunted') && registered.includes('crate::Hatched'), 'Register both event types: `events = [crate::Hatched, crate::Hunted]`.');
+        return {log: ['event type   Hunted { id: u64, moth_id: u64 }', 'topics       ["hunted"]', 'registered   crate::Hatched, crate::Hunted'], win: 'Two event types, both in the contract\'s schema.', scene: sceneOf(two(source))};
+      },
+    },
+    {
       id: 'hunted', kind: 'code', title: 'Telling the world',
-      body: `<p>Apps want to hear about hunts too. Emit an event once the new Duskling exists. <code>create_duskling</code> already emits <code>"hatched"</code>, so a hunt produces two events: the hatch, then the hunt.</p>`,
-      tasks: ['At the end of <code>hunt</code>, emit a <code>"hunted"</code> event with <code>(id, moth_id)</code>.'],
-      hint: `<code>abi::emit("hunted", (id, moth_id));</code>`,
-      start: S.feed, answer: S.hunted,
+      body: `<p>Now emit it once the new Duskling exists. <code>create_duskling</code> already emits a <code>Hatched</code> event, so a hunt produces two events: the hatch, then the hunt.</p>`,
+      tasks: ['At the end of <code>hunt</code>, emit <code>crate::Hunted { id, moth_id }</code> with the topic <code>"hunted"</code>.'],
+      hint: `<code>abi::emit("hunted", crate::Hunted { id, moth_id });</code>`,
+      start: S.huntedType, answer: S.hunted,
       check(source) {
         const c = two(source), mark = c.events.length;
         c.as('you').call('hunt', 0, 3);
         const ev = c.events.slice(mark);
         need(ev.length === 2 && ev[0].topic === 'hatched' && ev[1].topic === 'hunted', 'A hunt should emit "hatched" and then "hunted".');
-        need(ev[1].data[0] === 0n && ev[1].data[1] === 3n, 'The "hunted" event should carry (id, moth_id): here (0, 3).');
-        return {log: ['event "hatched"  (2, …)', 'event "hunted"  (0, 3)'], win: 'Hunts are on the record.', scene: sceneOf(c)};
+        need(ev[1].type === 'Hunted', 'Emit the event type, `crate::Hunted { id, moth_id }`: apps can only decode registered event types.');
+        need(ev[1].fields.id === 0n && ev[1].fields.moth_id === 3n, 'The `Hunted` event should carry the hunter\'s id and the moth\'s id: here 0 and 3.');
+        return {log: [`event "hatched"  Hatched { id: 2, dna: ${pad16(ev[0].fields.dna)} }`, 'event "hunted"   Hunted { id: 0, moth_id: 3 }'], win: 'Hunts are on the record.', scene: sceneOf(c)};
       },
     },
     {

@@ -2,7 +2,51 @@
 
 extern crate alloc;
 
-#[dusk_forge::contract]
+use bytecheck::CheckBytes;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_forge::ContractEvent;
+use rkyv::{Archive, Deserialize, Serialize};
+
+/// A Duskling hatched.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hatched {
+    pub id: u64,
+    pub dna: u64,
+}
+
+impl ContractEvent for Hatched {
+    const TOPICS: &'static [&'static str] = &["hatched"];
+}
+
+/// A Duskling came back from a hunt.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hunted {
+    pub id: u64,
+    pub moth_id: u64,
+}
+
+impl ContractEvent for Hunted {
+    const TOPICS: &'static [&'static str] = &["hunted"];
+}
+
+/// A Duskling changed hands.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Transferred {
+    pub id: u64,
+    pub to: BlsPublicKey,
+}
+
+impl ContractEvent for Transferred {
+    const TOPICS: &'static [&'static str] = &["transferred"];
+}
+
+#[dusk_forge::contract(events = [crate::Hatched, crate::Hunted, crate::Transferred])]
 mod hatchery {
     use alloc::vec::Vec;
     use dusk_core::abi::{self, ContractId};
@@ -38,7 +82,7 @@ mod hatchery {
         fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
             let id = self.dusklings.len() as u64;
             self.dusklings.push(Duskling { dna, level: 1, owner, ready_at: 0, wins: 0, losses: 0, approved: None });
-            abi::emit("hatched", (id, dna));
+            abi::emit("hatched", crate::Hatched { id, dna });
         }
 
         fn generate_dna(&self, seed: u64) -> u64 {
@@ -83,7 +127,7 @@ mod hatchery {
             let hunter = &self.dusklings[id as usize];
             let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
             self.create_duskling(dna, keeper);
-            abi::emit("hunted", (id, moth_id));
+            abi::emit("hunted", crate::Hunted { id, moth_id });
             self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
         }
 
@@ -126,7 +170,7 @@ mod hatchery {
             self.only_keeper(id);
             self.dusklings[id as usize].owner = to;
             self.dusklings[id as usize].approved = None;
-            abi::emit("transferred", (id, to));
+            abi::emit("transferred", crate::Transferred { id, to });
         }
 
         pub fn approve(&mut self, id: u64, to: BlsPublicKey) {

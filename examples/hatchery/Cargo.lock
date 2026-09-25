@@ -363,9 +363,12 @@ dependencies = [
 name = "dusk-hatchery"
 version = "0.1.0"
 dependencies = [
+ "bytecheck",
  "dusk-core",
  "dusk-data-driver",
  "dusk-forge",
+ "rkyv",
+ "serde",
 ]
 
 [[package]]

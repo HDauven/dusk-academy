@@ -7,7 +7,7 @@ Learn Dusk by raising Dusklings: pixel creatures made from 16 digits of DNA.
 | Path | Size | What you do |
 |---|---|---|
 | **Start with Dusk: Keeper's journey** | 5 levels, 36 questions, no code | Hatch your Duskling, then learn how Dusk works: the shared ledger, wallets and transactions; privacy with Moonlight, Phoenix and zero-knowledge proofs; credentials with Citadel; regulated markets; and the network (provisioners, Succinct Attestation). Each level earns gear for your Duskling. |
-| **Contracts: the Hatchery** | 5 lessons, 40 code chapters | Write one Dusk Forge contract in Rust that hatches Dusklings, gives them keepers, hunts moths from another contract, battles and trades. Every chapter is one small edit. Each lesson ends in a playground running your own contract. |
+| **Contracts: the Hatchery** | 5 lessons, 42 code chapters | Write one Dusk Forge contract in Rust that hatches Dusklings, announces them with registered event types, gives them keepers, hunts moths from another contract, battles and trades. Every chapter is one small edit. Each lesson ends in a playground running your own contract. |
 | **dApps: the Almanac** | 2 lessons, 11 code chapters | Build a web page in JavaScript that reads every Duskling from the Hatchery with the real Dusk Connect SDK and the contract's real data-driver, then prepare hatch and transfer calls for a wallet. It covers exact `u64` values, `JSON.rawJSON` and a down node. |
 | **Circuits: Secret stats** | 2 lessons, 9 code chapters | Write a dusk-plonk circuit that proves your Duskling's power without revealing its stats, then an arena pass proving power ≥ 50 with a range check. Every check generates and verifies real PLONK proofs in the browser. |
 
@@ -25,7 +25,7 @@ Then open **http://localhost:5173/**. Any static host works, including from a su
 
 ## How the contract lessons are checked
 
-In the browser, the Hatchery runs your edited contract in a **Rust-subset interpreter** (`academy/rust-runtime.js`). It evaluates the source as data: no `eval`, and no JavaScript or host access. Dusk's host functions are simulated: `abi::emit`, `abi::public_sender` (you, Rook, Fen or a shielded sender), `abi::block_height`, and `abi::call` to a Moth Nest contract. Checks grade what the contract *does*: calls, state, events, panics and rollback.
+In the browser, the Hatchery runs your edited contract in a **Rust-subset interpreter** (`academy/rust-runtime.js`). It evaluates the source as data: no `eval`, and no JavaScript or host access. It also enforces Forge's event rules: every emitted event type is registered in `#[dusk_forge::contract(events = [...])]`, with its derives and `ContractEvent` topics. Dusk's host functions are simulated: `abi::emit`, `abi::public_sender` (you, Rook, Fen or a shielded sender), `abi::block_height`, and `abi::call` to a Moth Nest contract. Checks grade what the contract *does*: calls, state, events, panics and rollback.
 
 The interpreter isn't rustc or DuskVM. To keep the lessons honest, two checks run the real thing:
 

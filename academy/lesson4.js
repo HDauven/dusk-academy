@@ -9,7 +9,7 @@ const P = {};
 const create = extra => `fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
     let id = self.dusklings.len() as u64;
     self.dusklings.push(Duskling { dna, level: 1, owner${extra} });
-    abi::emit("hatched", (id, dna));
+    abi::emit("hatched", crate::Hatched { id, dna });
 }`;
 P.readyAt = evolve(L3, {fields: [...L3.fields, 'ready_at: u64,'], methods: {create_duskling: create(', ready_at: 0')}});
 P.rest = evolve(P.readyAt, {consts: [...L3.consts, 'const COOLDOWN: u64 = 360;'], methods: {hunt: `pub fn hunt(&mut self, id: u64, moth_id: u64) {
@@ -18,7 +18,7 @@ P.rest = evolve(P.readyAt, {consts: [...L3.consts, 'const COOLDOWN: u64 = 360;']
     assert!(hunter.owner == keeper, "Only its keeper can send a Duskling hunting");
     let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
     self.create_duskling(dna, keeper);
-    abi::emit("hunted", (id, moth_id));
+    abi::emit("hunted", crate::Hunted { id, moth_id });
     self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
 }`}});
 P.ready = evolve(P.rest, {methods: {
@@ -29,7 +29,7 @@ P.ready = evolve(P.rest, {methods: {
     assert!(self.is_ready(id), "Your Duskling is still resting");
     let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
     self.create_duskling(dna, keeper);
-    abi::emit("hunted", (id, moth_id));
+    abi::emit("hunted", crate::Hunted { id, moth_id });
     self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
 }`,
   is_ready: `fn is_ready(&self, id: u64) -> bool {
@@ -43,7 +43,7 @@ P.onlyKeeper = evolve(P.ready, {methods: {
     let hunter = &self.dusklings[id as usize];
     let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
     self.create_duskling(dna, keeper);
-    abi::emit("hunted", (id, moth_id));
+    abi::emit("hunted", crate::Hunted { id, moth_id });
     self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
 }`,
   only_keeper: `fn only_keeper(&self, id: u64) -> BlsPublicKey {

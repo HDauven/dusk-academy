@@ -35,7 +35,7 @@ code, kbd { font-family: var(--mono); }
 #count { font-family: var(--pixel); font-size: 12px; color: var(--muted); min-width: 52px; text-align: right; }
 
 /* Stage */
-.stage { display: grid; grid-template-columns: minmax(360px, 42%) 1fr; min-height: 0; }
+.stage { display: grid; grid-template-columns: minmax(360px, 42%) minmax(0, 1fr); min-height: 0; }
 .left { display: flex; flex-direction: column; min-height: 0; border-right: 2px solid var(--line); background: var(--panel); }
 .scene-wrap { position: relative; flex: none; border-bottom: 2px solid var(--line); background: #121232; }
 #scene { display: block; width: 100%; aspect-ratio: 16 / 9; image-rendering: pixelated; }
@@ -161,7 +161,7 @@ dialog h2 { margin: 0 0 12px; font-family: var(--pixel); font-weight: 400; font-
   .topbar { flex-wrap: wrap; gap: 8px 14px; padding: 10px 16px; }
   .progress { width: 100%; margin: 0; }
   #pips { flex: 1; } #pips li { flex: 1; }
-  .stage { grid-template-columns: 1fr; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
   .left { border-right: 0; }
   .chapter { overflow: visible; padding: 18px 16px 24px; }
   .right { min-height: 70vh; }

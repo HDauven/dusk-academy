@@ -24,11 +24,13 @@ function dataSize(value) {
 const checked = value => {dataSize(value);return value;};
 const clone = value => structuredClone(checked(value));
 const operators = new Map([['..',1],['..=',1],['||',2],['&&',3],['==',4],['!=',4],['<',5],['<=',5],['>',5],['>=',5],['+',6],['-',6],['*',7],['/',7],['%',7]]);
+// The attribute lines every Forge event type carries: rkyv encoding on chain, serde JSON for apps.
+const EVENT_ATTRIBUTES = ['derive ( Archive , Serialize , Deserialize )', 'archive_attr ( derive ( CheckBytes ) )', 'cfg_attr ( feature = "data-driver" , derive ( serde :: Serialize , serde :: Deserialize ) )'];
 const keywords = new Set('as async await break const continue crate dyn else enum extern false fn for if impl in let loop match mod move mut pub ref return self static struct super trait true type unsafe use where while gen'.split(' '));
 
 export function parseRust(source, options={}) {
-  if(typeof source!=='string'||source.length>8000||!source.trim()||new TextEncoder().encode(source).length>8000) throw Error('Keep the source between 1 and 8,000 UTF-8 bytes.');
-  const tokens=[], pattern=/\s+|\/\/[^\r\n]*|0x[\da-fA-F_]+(?:u64|u32|usize|u8)?|\d[\d_]*(?:u64|u32|usize|u8)?|[A-Za-z_][A-Za-z0-9_]*|"(?:[^"\\]|\\.)*"|::|->|=>|\.\.=|\.\.|&&|\|\||==|!=|<=|>=|\+=|-=|\*=|\/=|%=|[{}()[\]#&!.,:;=+*/%<>|?\-]/y;
+  if(typeof source!=='string'||source.length>12000||!source.trim()||new TextEncoder().encode(source).length>12000) throw Error('Keep the source between 1 and 12,000 UTF-8 bytes.');
+  const tokens=[], pattern=/\s+|\/\/[^\r\n]*|0x[\da-fA-F_]+(?:u64|u32|usize|u8)?|\d[\d_]*(?:u64|u32|usize|u8)?|[A-Za-z_][A-Za-z0-9_]*|"(?:[^"\\]|\\.)*"|'[A-Za-z_][A-Za-z0-9_]*|::|->|=>|\.\.=|\.\.|&&|\|\||==|!=|<=|>=|\+=|-=|\*=|\/=|%=|[{}()[\]#&!.,:;=+*/%<>|?\-]/y;
   const fail=(message,offset=tokens[p]?.offset??source.length)=>{
     const lines=source.slice(0,offset).split('\n');
     throw Error(`Not supported by this lesson runtime at line ${lines.length}, column ${lines.at(-1).length+1}. ${message}`);
@@ -47,6 +49,9 @@ export function parseRust(source, options={}) {
   tokens.push({text:'<end>',offset:source.length});
   let p=0, nesting=0, expressions=0, types=0;
   const structs=new Map(), methods=new Map(), constants=new Map();
+  // Forge events: structs at the top of the file, their ContractEvent topics, the paths registered in
+  // #[dusk_forge::contract(events = [...])], and every struct literal and emit, checked after parsing.
+  const where=new Map(), events=new Map(), literals=[], emits=[];let registered=null,scope='root',pending=[];
   const peek=()=>tokens[p].text, take=t=>peek()===t&&(p++,true);
   const expect=t=>{if(!take(t))fail(`Expected ${t}, found ${peek()}.`);};
   const name=()=>{const n=peek();if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(n))fail('Expected an identifier.');p++;return n;};
@@ -100,14 +105,16 @@ export function parseRust(source, options={}) {
       if(['match','unsafe','async','await','dyn','move','ref','static','trait','type','where','enum','super','loop','while','for'].includes(id))fail(`\`${id}\` isn't supported in these lessons.`,tokens[p-1].offset);
       while(take('::')){if(take('<')){do{generic.push(type());}while(take(','));expect('>');break;}id+='::'+name();}
       if(take('!')) {if(!['assert','assert_eq','panic','vec'].includes(id))fail(`Macro ${id}! is unavailable.`);const bracket=take('[');if(!bracket)expect('(');n={kind:'macro',id,args:args(bracket?']':')')};}
-      else if((id==='Self'||structs.has(id))&&peek()==='{') {
-        expect('{');const fields=[];if(!take('}')){do{const key=name();fields.push([key,take(':')?expr():{kind:'name',id:key}]);}while(take(',')&&peek()!=='}');expect('}');}n={kind:'struct',id,fields};
+      else if((id==='Self'||structs.has(id.replace(/^crate::/,'')))&&peek()==='{') {
+        const offset=tokens[p-1].offset;
+        expect('{');const fields=[];if(!take('}')){do{const key=name();fields.push([key,take(':')?expr():{kind:'name',id:key}]);}while(take(',')&&peek()!=='}');expect('}');}
+        n={kind:'struct',id:id.replace(/^crate::/,''),path:id,offset,fields};literals.push({node:n,scope});
       } else n={kind:'name',id,generic};
     }
     let chain=0;
     while(true) {
       if(++chain>64)fail('Method and field chains are limited to 64.');
-      if(take('('))n={kind:'call',fn:n,args:args(')')};
+      if(take('(')){n={kind:'call',fn:n,args:args(')')};if(n.fn.kind==='name'&&n.fn.id==='abi::emit'&&n.args[1]?.kind==='struct')emits.push(n.args[1]);}
       else if(take('.')) {const id=name();n={kind:'member',object:n,id};
         if(peek()==='::'){p++;expect('<');const generic=[];do{generic.push(/^\d/.test(peek())?tokens[p++].text:type());}while(take(','));expect('>');n.generic=generic;if(peek()!=='(')fail('Generic arguments belong on a method call.');}}
       else if(take('[')){const index=expr();expect(']');n={kind:'index',object:n,index};}
@@ -124,24 +131,39 @@ export function parseRust(source, options={}) {
   function declarations(end) {
     while(peek()!==end) {
       if(take('#')) {
-        const inner=!!take('!');expect('[');const attr=[];while(!take(']')){if(peek()==='<end>')fail('Close the attribute.');attr.push(tokens[p++].text);}
-        if(!(inner&&['no_std','cfg ( target_family = "wasm" )'].includes(attr.join(' ')))&&!['dusk_forge :: contract','derive ( Default )'].includes(attr.join(' ')))fail('Only the supplied lesson annotations are supported.');
+        const inner=!!take('!');expect('[');const attr=[];let depth=1;
+        for(;;){if(peek()==='<end>')fail('Close the attribute.');const t=tokens[p++].text;if(t==='[')depth++;else if(t===']'&&!--depth)break;attr.push(t);}
+        const text=attr.join(' '),list=text.match(/^dusk_forge :: contract \( events = \[(.*)\] \)$/);
+        if(inner){if(!['no_std','cfg ( target_family = "wasm" )'].includes(text))fail('Only the supplied lesson annotations are supported.');}
+        else if(list){if(registered)fail('Register the events once.');registered=list[1].split(',').map(x=>x.replaceAll(' ','')).filter(Boolean);}
+        else if(['dusk_forge :: contract','derive ( Default )',...EVENT_ATTRIBUTES].includes(text))pending.push(text);
+        else fail('Only the supplied lesson annotations are supported.');
         continue;
       }
+      const attrs=pending;pending=[];
       if(take('extern')){expect('crate');expect('alloc');expect(';');continue;}
       if(take('use')) {
         const parts=[];while(!take(';')){if(peek()==='<end>')fail('End the import.');parts.push(tokens[p++].text);}
-        if(!['alloc::vec::Vec','dusk_core::abi','dusk_core::abi::{self,ContractId}','dusk_core::signatures::bls::PublicKeyasBlsPublicKey','dusk_core::abi::{ContractId,self}','dusk_core::transfer::TRANSFER_CONTRACT','dusk_plonk::prelude::*'].includes(parts.join('')))fail('Only the supplied lesson imports are supported.');continue;
+        const path=parts.join('').replace(/\{([^}]*)\}/,(_,items)=>'{'+items.split(',').sort().join(',')+'}');
+        if(!['alloc::vec::Vec','dusk_core::abi','dusk_core::abi::{ContractId,self}','dusk_core::signatures::bls::PublicKeyasBlsPublicKey','dusk_core::transfer::TRANSFER_CONTRACT','dusk_plonk::prelude::*','bytecheck::CheckBytes','dusk_forge::ContractEvent','rkyv::{Archive,Deserialize,Serialize}'].includes(path))fail('Only the supplied lesson imports are supported.');continue;
       }
       const pub=!!take('pub');
-      if(take('mod')){expect(options.module??'registry');expect('{');declarations('}');expect('}');continue;}
+      if(take('mod')){expect(options.module??'registry');expect('{');scope='module';declarations('}');scope='root';expect('}');continue;}
       if(take('struct')) {
-        const id=name();if(structs.has(id))fail('Duplicate struct.');const fields=new Map();structs.set(id,fields);expect('{');
+        const id=name();if(structs.has(id))fail('Duplicate struct.');const fields=new Map();structs.set(id,fields);where.set(id,{scope,attrs,offset:tokens[p-1].offset});expect('{');
         if(!take('}')){do{take('pub');const key=name();expect(':');if(fields.has(key))fail('Duplicate field.');fields.set(key,type());}while(take(',')&&peek()!=='}');expect('}');}continue;
       }
       if(take('const')){const id=name();expect(':');const declared=type();expect('=');const value=expr();expect(';');if(constants.has(id))fail('Duplicate constant.');constants.set(id,{declared,value});continue;}
       if(take('impl')) {
-        let owner=name();if(take('for')){if(owner!=='Circuit')fail('Only the Circuit trait is supported.');owner=name();}if(!structs.has(owner))fail('Implement a declared lesson struct.');expect('{');
+        let owner=name();
+        if(owner==='ContractEvent') {
+          expect('for');const id=name();if(!structs.has(id))fail(`Declare the struct ${id} before implementing ContractEvent for it.`);if(events.has(id))fail('Implement ContractEvent once per event type.');
+          expect('{');expect('const');if(name()!=='TOPICS')fail('ContractEvent has one item: `const TOPICS`.');expect(':');
+          for(const t of ['&',"'static",'[','&',"'static",'str',']','=','&','['])expect(t);
+          const topics=[];if(!take(']')){do{if(!peek().startsWith('"'))fail('Topics are string literals, like "hatched".');topics.push(JSON.parse(tokens[p++].text));}while(take(',')&&peek()!==']');expect(']');}
+          expect(';');expect('}');events.set(id,{topics});continue;
+        }
+        if(take('for')){if(owner!=='Circuit')fail('Only the Circuit and ContractEvent traits are supported.');owner=name();}if(!structs.has(owner))fail('Implement a declared lesson struct.');expect('{');
         while(!take('}')) {
           const exported=!!take('pub'),constant=!!take('const');expect('fn');const id=name(),params=[];let receiver=false,mutable=false;
           expect('(');if(!take(')')){do{
@@ -157,8 +179,24 @@ export function parseRust(source, options={}) {
     }
   }
   declarations('<end>');
+  // What Forge's macro checks, then what rustc would: emits match a registered path, registered
+  // types live at the top of the file with their derives and topics, and paths reach their structs.
+  const module=options.module??'registry';
+  for(const n of emits)if(!(registered??[]).includes(n.path))fail(`event type \`${n.path}\` is emitted but not registered; add it to the \`#[contract(events = [...])]\` list.`,n.offset);
+  for(const path of registered??[]) {
+    const id=path.replace(/^crate::/,''),at=where.get(id);
+    if(!at)fail(`\`${path}\` is registered as an event, but there's no struct called \`${id}\`.`);
+    if(at.scope!=='root'||!path.startsWith('crate::'))fail(`Declare event types at the top of the file, outside \`mod ${module}\`, and register them as \`crate::${id}\`.`);
+    if(!events.has(id))fail(`\`${id}\` is registered as an event, so it needs \`impl ContractEvent for ${id}\` with its TOPICS.`,at.offset);
+    if(!EVENT_ATTRIBUTES.every(a=>at.attrs.includes(a)))fail(`Keep the three attribute lines above \`${id}\`: Forge needs them to encode the event and to decode it for apps.`,at.offset);
+  }
+  for(const {node,scope:inside} of literals) {
+    const at=where.get(node.id);
+    if(node.path.startsWith('crate::')&&at?.scope!=='root')fail(`\`${node.id}\` is declared inside \`mod ${module}\`, so write just \`${node.id}\`.`,node.offset);
+    if(!node.path.startsWith('crate::')&&node.path!=='Self'&&at?.scope==='root'&&inside==='module')fail(`\`${node.id}\` is declared at the top of the file, outside \`mod ${module}\`. Inside the module, write \`crate::${node.id}\`.`,node.offset);
+  }
   if(!structs.size||!methods.size)fail('Keep the supplied lesson structs and methods.');
-  return {structs,methods,constants};
+  return {structs,methods,constants,events,registered:registered??[]};
 }
 
 export function createRuntime(source, hosts={}) {
@@ -180,7 +218,7 @@ export function createRuntime(source, hosts={}) {
     else if(t.startsWith('Option<')){if(v!==null){if(v?.kind!=='some')unsupported('Expected Some or None.');validate(v.value,t.slice(7,-1),owner);}}
     else if(t.startsWith('Vec<')){if(v?.kind!=='vec')unsupported('Expected a vector.');v.element=t.slice(4,-1);for(const e of v.items)validate(e,v.element,owner);}
     else if(t.startsWith('Result<')){if(!['ok','err'].includes(v?.kind))unsupported('Expected Ok or Err.');if(v.kind==='ok'){const inner=t.slice(7,-1);let end=0,nesting=0;for(;end<inner.length;end++){if('(<'.includes(inner[end]))nesting++;if(')>'.includes(inner[end]))nesting--;if(inner[end]===','&&!nesting)break;}validate(v.value,inner.slice(0,end),owner);}}
-    else if(program.structs.has(t)){if(v?.kind!=='struct'||v.type!==t)unsupported('Expected '+t+'.');if(Object.keys(v.fields).length!==program.structs.get(t).size||Object.keys(v.fields).some(k=>!program.structs.get(t).has(k)))unsupported('Supply exactly the declared fields.');for(const [k,ft]of program.structs.get(t))validate(v.fields[k],ft,t);}
+    else if(program.structs.has(t)){if(v?.kind!=='struct'||v.type!==t)unsupported('Expected '+t+'.');if(Object.keys(v.fields).length!==program.structs.get(t).size||Object.keys(v.fields).some(k=>!program.structs.get(t).has(k)))unsupported(`Supply exactly the declared fields of ${t}.`);for(const [k,ft]of program.structs.get(t))validate(v.fields[k],ft,t);}
     else if(!['Composer','Constraint','Error','_'].includes(t))unsupported('Unsupported type '+t+'.');
     return v;
   };
@@ -200,7 +238,7 @@ export function createRuntime(source, hosts={}) {
     if(n.kind==='member'||n.kind==='index') {
       const parent=reference(n.object,env),obj=parent.get();let key;
       if(n.kind==='member'){if(obj?.kind!=='struct'||!Object.hasOwn(obj.fields,n.id))unsupported('Unknown field '+n.id+'.');key=n.id;}
-      else {if(obj?.kind!=='vec')unsupported('Index a vector.');key=Number(uint(value(n.index,env)));if(key>=obj.items.length)throw new Rejection('index out of bounds');}
+      else {if(obj?.kind!=='vec')unsupported('Index a vector.');key=Number(uint(value(n.index,env)));if(key>=obj.items.length)throw new Rejection(`index out of bounds: the len is ${obj.items.length} but the index is ${key}`);}
       const data=n.kind==='member'?obj.fields:obj.items;
       return {get:()=>data[key],mutable:parent.mutable,set:v=>{if(!parent.mutable)unsupported('Mutation requires &mut self or a mutable binding.');if(n.kind==='member')validate(v,program.structs.get(obj.type).get(key),obj.type);else if(obj.element)validate(v,obj.element,env.owner);data[key]=v;}};
     }
@@ -226,7 +264,7 @@ export function createRuntime(source, hosts={}) {
         if(!mutable)unsupported('A vector mutation requires &mut self.');
         if(id==='push'){if(obj.items.length>=128)throw new RuntimeLimit('Lesson vectors are limited to 128 records.');if(obj.element)validate(args[0],obj.element,env.owner);if(dataSize(obj)+dataSize(args[0])>32768)throw new RuntimeLimit('A lesson vector exceeds the 32 KiB teaching limit.');obj.items.push(clone(args[0]));return;}
         if(id==='clear'){obj.items.length=0;return;}
-        const i=Number(uint(args[0]));if(i>=obj.items.length)throw new Rejection('index out of bounds');
+        const i=Number(uint(args[0]));if(i>=obj.items.length)throw new Rejection(`${id==='remove'?'removal':'swap_remove'} index (is ${i}) should be < len (is ${obj.items.length})`);
         if(id==='remove')return obj.items.splice(i,1)[0];
         const removed=obj.items[i],last=obj.items.pop();if(i<obj.items.length)obj.items[i]=last;return removed;
       }
@@ -273,11 +311,11 @@ export function createRuntime(source, hosts={}) {
       case 'struct':{
         const type=n.id==='Self'?env.owner:n.id,fields=Object.create(null);if(!program.structs.has(type))unsupported('Unknown struct '+type+'.');
         for(const [key,v]of n.fields){if(Object.hasOwn(fields,key))unsupported('Duplicate struct field.');fields[key]=value(v,env);}
-        if(Object.keys(fields).length!==program.structs.get(type).size||Object.keys(fields).some(k=>!program.structs.get(type).has(k)))unsupported('Supply exactly the declared fields.');
+        if(Object.keys(fields).length!==program.structs.get(type).size||Object.keys(fields).some(k=>!program.structs.get(type).has(k)))unsupported(`Supply exactly the declared fields of ${type}.`);
         return validate(checked({kind:'struct',type,fields}),type,type);
       }
       case 'member':{const obj=value(n.object,env);if(obj?.kind!=='struct'||!Object.hasOwn(obj.fields,n.id))unsupported('Unknown field '+n.id+'.');return obj.fields[n.id];}
-      case 'index':{const obj=value(n.object,env),i=Number(uint(value(n.index,env)));if(obj?.kind!=='vec')unsupported('Index a vector.');if(i>=obj.items.length)throw new Rejection('index out of bounds');return obj.items[i];}
+      case 'index':{const obj=value(n.object,env),i=Number(uint(value(n.index,env)));if(obj?.kind!=='vec')unsupported('Index a vector.');if(i>=obj.items.length)throw new Rejection(`index out of bounds: the len is ${obj.items.length} but the index is ${i}`);return obj.items[i];}
       case 'tuple':return checked({kind:'tuple',items:n.list.map(x=>value(x,env))});
       case 'array':return checked({kind:'array',items:n.list.map(x=>value(x,env))});
       case 'repeat':{const count=bounded(value(n.count,env)),v=value(n.value,env);if(dataSize(v)*count>32768)throw new RuntimeLimit('A repeated value exceeds the 32 KiB teaching limit.');return checked({kind:'array',items:Array.from({length:count},()=>clone(v))});}

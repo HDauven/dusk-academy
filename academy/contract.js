@@ -41,7 +41,9 @@ export function deploy(source, {sender = 'you', height = 1000} = {}) {
   const functions = new Map([
     ['abi::emit', args => {
       if (args.length !== 2 || typeof args[0] !== 'string') throw Error('abi::emit expects a topic string and a payload.');
-      events.push({topic: args[0], data: args[1]?.kind === 'tuple' ? args[1].items : [args[1]]});
+      // A Forge event type is recorded by its fields; any other payload as a list of values.
+      const [topic, data] = args;
+      events.push(data?.kind === 'struct' ? {topic, type: data.type, fields: data.fields} : {topic, data: data?.kind === 'tuple' ? data.items : [data]});
     }],
     ['abi::public_sender', args => {
       if (args.length) throw Error('abi::public_sender takes no arguments.');
@@ -122,7 +124,7 @@ export function friendly(error) {
     ? 'Overflow! The result doesn\'t fit in a `u64`, so the call panicked. Forge contracts are built with overflow checks on.'
     : /index out of bounds/.test(text) ? 'The call panicked: that index is past the end of the vector.'
     : `The call panicked: ${text}.`};
-  if (/Supply exactly the declared fields/.test(text)) return {text: 'When you build a struct, give every field a value, and no extra ones. Check the fields of `Duskling`.'};
+  if (/Supply exactly the declared fields/.test(text)) return {text: `When you build a struct, give every field a value, and no extra ones. Check the fields of \`${text.match(/fields of (\w+)/)?.[1] ?? 'the struct'}\`.`};
   const at = text.match(/at line (\d+), column (\d+)\. (.*)$/s);
   if (at) {
     let msg = at[3];

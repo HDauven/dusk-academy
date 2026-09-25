@@ -2,6 +2,7 @@
 // and each chapter starts exactly where the previous one ended.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {lessons, chapters} from './course.js';
 import {file, LESSON1} from './hatchery-file.js';
 import {friendly} from './contract.js';
@@ -9,6 +10,10 @@ import {levels, chapters as journey} from './journey.js';
 
 test('the Lesson 1 template matches the Lesson 1 reference file', () => {
   assert.equal(file(LESSON1), lessons[0].reference);
+});
+
+test('examples/hatchery is the finished Lesson 5 contract', () => {
+  assert.equal(readFileSync(new URL('../examples/hatchery/src/lib.rs', import.meta.url), 'utf8'), lessons[4].reference + '\n');
 });
 
 test('every code chapter passes with its answer and fails from its start', () => {
@@ -24,8 +29,9 @@ test('chapters chain: each start is the previous answer, across lessons too', ()
   for (let i = 1; i < code.length; i++) {
     const [a, b] = [code[i - 1], code[i]];
     const sameLesson = a.lesson === b.lesson;
-    // Chapters that supply new lines up front (lesson 1's vectors and mixing) start from a prepared file.
-    if (sameLesson && !['vectors', 'mixing'].includes(b.id)) assert.equal(b.start, a.answer, `${b.id} should start from ${a.id}'s answer`);
+    // Chapters that supply new lines up front (lesson 1's vectors and mixing, and the event types that
+    // arrive half-written) start from a prepared file.
+    if (sameLesson && !['vectors', 'mixing', 'event-type', 'hunted-type', 'transferred'].includes(b.id)) assert.equal(b.start, a.answer, `${b.id} should start from ${a.id}'s answer`);
     if (!sameLesson) assert.equal(b.start, lessons[a.lesson].reference, `${b.id} should start from the end of lesson ${a.lesson + 1}`);
   }
   lessons.forEach((l, i) => assert.equal(l.reference, code.filter(c => c.lesson === i).at(-1).answer, `lesson ${i + 1} reference`));

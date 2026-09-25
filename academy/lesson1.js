@@ -1,5 +1,6 @@
 // Lesson 1: The Hatchery. Every code chapter is one small edit, checked by running the contract.
 import {WICK, SAMPLE, MODULUS, dnaFor, pad16, deploy, need, needMethod, stripComments as code, seedFromName, friendly} from './contract.js';
+import {header, HATCHED} from './hatchery-file.js';
 export {WICK, SAMPLE, dnaFor, pad16, deploy, seedFromName, friendly};
 
 // Reference file after each code chapter.
@@ -197,7 +198,7 @@ step.events = body(C3, `
         fn create_duskling(&mut self, dna: u64) {
             let id = self.dusklings.len() as u64;
             self.dusklings.push(Duskling { dna, level: 1 });
-            abi::emit("hatched", (id, dna));
+            abi::emit("hatched", crate::Hatched { id, dna });
         }
 
         fn generate_dna(&self, seed: u64) -> u64 {
@@ -209,6 +210,11 @@ step.events = body(C3, `
             self.create_duskling(dna);
         }
 `);
+// The event chapters add the Hatched event type above the contract module.
+const withEvents = (source, events, registered) => source.replace('#![no_std]\n\nextern crate alloc;\n\n#[dusk_forge::contract]', header(events, registered));
+step.eventType0 = withEvents(step.hatch, [{...HATCHED, fields: ['// Add the fields here.']}], []);
+step.eventType = withEvents(step.hatch, [HATCHED], ['Hatched']);
+step.events = withEvents(step.events, [HATCHED], ['Hatched']);
 
 const sceneOf = c => ({nests: 5, creatures: c.dusklings().map(d => pad16(d.dna))});
 
@@ -451,26 +457,53 @@ self.store_egg(size);</code></pre>`,
     },
   },
   {
-    id: 'events', kind: 'code', title: 'Events',
-    body: `<p>When a Duskling hatches, the outside world should hear about it: wallets, explorers, and this very page. Contracts announce things with <strong>events</strong>:</p>
-<pre><code>abi::emit("warmed", (id, degrees));</code></pre>
-<p>An event is a receipt attached to the transaction. Apps listen for it, but it isn't contract state. <code>abi::emit</code> comes from the <code>abi</code> module you've had imported since chapter 2.</p>`,
-    tasks: [`In <code>create_duskling</code>, before pushing, save the new id: <code>let id = self.dusklings.len() as u64;</code>`, `After pushing, emit a <code>"hatched"</code> event with <code>(id, dna)</code>.`],
+    id: 'event-type', kind: 'code', title: 'Event types',
+    body: `<p>When a Duskling hatches, the outside world should hear about it: wallets, explorers, and this very page. Contracts announce things with <strong>events</strong>, receipts attached to the transaction. Apps listen for them, but they aren't contract state.</p>
+<p>In Forge, each kind of event is a <strong>type</strong>: a struct holding the event's data. Event types live at the top of the file, outside the contract module. A new <code>Hatched</code> type is waiting there for its fields.</p>
+<ul><li>The three attribute lines let <strong>rkyv</strong> encode the event on chain, and <strong>serde</strong> turn it into JSON for apps. Every event type carries them.</li>
+<li><code>impl ContractEvent</code> lists its <strong>topics</strong>: the names it's emitted under.</li></ul>
+<p>Then <strong>register</strong> the type in the contract attribute. Forge adds it to the contract's schema, so apps can decode it:</p>
+<pre><code>#[dusk_forge::contract(events = [crate::Warmed])]</code></pre>
+<p class="aside"><code>crate::</code> is the path from the top of the file. Forge matches paths exactly as written, so you'll use the same path when you emit the event.</p>`,
+    tasks: [`Give <code>Hatched</code> two public fields: <code>pub id: u64,</code> and <code>pub dna: u64,</code>.`, `Register it: change <code>#[dusk_forge::contract]</code> to <code>#[dusk_forge::contract(events = [crate::Hatched])]</code>.`],
+    hint: `<pre><code>pub struct Hatched {
+    pub id: u64,
+    pub dna: u64,
+}
+
+#[dusk_forge::contract(events = [crate::Hatched])]</code></pre>`,
+    start: step.eventType0, answer: step.eventType,
+    scene: {nests: 5, creatures: [11n, 12n, 13n, 14n].map(s => pad16(dnaFor(s)))},
+    check(source) {
+      const c = deploy(source), fields = c.rt.program.structs.get('Hatched'), topics = c.rt.program.events.get('Hatched')?.topics;
+      need(fields?.size === 2 && fields.get('id') === 'u64' && fields.get('dna') === 'u64', '`Hatched` needs two fields: `pub id: u64` and `pub dna: u64`.');
+      need(topics?.length === 1 && topics[0] === 'hatched', 'Keep `Hatched`\'s topic: `const TOPICS: &\'static [&\'static str] = &["hatched"];`.');
+      need(c.rt.program.registered.includes('crate::Hatched'), 'Register the event type: `#[dusk_forge::contract(events = [crate::Hatched])]`.');
+      return {log: ['event type   Hatched { id: u64, dna: u64 }', 'topics       ["hatched"]', 'registered   crate::Hatched'], win: 'Forge knows about the event now. Nothing emits it yet.', scene: {nests: 5, creatures: [11n, 12n, 13n, 14n].map(s => pad16(dnaFor(s)))}};
+    },
+  },
+  {
+    id: 'events', kind: 'code', title: 'Emitting events',
+    body: `<p>Time to announce every hatch. <code>abi::emit</code> takes a topic and an event, and attaches the event to the transaction:</p>
+<pre><code>abi::emit("warmed", crate::Warmed { id, degrees });</code></pre>
+<p>Use a topic from the type's <code>TOPICS</code>, so apps can decode it. <code>abi::emit</code> comes from the <code>abi</code> module you've had imported since chapter 2.</p>`,
+    tasks: [`In <code>create_duskling</code>, before pushing, save the new id: <code>let id = self.dusklings.len() as u64;</code>`, `After pushing, emit <code>crate::Hatched { id, dna }</code> with the topic <code>"hatched"</code>.`],
     hint: `<pre><code>let id = self.dusklings.len() as u64;
 self.dusklings.push(Duskling { dna, level: 1 });
-abi::emit("hatched", (id, dna));</code></pre>`,
-    start: step.hatch, answer: step.events,
+abi::emit("hatched", crate::Hatched { id, dna });</code></pre>`,
+    start: step.eventType, answer: step.events,
     scene: {nests: 5, creatures: [11n, 12n, 13n, 14n].map(s => pad16(dnaFor(s)))},
     check(source) {
       const c = deploy(source), log = [];
       for (const seed of [21n, 22n]) c.call('hatch', seed);
       need(c.events.length === 2, `Two hatches should emit two events, but ${c.events.length} were emitted.`);
       c.events.forEach((e, i) => {
-        need(e.topic === 'hatched', `Use the topic "hatched", not "${e.topic}".`);
-        need(e.data.length === 2 && e.data[0] === BigInt(i) && e.data[1] === dnaFor([21n, 22n][i]), `Event ${i} should carry (${i}, ${dnaFor([21n, 22n][i])}): the id first, then the DNA.`);
-        log.push(`event "hatched"  (${e.data[0]}, ${pad16(e.data[1])})`);
+        need(e.type === 'Hatched', 'Emit the event type, `crate::Hatched { id, dna }`: apps can only decode registered event types.');
+        need(e.topic === 'hatched', `Use the topic "hatched", the one \`Hatched\` lists in TOPICS, not "${e.topic}".`);
+        need(e.fields.id === BigInt(i) && e.fields.dna === dnaFor([21n, 22n][i]), `Event ${i} should carry id ${i} and DNA ${dnaFor([21n, 22n][i])}.`);
+        log.push(`event "hatched"  Hatched { id: ${e.fields.id}, dna: ${pad16(e.fields.dna)} }`);
       });
-      return {log, win: 'The page heard your events and hatched both eggs.', scene: {nests: 5, creatures: c.events.map(e => pad16(e.data[1]))}, fromEvents: true};
+      return {log, win: 'The page heard your events and hatched both eggs.', scene: {nests: 5, creatures: c.events.map(e => pad16(e.fields.dna))}, fromEvents: true};
     },
   },
   {

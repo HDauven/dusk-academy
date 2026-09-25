@@ -19,7 +19,7 @@ const run = (body, method, ...args) => { const rt = createRuntime(contract(body)
 
 test('source is bounded and outside syntax is refused, not ignored', () => {
   const make = src => createRuntime(src, {module: 'hatchery', contract: 'Hatchery'});
-  assert.throws(() => make('// ' + 'x'.repeat(8000)), /8,000/);
+  assert.throws(() => make('// ' + 'x'.repeat(12000)), /12,000/);
   assert.throws(() => make(contract('pub fn f(&self) -> u64 { unsafe { 1 } }')), /`unsafe` isn't supported in these lessons/);
   assert.throws(() => make(contract('pub fn f(&self) -> u64 { match 1 { _ => 1 } }')), /`match` isn't supported in these lessons/);
   assert.throws(() => make(contract('pub fn f(&self) { println!("hi"); }')), /Macro println! is unavailable/);
@@ -63,4 +63,20 @@ test('simulated hosts: shielded senders have no public sender, block height is a
             abi::call::<_, u64>(dusk_core::abi::ContractId::from_bytes([1; 32]), "x", &1).expect("no")
         }`), {module: 'hatchery', contract: 'Hatchery'});
   assert.throws(() => other.invoke(other.create(), 'f', [], true));
+});
+
+test("Forge's event rules: registered types with derives and topics, emitted by the registered path", () => {
+  const make = src => createRuntime(src, {module: 'hatchery', contract: 'Hatchery'});
+  const good = lessons[0].reference;
+  assert.doesNotThrow(() => make(good));
+  assert.throws(() => make(good.replace('crate::Hatched { id, dna }', 'Hatched { id, dna }')), /event type `Hatched` is emitted but not registered/);
+  assert.throws(() => make(good.replace('events = [crate::Hatched]', 'events = [Hatched]')), /event type `crate::Hatched` is emitted but not registered/);
+  assert.throws(() => make(good.replace(/impl ContractEvent for Hatched \{[^}]*\}/, '')), /needs `impl ContractEvent for Hatched`/);
+  assert.throws(() => make(good.replace('#[archive_attr(derive(CheckBytes))]\n', '')), /Keep the three attribute lines above `Hatched`/);
+  assert.throws(() => make(good.replace('self.dusklings.push(Duskling { dna, level: 1 });', 'self.dusklings.push(crate::Duskling { dna, level: 1 });')), /`Duskling` is declared inside `mod hatchery`/);
+  // Rust's messages for a failed Result and an index past the end.
+  const c = deploy(lessons[2].reference);
+  c.as('you').call('hatch', 1);
+  assert.throws(() => c.as('you').call('hunt', 0, 40), {message: 'The Moth Nest has no such moth: Panic("index out of bounds: the len is 6 but the index is 40")'});
+  assert.throws(() => run('pub fn f(&self) -> u64 { let v: Vec<u64> = Vec::new(); v[2] }', 'f'), {message: 'index out of bounds: the len is 0 but the index is 2'});
 });

@@ -1,5 +1,5 @@
 // Lesson 5: Trading. Transfers, events with keys, approvals with Option, &mut borrows, stale approvals.
-import {file, evolve} from './hatchery-file.js';
+import {file, evolve, HATCHED, HUNTED, TRANSFERRED} from './hatchery-file.js';
 import {PARTS as L4} from './lesson4.js';
 import {deploy, need, needMethod, fnSource, pad16, seedFromName} from './contract.js';
 
@@ -8,15 +8,17 @@ P.transfer = evolve(L4, {methods: {transfer: `pub fn transfer(&mut self, id: u64
     self.only_keeper(id);
     self.dusklings[id as usize].owner = to;
 }`}});
-P.transferred = evolve(P.transfer, {methods: {transfer: `pub fn transfer(&mut self, id: u64, to: BlsPublicKey) {
+// Transferred arrives with its id field and topic; the learner adds the key, registers and emits it.
+P.transferred0 = evolve(P.transfer, {events: [HATCHED, HUNTED, {...TRANSFERRED, fields: ['pub id: u64,', '// Add the new keeper here.'], keys: true}]});
+P.transferred = evolve(P.transfer, {events: [HATCHED, HUNTED, TRANSFERRED], registered: ['Hatched', 'Hunted', 'Transferred'], methods: {transfer: `pub fn transfer(&mut self, id: u64, to: BlsPublicKey) {
     self.only_keeper(id);
     self.dusklings[id as usize].owner = to;
-    abi::emit("transferred", (id, to));
+    abi::emit("transferred", crate::Transferred { id, to });
 }`}});
 P.approvedField = evolve(P.transferred, {fields: [...L4.fields, 'approved: Option<BlsPublicKey>,'], methods: {create_duskling: `fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
     let id = self.dusklings.len() as u64;
     self.dusklings.push(Duskling { dna, level: 1, owner, ready_at: 0, wins: 0, losses: 0, approved: None });
-    abi::emit("hatched", (id, dna));
+    abi::emit("hatched", crate::Hatched { id, dna });
 }`}});
 P.approve = evolve(P.approvedField, {methods: {approve: `pub fn approve(&mut self, id: u64, to: BlsPublicKey) {
     self.only_keeper(id);
@@ -33,7 +35,7 @@ P.stale = evolve(P.take, {methods: {transfer: `pub fn transfer(&mut self, id: u6
     self.only_keeper(id);
     self.dusklings[id as usize].owner = to;
     self.dusklings[id as usize].approved = None;
-    abi::emit("transferred", (id, to));
+    abi::emit("transferred", crate::Transferred { id, to });
 }`}});
 export const PARTS = P.stale;
 const S = Object.fromEntries(Object.entries(P).map(([k, v]) => [k, file(v)]));
@@ -70,17 +72,24 @@ self.dusklings[id as usize].owner = to;</code></pre>`,
     },
     {
       id: 'transferred', kind: 'code', title: 'A receipt',
-      body: `<p>Wallets and explorers show ownership changes by listening for events. A key can go in an event's data just like a number.</p>`,
-      tasks: ['At the end of <code>transfer</code>, emit a <code>"transferred"</code> event with <code>(id, to)</code>.'],
-      hint: `<code>abi::emit("transferred", (id, to));</code>`,
-      start: S.transfer, answer: S.transferred,
+      body: `<p>Wallets and explorers show ownership changes by listening for events. A key can go in an event just like a number.</p>
+<p>A <code>Transferred</code> event type is waiting at the top of the file. The key type is imported up there too: the module's imports don't reach outside the module.</p>`,
+      tasks: ['Give <code>Transferred</code> a second field for the new keeper: <code>pub to: BlsPublicKey,</code>.', 'Register it: add <code>crate::Transferred</code> to the events list.', 'At the end of <code>transfer</code>, emit <code>crate::Transferred { id, to }</code> with the topic <code>"transferred"</code>.'],
+      hint: `<pre><code>pub to: BlsPublicKey,
+
+#[dusk_forge::contract(events = [crate::Hatched, crate::Hunted, crate::Transferred])]
+
+abi::emit("transferred", crate::Transferred { id, to });</code></pre>`,
+      start: S.transferred0, answer: S.transferred,
       check(source) {
         const c = two(source), mark = c.events.length;
         c.as('you').call('transfer', 0, 'friend');
         const ev = c.events.slice(mark);
+        need(c.rt.program.structs.get('Transferred')?.get('to') === 'BlsPublicKey', '`Transferred` needs a field `pub to: BlsPublicKey`.');
         need(ev.length === 1 && ev[0].topic === 'transferred', 'A transfer should emit one "transferred" event.');
-        need(ev[0].data[0] === 0n && ev[0].data[1]?.id === 'friend', 'The event should carry (id, to): here (0, Fen).');
-        return {log: ['event "transferred"  (0, Fen)'], win: 'Every handover leaves a receipt.', scene: sceneOf(c)};
+        need(ev[0].type === 'Transferred', 'Emit the event type, `crate::Transferred { id, to }`: apps can only decode registered event types.');
+        need(ev[0].fields.id === 0n && ev[0].fields.to?.id === 'friend', 'The event should carry the Duskling\'s id and the new keeper: here 0 and Fen.');
+        return {log: ['event "transferred"  Transferred { id: 0, to: Fen }'], win: 'Every handover leaves a receipt.', scene: sceneOf(c)};
       },
     },
     {

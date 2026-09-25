@@ -2,10 +2,10 @@
   "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
   "forge": "0.3.0",
   "duskCore": "1.6.0",
-  "contractSourceSha256": "72e6bcca0bb0e30c5702851b98b39fdef1faf65012c6d64ae5db421c5a979c91",
+  "contractSourceSha256": "2ca18e7efe183a0a1d445f9d927b8d5add319c4c7f9ac308aa8251d56905fd82",
   "hatchery-driver.wasm": {
-    "bytes": 270533,
-    "sha256": "eb68bafa1628e826a1fd6c8a25eae03c3b5881d06542da3cb2fa962e4af02061"
+    "bytes": 280360,
+    "sha256": "383d532dfcccc31b2321c7ebe123985db096f143eface0b06b819b74ef37e2ad"
   },
   "almanac-fixture.json": {
     "sha256": "df042601461e7de87cc71f8d27fa13323f3ef7e4d6aefc5ce52bdfed3d17506f"

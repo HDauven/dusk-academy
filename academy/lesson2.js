@@ -22,7 +22,7 @@ P.owner = evolve(P.sender, {
     create_duskling: `fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
     let id = self.dusklings.len() as u64;
     self.dusklings.push(Duskling { dna, level: 1, owner });
-    abi::emit("hatched", (id, dna));
+    abi::emit("hatched", crate::Hatched { id, dna });
 }`,
     hatch: `pub fn hatch(&mut self, seed: u64) {
     let keeper = abi::public_sender().expect("Hatch from a public Moonlight account");

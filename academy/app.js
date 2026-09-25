@@ -201,7 +201,7 @@ function hatch(name, animate = true) {
     const c = deploy(save.passed.events ?? lessons[0].reference);
     c.call('hatch', seed);
     const e = c.events.at(-1);
-    dna = pad16(e ? e.data[1] : c.dusklings().at(-1).dna);
+    dna = pad16(e?.fields?.dna ?? c.dusklings().at(-1).dna);
   } catch (error) {
     $('#hatch-source').textContent = 'Your contract failed to hatch: ' + friendly(error).text;
     return;

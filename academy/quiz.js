@@ -225,7 +225,7 @@ const WIRE = {
     try {
       const c = deploy(reference);
       c.call('hatch', seedFromName(name));
-      dna = pad16(c.events.at(-1).data[1]);
+      dna = pad16(c.events.at(-1).fields.dna);
     } catch (error) { box.querySelector('.hatch-note').textContent = 'The Hatchery failed: ' + friendly(error).text; return; }
     const first = !keeper.dna;
     keeper = {...keeper, name, dna}; saveKeeper(keeper);

@@ -29,7 +29,8 @@ const cargo = (cwd, args, target) => {
   return run.stdout;
 };
 const hex = bytes => Buffer.from(bytes).toString('hex');
-const show = v => JSON.stringify(v, (k, x) => typeof x === 'bigint' ? x.toString() : x);
+// JSON with exact integers and object keys in a fixed order.
+const show = v => JSON.stringify(v, (k, x) => typeof x === 'bigint' ? x.toString() : x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort()) : x);
 
 // 1. Record every call each chapter's check makes in the interpreter, and every call each lesson's
 // playground makes when a keeper named Moonpaw presses every action in order, twice.
@@ -55,7 +56,6 @@ const recorded = [
 // `impl Hatchery` (the answer's own code is unchanged):
 //   academy_state          returns every field, in declared order, as nested tuples
 //   academy_private_<fn>   forwards to a private method that the check calls directly
-//   academy_event_<n>      takes an event's payload type, so the data-driver can decode it
 const PLAIN = /^(u8|u16|u32|u64|bool|BlsPublicKey|Option<(u8|u16|u32|u64|bool|BlsPublicKey)>)$/;
 function stateReader(rt) {
   const structs = rt.program.structs;
@@ -79,11 +79,6 @@ function privateCaller(rt, name) {
   const params = m.params.map(p => `${p.name}: ${p.type}`).join(', '), output = m.output === '()' ? '' : ` -> ${m.output}`;
   return `pub fn academy_private_${name}(&${m.mutable ? 'mut ' : ''}self${params ? ', ' + params : ''})${output} { self.${name}(${m.params.map(p => p.name).join(', ')}) }`;
 }
-const payloadType = data => {
-  const types = data.map(v => typeof v === 'bigint' ? 'u64' : v?.kind === 'key' ? 'BlsPublicKey' : null);
-  if (types.includes(null)) throw Error(`check_vm can't type the event payload ${show(data)}.`);
-  return types.length === 1 ? types[0] : `(${types.join(', ')})`;
-};
 function withProbes(r) {
   const probes = [stateReader(r.rt)];
   r.privates = new Set();
@@ -91,11 +86,6 @@ function withProbes(r) {
     if (s.exported || r.privates.has(s.fn)) continue;
     const caller = privateCaller(r.rt, s.fn);
     if (caller) { r.privates.add(s.fn); probes.push(caller); }
-  }
-  r.eventProbes = new Map();
-  for (const ev of r.steps.flatMap(s => s.events ?? [])) {
-    const type = payloadType(ev.data), key = `${ev.topic}:${type}`;
-    if (!r.eventProbes.has(key)) { r.eventProbes.set(key, `academy_event_${r.eventProbes.size}`); probes.push(`pub fn ${r.eventProbes.get(key)}(&self, _data: ${type}) {}`); }
   }
   const at = r.source.search(/impl\s+Hatchery\s*\{/);
   if (at < 0) throw Error('No `impl Hatchery` block.');
@@ -156,7 +146,6 @@ function loadDriver(path) {
   return {
     encode: (fn, args) => call('encode_input_fn', text(fn), text(args)),
     output: (fn, bytes) => json(call('decode_output_fn', text(fn), bytes)),
-    input: (fn, bytes) => json(call('decode_input_fn', text(fn), bytes)),
     event: (topic, bytes) => json(call('decode_event', text(topic), bytes)),
   };
 }
@@ -235,15 +224,13 @@ for (const [i, {c, records, checkError, playground}] of recorded.entries()) {
     }
     const rt = e.record.rt, have = show(e.driver.output(e.fn, Buffer.from(got.data, 'hex'))), want = show(canon(s.value, rt));
     if (have !== want) problems.push(`${e.label}: returned ${have} in the VM, ${want} in the interpreter`);
+    // Events decode with the contract's own data-driver, which knows its registered event types.
     const vmEvents = got.events.map(ev => {
       if (ev.source !== e.id) return {topic: ev.topic, from: ev.source};
-      // Decode with the probe for the payload type the interpreter emitted under this topic.
-      const ours = s.events.find(x => x.topic === ev.topic), probe = ours && e.record.eventProbes.get(`${ev.topic}:${payloadType(ours.data)}`);
-      if (!probe) return {topic: ev.topic, data: `0x${ev.data}`};
-      const data = e.driver.input(probe, Buffer.from(ev.data, 'hex'));
-      return {topic: ev.topic, data: Array.isArray(data) ? data : [data]};
+      try { return {topic: ev.topic, data: e.driver.event(ev.topic, Buffer.from(ev.data, 'hex'))}; }
+      catch (error) { return {topic: ev.topic, undecodable: `0x${ev.data}`, error: error.message}; }
     });
-    const ours = s.events.map(ev => ({topic: ev.topic, data: ev.data.map(x => canon(x, rt))}));
+    const ours = s.events.map(ev => ({topic: ev.topic, data: ev.fields ? Object.fromEntries(Object.entries(ev.fields).map(([k, x]) => [k, canon(x, rt)])) : ev.data.map(x => canon(x, rt))}));
     if (show(vmEvents) !== show(ours)) problems.push(`${e.label}: events differ:\n      VM          ${show(vmEvents)}\n      interpreter ${show(ours)}`);
   });
   const replayed = expect.filter(e => e.kind === 'call').length;
