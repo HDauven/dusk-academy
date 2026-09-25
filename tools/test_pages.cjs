@@ -15,6 +15,8 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
 (async () => {
   const {chapters: code} = await import('../academy/course.js');
   const {chapters: journey} = await import('../academy/journey.js');
+  const {chapters: stats} = await import('../academy/stats-lessons.js');
+  const {chapters: almanac} = await import('../academy/almanac-lessons.js');
   const root = path.resolve(__dirname, '..');
   const web = await mkdtemp(path.join(tmpdir(), 'academy-static-'));
   await symlink(root, path.join(web, 'dusk-academy'));
@@ -31,7 +33,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
     const context = await browser.newContext({viewport: {width: 1440, height: 900}});
     await context.route('**/*', route => {
       const url = route.request().url();
-      if (url.startsWith(base) || url.startsWith('data:')) return route.continue();
+      if (url.startsWith(base) || url.startsWith('data:') || url.startsWith('blob:')) return route.continue();
       outside.push(url); return route.abort();
     });
     const page = await context.newPage();
@@ -51,6 +53,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
     // Home, fresh.
     await go('');
     assert.equal(await page.locator('.path').count(), 4);
+    assert.equal(await page.locator('.path.soon').count(), 0, 'every path is available');
     assert.match(await page.textContent('#hero-primary'), /journey/i);
     await audit('home');
 
@@ -92,6 +95,40 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
       }
     }
 
+    // Secret stats and the Almanac: real proofs in a worker, real Dusk Connect in the sandbox.
+    const settle = () => page.waitForFunction(() => document.querySelector('#console .win, #console .bad') && !document.querySelector('#check-button').disabled, null, {timeout: 120000});
+    for (const [file, list] of [['secret-stats.html', stats], ['almanac.html', almanac]]) {
+      for (const c of list) {
+        await go(file, c.id);
+        if (c.kind === 'code') {
+          await page.click('#check-button'); await settle();
+          assert.equal(await page.locator('#console .bad').count(), 1, `${file}#${c.id}: the starting file should fail`);
+          await page.click('#answer-button'); await page.click('#use-answer'); await page.click('#check-button'); await settle();
+          assert.equal(await page.locator('#console .win').count(), 1, `${file}#${c.id}: the answer should pass: ${await page.textContent('#console')}`);
+          if (list.indexOf(c) === 1) await audit(`${file} code chapter`);
+        }
+        if (c.kind === 'finale' && file === 'secret-stats.html') {
+          for (const b of await page.locator('[data-lab]').all()) {
+            await b.click();
+            await page.waitForFunction(() => { const last = [...document.querySelectorAll('#lab-log p')].at(-1); return last && !last.textContent.startsWith('›'); }, null, {timeout: 120000});
+          }
+          assert.equal(await page.locator('#lab-log .bad').count(), 0, `${c.id}: the proof lab ran cleanly`);
+          assert.ok(await page.locator('#lab-log .ok, #lab-log .refused').count() >= 2);
+        }
+        if (c.id === 'almanac-lab') {
+          await page.waitForSelector('.almanac-card', {timeout: 60000});
+          assert.equal(await page.locator('.almanac-card').count(), 6);
+          assert.equal(await page.locator('.almanac-card.inexact').count(), 1, 'Duskling #3 is shown as inexact');
+          await audit('almanac gallery');
+        }
+        if (c.id === 'hatch-lab') {
+          await page.click('#prepare');
+          await page.waitForSelector('#lab-log .refused', {timeout: 60000});
+          assert.match(await page.textContent('#lab-log'), /fnName: "hatch"/);
+        }
+      }
+    }
+
     // Home again: both paths finished, and the Duskling shows up wearing its gear.
     await go('');
     assert.match(await page.textContent('#journey-go'), /Review/);
@@ -102,7 +139,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
     // Narrow screens: no sideways scrolling.
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({width, height: 800});
-      for (const [file, hash] of [['', ''], ['journey.html', 'disclosure'], ['hatchery.html', 'events'], ['hatchery.html', 'trade-day']]) {
+      for (const [file, hash] of [['', ''], ['journey.html', 'disclosure'], ['hatchery.html', 'events'], ['hatchery.html', 'trade-day'], ['secret-stats.html', 'range'], ['almanac.html', 'almanac-lab']]) {
         await go(file, hash);
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
         assert.ok(overflow <= 1, `${file || 'home'}#${hash} at ${width}px scrolls sideways by ${overflow}px`);
@@ -111,7 +148,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
 
     assert.deepEqual(outside, [], 'no requests leave the site');
     assert.deepEqual(errors, [], 'no page errors, console errors or failed requests');
-    console.log(`PASS: ${journey.length} journey chapters, ${code.length} Hatchery chapters, ${audits} accessibility audits${AxeBuilder ? '' : ' (axe not installed)'}.`);
+    console.log(`PASS: ${journey.length} journey, ${code.length} Hatchery, ${stats.length} Secret stats and ${almanac.length} Almanac chapters; ${audits} accessibility audits${AxeBuilder ? '' : ' (axe not installed)'}.`);
   } finally {
     await browser?.close();
     server.kill();

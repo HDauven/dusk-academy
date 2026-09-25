@@ -9,6 +9,11 @@ import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {chapters} from '../academy/course.js';
+import {chapters as circuitChapters, samplesOf, SUM_CASES, ARENA_CASES} from '../academy/stats-lessons.js';
+import {circuitProgram, runEngine} from '../academy/circuit.js';
+import {buildEngine} from './circuit_engine.mjs';
+import {buildAlmanac} from './build_almanac.mjs';
+import {readFileSync} from 'node:fs';
 
 const crate = resolve(import.meta.dirname, '../examples/hatchery');
 const work = mkdtempSync(join(tmpdir(), 'dusk-hatchery-'));
@@ -30,5 +35,31 @@ for (const c of chapters.filter(c => c.kind === 'code')) {
   }
 }
 rmSync(work, {recursive: true, force: true});
-console.log(failed ? `${failed} build(s) failed.` : 'Every chapter answer compiles as a contract and as a data-driver.');
+
+// Circuits: compile each answer as real Rust inside the PLONK engine, prove the chapter's samples
+// natively, and require the same outcome as the browser engine (which replays interpreted gates).
+const browser = readFileSync(resolve(import.meta.dirname, '../academy/vendor/circuit-engine.wasm'));
+const circuitTarget = mkdtempSync(join(tmpdir(), 'dusk-circuit-target-'));
+for (const c of circuitChapters.filter(c => c.kind === 'code')) {
+  const samples = samplesOf(c.lesson === 0 ? SUM_CASES : ARENA_CASES);
+  const {wasm, error} = buildEngine(c.answer, {target: circuitTarget});
+  if (error) { failed++; console.log(`FAIL  circuits ${c.id} (compile)\n  ${error}`); continue; }
+  const [native, interpreted] = [await runEngine(wasm, samples), await runEngine(browser, samples, circuitProgram(c.answer, samples))];
+  const outcome = r => JSON.stringify(r.cases.map(x => [x.verified, x.publics, x.tamperedVerified]));
+  if (outcome(native) !== outcome(interpreted)) { failed++; console.log(`FAIL  circuits ${c.id}: native ${outcome(native)} vs browser ${outcome(interpreted)}`); }
+  else console.log(`ok    circuits ${c.id} (native proofs match the browser engine)`);
+}
+// The vendored browser artifacts must be exactly what their sources build.
+const same = (name, built) => {
+  const ok = readFileSync(resolve(import.meta.dirname, '../academy/vendor', name)).equals(Buffer.from(built));
+  if (!ok) failed++;
+  console.log(`${ok ? 'ok   ' : 'FAIL '} vendor/${name} ${ok ? 'matches its source build' : 'differs from its source build: rebuild it'}`);
+};
+const engine = buildEngine(readFileSync(resolve(import.meta.dirname, '../engines/circuit/src/gates.rs'), 'utf8'), {target: circuitTarget});
+if (engine.error) { failed++; console.log(`FAIL  circuit engine\n  ${engine.error}`); } else same('circuit-engine.wasm', engine.wasm);
+const almanacBuild = buildAlmanac();
+same('hatchery-driver.wasm', almanacBuild.driver);
+same('almanac-fixture.json', almanacBuild.fixture);
+rmSync(circuitTarget, {recursive: true, force: true});
+console.log(failed ? `${failed} check(s) failed.` : 'Every contract answer compiles as a contract and a data-driver, and every circuit answer proves the same natively as in the browser.');
 process.exit(failed ? 1 : 0);

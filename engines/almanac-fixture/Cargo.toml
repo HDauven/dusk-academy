@@ -1,0 +1,15 @@
+# Generates academy/vendor/almanac-fixture.json: the bytes a node would return for the Almanac's
+# Hatchery queries, produced by rkyv from the real Rust types so the real data-driver decodes them.
+[package]
+name = "almanac-fixture"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[dependencies]
+dusk-core = { version = "1.6", git = "https://github.com/dusk-network/rusk", tag = "dusk-core-1.6.0", features = ["serde"] }
+rkyv = { version = "0.7", default-features = false, features = ["size_32", "alloc", "validation"] }
+rand_chacha = { version = "0.3", default-features = false }
+rand_core = { version = "0.6", default-features = false }
+serde_json = "1"

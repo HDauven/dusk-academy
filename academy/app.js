@@ -2,6 +2,7 @@ import {lessons, chapters, lessonCode} from './course.js';
 import {deploy, friendly, seedFromName, pad16, WICK, KEEPERS} from './contract.js';
 import {Rejection} from './rust-runtime.js';
 import {createScene} from './scene.js';
+import {createEditor, diffHtml} from './editor.js';
 import {drawCreature, genes, traitNames, TRAITS, sprite, GENE_COLORS} from './creature.js';
 import {load, store, favicon, loadKeeper, saveKeeper} from './store.js';
 
@@ -23,51 +24,11 @@ const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&
 const codeHtml = s => escapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 
 // ---- Editor ---------------------------------------------------------------------------------
-const code = $('#code');
-const TOKEN = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(#!?\[[^\]\n]*\])|\b(pub|fn|impl|mod|struct|let|mut|self|Self|const|use|extern|crate|as|return|if|else|for|in|while|loop|match|true|false|Some|None)\b|\b(u8|u16|u32|u64|u128|usize|bool|Vec|Option|Result|String|BlsPublicKey|ContractId)\b|\b(0x[\da-fA-F_]+(?:u\d+)?|\d[\d_]*(?:u\d+)?)\b|\b([a-z_]\w*)(?=!)|\b([a-z_]\w*)(?=\s*(?:\(|::<))/g;
-const CLASSES = [null, 't-com', 't-str', 't-attr', 't-kw', 't-ty', 't-num', 't-mac', 't-fn'];
-function highlight(source) {
-  let html = '', end = 0;
-  for (const m of source.matchAll(TOKEN)) {
-    const cls = CLASSES[m.findIndex((g, i) => i > 0 && g !== undefined)];
-    html += escapeHtml(source.slice(end, m.index)) + `<span class="${cls}">${escapeHtml(m[0])}</span>`;
-    end = m.index + m[0].length;
-  }
-  return html + escapeHtml(source.slice(end));
-}
-function paintEditor() {
-  $('#highlight').innerHTML = highlight(code.value) + '\n';
-  $('#gutter').textContent = code.value.split('\n').map((_, i) => i + 1).join('\n');
-  syncScroll();
-}
-function syncScroll() {
-  $('#highlight').style.transform = `translate(${-code.scrollLeft}px, ${-code.scrollTop}px)`;
-  $('#gutter').scrollTop = code.scrollTop;
-  const err = $('#error-line');
-  if (!err.hidden) err.style.top = `${14 + (Number(err.dataset.line) - 1) * 22 - code.scrollTop}px`;
-}
-function markError(line) {
-  const err = $('#error-line');
-  err.hidden = !line;
-  if (line) { err.dataset.line = line; syncScroll(); }
-}
 let draftTimer;
-code.addEventListener('input', () => {
-  paintEditor(); markError(null);
+const editor = createEditor({language: 'rust', onRun: () => check(), onChange: value => {
   clearTimeout(draftTimer);
-  draftTimer = setTimeout(() => { save.drafts[chapter().id] = code.value; persist(); }, 300);
-});
-code.addEventListener('scroll', syncScroll);
-code.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); check(); return; }
-  const {selectionStart: a, selectionEnd: b, value} = code;
-  if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); code.setRangeText('    ', a, b, 'end'); code.dispatchEvent(new Event('input')); }
-  if (e.key === 'Enter' && !e.shiftKey) {
-    const lineStart = value.lastIndexOf('\n', a - 1) + 1, line = value.slice(lineStart, a);
-    const indent = line.match(/^\s*/)[0] + (/[{(]\s*$/.test(line) ? '    ' : '');
-    e.preventDefault(); code.setRangeText('\n' + indent, a, b, 'end'); code.dispatchEvent(new Event('input'));
-  }
-});
+  draftTimer = setTimeout(() => { save.drafts[chapter().id] = value; persist(); }, 300);
+}});
 
 // ---- Scene ----------------------------------------------------------------------------------
 function paintScene(sc, animate) {
@@ -129,9 +90,7 @@ function show(i, {focus = true} = {}) {
   const passedScene = c.kind === 'code' && save.passed[c.id] ? safeScene(c, save.passed[c.id]) : null;
   if (pane !== 'finale' && pane !== 'play') paintScene(passedScene ?? c.scene ?? defaultScene(c), false);
   if (pane === 'code') {
-    code.value = save.drafts[c.id] ?? c.start;
-    paintEditor(); markError(null);
-    code.scrollTop = 0;
+    editor.set(save.drafts[c.id] ?? c.start);
     $('#console').innerHTML = save.passed[c.id]
       ? '<p class="ok">✓ You passed this chapter. Edit and check again any time.</p>'
       : '<p class="muted">Press <kbd>Check</kbd> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>) to deploy and test your contract.</p>';
@@ -158,14 +117,14 @@ function safeScene(c, source) { try { return c.check(source).scene; } catch { re
 
 // ---- Checking -------------------------------------------------------------------------------
 function check() {
-  const c = chapter(), source = code.value, out = $('#console');
+  const c = chapter(), source = editor.value, out = $('#console');
   out.innerHTML = '<p class="log">› deploying Hatchery…</p>';
   let result;
   try { result = c.check(source); }
   catch (error) {
     const f = friendly(error);
     out.innerHTML = `<p class="bad">✗ ${codeHtml(f.text)}</p><p class="muted">Stuck? Try the Hint, or Show answer to compare.</p>`;
-    markError(f.line);
+    editor.markError(f.line);
     $('#toast').textContent = '';
     return;
   }
@@ -185,28 +144,14 @@ $('#hint-button').addEventListener('click', () => {
   $('#tasks').append(p); p.scrollIntoView({block: 'nearest', behavior: 'smooth'});
 });
 
-// ---- Show answer: a line diff between the editor and the reference -------------------------
-function diff(a, b) {
-  const x = a.split('\n'), y = b.split('\n'), n = x.length, m = y.length;
-  const L = Array.from({length: n + 1}, () => new Array(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = x[i].trimEnd() === y[j].trimEnd() ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
-  const out = [];
-  let i = 0, j = 0;
-  while (i < n || j < m) {
-    if (i < n && j < m && x[i].trimEnd() === y[j].trimEnd()) { out.push(['same', y[j]]); i++; j++; }
-    else if (j < m && (i === n || L[i][j + 1] >= L[i + 1][j])) out.push(['add', y[j++]]);
-    else out.push(['del', x[i++]]);
-  }
-  return out;
-}
+// ---- Show answer ----------------------------------------------------------------------------
 $('#answer-button').addEventListener('click', () => {
-  $('#diff').innerHTML = diff(code.value, chapter().answer).map(([k, l]) => `<span class="${k}">${k === 'add' ? '+ ' : k === 'del' ? '- ' : '  '}${escapeHtml(l) || ' '}</span>`).join('');
+  $('#diff').innerHTML = diffHtml(editor.value, chapter().answer);
   $('#answer-dialog').showModal();
 });
 $('#use-answer').addEventListener('click', () => {
-  code.value = chapter().answer; code.dispatchEvent(new Event('input'));
+  editor.replace(chapter().answer);
   $('#answer-dialog').close();
-  code.setSelectionRange(0, 0); code.focus({preventScroll: true}); code.scrollTop = 0; syncScroll();
 });
 
 // ---- Navigation -----------------------------------------------------------------------------

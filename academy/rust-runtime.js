@@ -108,7 +108,8 @@ export function parseRust(source, options={}) {
     while(true) {
       if(++chain>64)fail('Method and field chains are limited to 64.');
       if(take('('))n={kind:'call',fn:n,args:args(')')};
-      else if(take('.')) {const id=name();n={kind:'member',object:n,id};}
+      else if(take('.')) {const id=name();n={kind:'member',object:n,id};
+        if(peek()==='::'){p++;expect('<');const generic=[];do{generic.push(/^\d/.test(peek())?tokens[p++].text:type());}while(take(','));expect('>');n.generic=generic;if(peek()!=='(')fail('Generic arguments belong on a method call.');}}
       else if(take('[')){const index=expr();expect(']');n={kind:'index',object:n,index};}
       else if(take('?'))n={kind:'try',value:n};
       else if(peek()==='as'&&min<=8){p++;n={kind:'cast',value:n,type:type()};}
@@ -209,13 +210,13 @@ export function createRuntime(source, hosts={}) {
     if(fn?.kind!=='closure'||fn.params.length!==args.length)unsupported('Expected a matching closure.');
     const env=scope(fn.env);env.owner=fn.env.owner;fn.params.forEach((id,i)=>env.vars.set(id,{value:args[i],mutable:false}));return value(fn.value,env);
   }
-  function method(obj,id,args,mutable,env) {
+  function method(obj,id,args,mutable,env,generic=[]) {
     if(obj?.kind!=='struct'&&obj?.kind!=='host') {
       const arity={len:0,is_empty:0,iter:0,iter_mut:0,get:1,push:1,remove:1,swap_remove:1,clear:0,position:1,find:1,map:1,sum:0,expect:1,unwrap:0,unwrap_or:1,is_some:0,is_none:0,is_ok:0,is_err:0,filter:1,count:0,any:1,checked_add:1,wrapping_add:1,wrapping_mul:1,pow:1};
       if(!Object.hasOwn(arity,id)||args.length!==arity[id])unsupported('Arguments do not match '+id+'.');
     }
     if(obj?.kind==='struct')return invoke(obj,id,args,mutable);
-    if(obj?.kind==='host')return hosts.method(obj,id,args);
+    if(obj?.kind==='host')return hosts.method(obj,id,args,generic);
     if(obj?.kind==='vec') {
       if(id==='len')return BigInt(obj.items.length);
       if(id==='is_empty')return obj.items.length===0;
@@ -312,7 +313,7 @@ export function createRuntime(source, hosts={}) {
         if(n.fn.kind==='member') {
           const object=value(n.fn.object,env);let mutable=false;
           if(['name','member','index'].includes(n.fn.object.kind)){try{mutable=reference(n.fn.object,env).mutable;}catch(e){if(!e.message?.includes('Unknown binding'))throw e;}}
-          return method(object,n.fn.id,args,mutable,env);
+          return method(object,n.fn.id,args,mutable,env,n.fn.generic??[]);
         }
         unsupported('Only named lesson functions and methods may be called.');
       }

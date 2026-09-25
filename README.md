@@ -8,8 +8,8 @@ Learn Dusk by raising Dusklings: pixel creatures made from 16 digits of DNA.
 |---|---|---|
 | **Start with Dusk: Keeper's journey** | 5 levels, 36 questions, no code | Hatch your Duskling, then learn how Dusk works: the shared ledger, wallets and transactions; privacy with Moonlight, Phoenix and zero-knowledge proofs; credentials with Citadel; regulated markets; and the network (provisioners, Succinct Attestation). Each level earns gear for your Duskling. |
 | **Contracts: the Hatchery** | 5 lessons, 40 code chapters | Write one Dusk Forge contract in Rust that hatches Dusklings, gives them keepers, hunts moths from another contract, battles and trades. Every chapter is one small edit. Each lesson ends in a playground running your own contract. |
-| dApps: the Almanac | coming | Read Dusklings from a browser with Dusk Connect. |
-| Circuits: Secret stats | coming | Prove a Duskling's hidden stats with a real PLONK proof. |
+| **dApps: the Almanac** | 2 lessons, 11 code chapters | Build a web page in JavaScript that reads every Duskling from the Hatchery with the real Dusk Connect SDK and the contract's real data-driver, then prepare hatch and transfer calls for a wallet. It covers exact `u64` values, `JSON.rawJSON` and a down node. |
+| **Circuits: Secret stats** | 2 lessons, 9 code chapters | Write a dusk-plonk circuit that proves your Duskling's power without revealing its stats, then an arena pass proving power ≥ 50 with a range check. Every check generates and verifies real PLONK proofs in the browser. |
 
 Everything runs from static files in your browser: no server, wallet, RPC node or account. You get one Duskling, shared across paths, and progress is saved in your browser only.
 
@@ -29,6 +29,10 @@ In the browser, the Hatchery runs your edited contract in a **Rust-subset interp
 
 The interpreter isn't rustc or DuskVM. To keep the lessons honest, **every chapter's reference answer also compiles with real Dusk Forge 0.3 and dusk-core 1.6**, as a contract and as a data-driver (`npm run test:rust`). The finished contract lives in [`examples/hatchery`](examples/hatchery), ready to build yourself.
 
+**Secret stats** interprets your circuit into gates. A real dusk-plonk 0.22.1 engine, compiled to WebAssembly from [`engines/circuit`](engines/circuit), proves and verifies them in a worker, with fresh demonstration parameters. `npm run test:rust` also compiles every chapter's answer as real Rust inside that engine and checks that its proofs come out the same as in the browser.
+
+**The Almanac** runs your JavaScript, unmodified except for the SDK import, in a disposable worker inside an opaque sandboxed iframe whose CSP blocks all network connections. It uses the real Dusk Connect and the Hatchery's real data-driver. The node is a practice node inside the page, answering with bytes that [`engines/almanac-fixture`](engines/almanac-fixture) produces from the real Rust types.
+
 Dusk facts in the journey were checked against the Dusk sources: `dusk-core` host functions, Forge's contract rules, Phoenix view keys, and rusk's consensus, staking and slashing code.
 
 ## Checks
@@ -36,7 +40,7 @@ Dusk facts in the journey were checked against the Dusk sources: `dusk-core` hos
 ```sh
 npm test            # interpreter limits and rollback; every chapter passes with its answer and fails from its start
 npm run test:e2e    # the whole site over static HTTP in Chromium: every chapter, playgrounds, narrow screens, axe audits
-npm run test:rust   # every chapter answer, compiled with the real Rust toolchain and Dusk Forge
+npm run test:rust   # every contract and circuit answer, compiled for real; vendored artifacts rebuilt byte for byte
 ```
 
 - **`test:e2e`** needs Playwright (and optionally `@axe-core/playwright`). `CHROMIUM_PATH` picks a Chromium and `NODE_PATH` points at an external `node_modules`.
@@ -44,15 +48,20 @@ npm run test:rust   # every chapter answer, compiled with the real Rust toolchai
 
 ## Layout
 
-- `index.html`, `journey.html`, `hatchery.html`: the three pages. `creatures.html` is a developer sheet showing every trait and piece of gear.
+- `index.html`, `journey.html`, `hatchery.html`, `almanac.html`, `secret-stats.html`: the pages. `creatures.html` is a developer sheet showing every trait and piece of gear.
 - `academy/`:
   - Duskling generation and scenes: `creature.js`, `scene.js`
   - Journey content and screen: `journey.js`, `quiz.js`
   - Hatchery lessons: `lesson1.js` … `lesson5.js`, `course.js`, `hatchery-file.js`
   - Contract runner and simulated hosts: `contract.js`, `rust-runtime.js`
   - Hatchery screen: `app.js`; home: `home.js`; progress: `store.js`; styles: `style.css`
+  - The dApps and Circuits screens: `path-app.js`, `editor.js`
+  - Secret stats: `stats-lessons.js`, `stats-app.js`, `circuit.js`, `circuit-worker.js`
+  - The Almanac: `almanac-lessons.js`, `almanac-app.js`, `almanac-sandbox.js`, `almanac-harness.js`, `almanac-transport.js`
+  - `vendor/`: Dusk Connect, the circuit engine, the Hatchery data-driver and the practice-node fixture, with hashes in `circuit-engine.json` and `almanac.json`. Rebuild them with `npm run build:circuit` and `npm run build:almanac`.
 - `examples/hatchery/`: the finished contract as a Forge crate.
-- `tools/`: the end-to-end test and the Rust compile check.
+- `engines/circuit/`: the browser's PLONK engine. `engines/almanac-fixture/` generates the practice node's answers.
+- `tools/`: builds for the vendored artifacts, the end-to-end test and the Rust checks.
 
 The classic registration-counter academy was replaced by this one. It's preserved at the git tag `classic-academy`.
 
@@ -60,7 +69,9 @@ The classic registration-counter academy was replaced by this one. It's preserve
 
 Academy code and lesson text are available under the [MIT License](LICENSE). Separately licensed material keeps its own terms:
 
-- [`examples/hatchery`](examples/hatchery) follows the Dusk Forge contract template and is provided under MPL-2.0.
+- [`examples/hatchery`](examples/hatchery) follows the Dusk Forge contract template, and [`engines/circuit`](engines/circuit) derives from the classic academy's dusk-plonk harness. Both are provided under MPL-2.0.
+- Dusk Connect ([`academy/vendor/dusk-connect.js`](academy/vendor/dusk-connect.js)) is bundled from [dusk-network/connect](https://github.com/dusk-network/connect) at commit `67b37ab`, under the [MIT License](academy/vendor/dusk-connect.LICENSE).
+- The WebAssembly artifacts in `academy/vendor` are built from the sources above and their pinned dependencies (`Cargo.lock`), which keep their own licenses.
 - Manrope and Silkscreen fonts: [Manrope OFL](assets/Manrope-OFL.txt) and [Silkscreen OFL](assets/Silkscreen-OFL.txt).
 
 Dusk names and trademarks remain with their respective owners. This is an independent learning project, not an official Dusk product.

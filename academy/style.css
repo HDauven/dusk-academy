@@ -393,3 +393,20 @@ canvas.pixel { image-rendering: pixelated; display: block; }
 .tag.rival { color: #ff9aa9; border-color: #7a3a4c; }
 .tag.friend { color: #8fe3c0; border-color: #2f6f5a; }
 @media (max-width: 980px) { .overview, .play { padding: 20px 16px; } .tag { font-size: 8px; } }
+
+/* ---- Secret stats --------------------------------------------------------------------------- */
+.lab-pane { overflow-y: auto; padding: 28px; gap: 18px; background: radial-gradient(circle at 60% 10%, #1b1b46, var(--code-bg) 60%); }
+.lab-pane .panel h2 { margin: 4px 0 14px; font-family: var(--pixel); font-weight: 400; font-size: 22px; }
+.lab-pane .cards { margin-bottom: 12px; }
+.card-face.mine { background: #1d2a3a; border-color: #3f6f8f; }
+.card-face.mine b { color: #9fdcff; }
+.play-log .log, .play-log .ok, .play-log .refused, .play-log .bad { word-break: break-word; }
+@media (max-width: 980px) { .lab-pane { padding: 20px 16px; } }
+
+/* ---- The Almanac ---------------------------------------------------------------------------- */
+.almanac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.almanac-card { margin: 0; padding: 12px; background: var(--panel-2); border: 2px solid var(--line-2); box-shadow: 0 4px 0 #07081a; text-align: center; font-size: 13px; }
+.almanac-card canvas { width: 96px; height: 96px; image-rendering: pixelated; display: block; margin: 0 auto 8px; background: radial-gradient(circle, #2a2562, #151637 70%); }
+.almanac-card code { font-size: 11px; color: var(--muted); }
+.almanac-card.inexact { border-style: dashed; border-color: #7a5a2e; }
+.mystery { width: 96px; height: 96px; margin: 0 auto 8px; display: grid; place-items: center; font-family: var(--pixel); font-size: 40px; color: var(--accent); background: repeating-linear-gradient(45deg, #231f45 0 6px, #1b1838 6px 12px); }

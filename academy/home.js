@@ -1,5 +1,7 @@
 import {lessons as codeLessons, chapters as hatchery, lessonCode} from './course.js';
 import {WICK} from './contract.js';
+import {lessons as almanacLessons, chapters as almanacChapters} from './almanac-lessons.js';
+import {lessons as statsLessons, chapters as statsChapters} from './stats-lessons.js';
 import {levels, chapters as journey, levelQuizzes} from './journey.js';
 import {createScene} from './scene.js';
 import {drawCreature, sprite, traitNames, GENE_COLORS, GEAR_INFO} from './creature.js';
@@ -35,6 +37,19 @@ $('#lesson-map').innerHTML = codeLessons.map((l, i) => {
   const checks = lessonCode(i), n = checks.filter(c => code.passed[c.id]).length, first = hatchery.find(c => c.lesson === i);
   return `<li class="open ${n === checks.length ? 'done' : ''}"><a href="hatchery.html#${first.id}"><b>${l.n}</b><strong>${l.title}</strong><small>${n === checks.length ? 'done' : `${n} / ${checks.length} checks`}</small></a></li>`;
 }).join('');
+
+// dApps and Circuits: two lessons each.
+for (const [key, page, lessons, chapters] of [['almanac', 'almanac.html', almanacLessons, almanacChapters], ['stats', 'secret-stats.html', statsLessons, statsChapters]]) {
+  const save = load(key, {at: 0, passed: {}});
+  const code = chapters.filter(c => c.kind === 'code'), passed = code.filter(c => save.passed[c.id]).length;
+  $(`#${key}-map`).innerHTML = lessons.map((l, i) => {
+    const checks = code.filter(c => c.lesson === i), n = checks.filter(c => save.passed[c.id]).length, first = chapters.find(c => c.lesson === i);
+    return `<li class="open ${n === checks.length ? 'done' : ''}"><a href="${page}#${first.id}"><b>${l.n}</b><strong>${l.title}</strong><small>${n === checks.length ? 'done' : `${n} / ${checks.length} checks`}</small></a></li>`;
+  }).join('');
+  const finished = passed === code.length, started = passed > 0 || save.at > 0;
+  $(`#${key}-go`).textContent = finished ? 'Review' : started ? 'Continue' : 'Start';
+  $(`#${key}-go`).href = `${page}#${chapters[finished ? 0 : save.at]?.id ?? ''}`;
+}
 
 // Hero buttons follow the learner.
 if (tripStarted && !tripDone) { $('#hero-primary').textContent = `Continue level ${current + 1}: ${levels[current].title}`; $('#hero-primary').href = $('#journey-go').href; }

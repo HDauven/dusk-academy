@@ -153,8 +153,8 @@ function keeperCard() {
 function pathTiles() {
   return `<div class="paths-grid">
     <a class="path-tile" href="hatchery.html">${creature(SAMPLE[1], 64, [])}<span class="kicker">Contracts</span><strong>The Hatchery</strong><span class="muted">Write the Rust contract that hatched your Duskling.</span></a>
-    <div class="path-tile soon">${creature(SAMPLE[2], 64, [])}<span class="kicker">dApps · soon</span><strong>The Almanac</strong><span class="muted">Read Dusklings from a browser with Dusk Connect.</span></div>
-    <div class="path-tile soon">${creature('1335947248835871', 64, [])}<span class="kicker">Circuits · soon</span><strong>Secret stats</strong><span class="muted">Prove a Duskling's power without revealing its stats.</span></div>
+    <a class="path-tile" href="almanac.html">${creature(SAMPLE[2], 64, [])}<span class="kicker">dApps</span><strong>The Almanac</strong><span class="muted">Read every Duskling from a browser with Dusk Connect.</span></a>
+    <a class="path-tile" href="secret-stats.html">${creature('1335947248835871', 64, [])}<span class="kicker">Circuits</span><strong>Secret stats</strong><span class="muted">Prove your Duskling's power without revealing its stats.</span></a>
   </div><a class="ghost home-link" href="./">Back to all paths</a>`;
 }
 

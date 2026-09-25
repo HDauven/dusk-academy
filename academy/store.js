@@ -1,5 +1,5 @@
 // Progress lives in this browser only. Every read and write tolerates blocked storage.
-export const KEYS = {hatchery: 'dusk-academy:hatchery:v1', journey: 'dusk-academy:journey:v1', keeper: 'dusk-academy:keeper:v1'};
+export const KEYS = {hatchery: 'dusk-academy:hatchery:v1', journey: 'dusk-academy:journey:v1', keeper: 'dusk-academy:keeper:v1', stats: 'dusk-academy:secret-stats:v1', almanac: 'dusk-academy:almanac:v1'};
 
 export function load(path, defaults) {
   const value = structuredClone(defaults);

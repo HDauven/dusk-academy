@@ -122,7 +122,7 @@ export function createScene(canvas, {kind = 'hatchery'} = {}) {
   ctx.imageSmoothingEnabled = false;
   const backdrop = kind === 'harbor' ? paintHarbor() : paintHatchery();
   const r = rng(99), twinkles = Array.from({length: 10}, () => [Math.floor(r() * W), Math.floor(r() * 36), r() * 6]);
-  let state = {creatures: [], nests: 0, moths: 0, solo: null, keeper: null, companion: null, egg: false, gear: [], lanterns: 0, lit: [], flash: null, wobbleAt: -Infinity};
+  let state = {creatures: [], nests: 0, bare: false, moths: 0, solo: null, keeper: null, companion: null, egg: false, gear: [], lanterns: 0, lit: [], flash: null, wobbleAt: -Infinity};
   let born = new Map(), sparks = [], running = false;
   const burst = (x, y, n = 10) => { for (let k = 0; k < n; k++) sparks.push({x, y, vx: Math.cos(k * 2.4) * 0.9, vy: -Math.abs(Math.sin(k * 2.4)) * 1.2 - 0.3, life: 30}); };
 
@@ -235,7 +235,7 @@ export function createScene(canvas, {kind = 'hatchery'} = {}) {
     if (state.solo) { drawNest(118); drawCreature(state.solo, 118, t, 0, {scale: 2, gear: state.gear}); return; }
     const count = Math.max(state.nests, state.creatures.length), xs = slots(Math.min(count, 5));
     const shown = state.creatures.slice(-5);
-    xs.forEach((x, i) => { drawNest(x); if (shown[i]) drawCreature(dnaOf(shown[i]), x, t, i + Math.max(0, state.creatures.length - 5)); });
+    xs.forEach((x, i) => { if (!state.bare) drawNest(x); if (shown[i]) drawCreature(dnaOf(shown[i]), x, t, i + Math.max(0, state.creatures.length - 5)); });
     for (let k = 0; k < state.moths; k++) drawMoth(t, k);
   }
 
