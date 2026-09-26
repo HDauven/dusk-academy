@@ -4,15 +4,14 @@ import {lessons as almanacLessons, chapters as almanacChapters} from './almanac-
 import {lessons as statsLessons, chapters as statsChapters} from './stats-lessons.js';
 import {levels, chapters as journey, levelQuizzes} from './journey.js';
 import {createScene} from './scene.js';
-import {drawCreature, sprite, traitNames, GENE_COLORS, GEAR_INFO} from './creature.js';
-import {load, favicon, loadKeeper} from './store.js';
+import {drawCreature, traitNames, GENE_COLORS, GEAR_INFO} from './creature.js';
+import {load, loadKeeper} from './store.js';
 
 const $ = s => document.querySelector(s);
 const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const trip = load('journey', {at: 0, answers: {}});
 const code = load('hatchery', {at: 0, passed: {}});
 const keeper = loadKeeper();
-favicon(sprite(WICK));
 
 // Keeper's journey: one tile per level with its reward.
 const right = c => !!trip.answers[c.id]?.right;

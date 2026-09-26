@@ -3,10 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: 'wasm-unsafe-eval' 'sha256-Yt3oRXiYREH9PZ3N62Fz+Bp4D5RaF5PuUpThZFhQROo='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c0d1d">
-  <title>The Almanac | Dusklings</title>
+  <!-- seo:head -->
+  <title>The Almanac: Dusk dApps with Dusk Connect | Dusklings</title>
+  <meta name="description" content="Build a JavaScript dApp that reads a Dusk contract with Dusk Connect and its data-driver, then prepares hatch and transfer calls for a wallet to sign.">
+  <link rel="canonical" href="https://dusklings.com/almanac.html">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="assets/icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dusklings">
+  <meta property="og:title" content="The Almanac: Dusk dApps with Dusk Connect | Dusklings">
+  <meta property="og:description" content="Build a JavaScript dApp that reads a Dusk contract with Dusk Connect and its data-driver, then prepares hatch and transfer calls for a wallet to sign.">
+  <meta property="og:url" content="https://dusklings.com/almanac.html">
+  <meta property="og:image" content="https://dusklings.com/assets/og/almanac.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Almanac, a Dusklings path: dApps in JavaScript">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","@id":"https://dusklings.com/almanac.html#course","name":"The Almanac","description":"Build a JavaScript dApp that reads a Dusk contract with Dusk Connect and its data-driver, then prepares hatch and transfer calls for a wallet to sign.","url":"https://dusklings.com/almanac.html","inLanguage":"en","isAccessibleForFree":true,"educationalLevel":"Beginner","teaches":["Dusk Connect","Contract data-drivers","Reading contract state from JavaScript","Preparing contract calls for a wallet"],"about":{"@type":"Thing","name":"Dusk","url":"https://dusk.network"},"provider":{"@type":"Organization","name":"Dusklings","url":"https://dusklings.com/"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"Online"},"offers":{"@type":"Offer","category":"Free","price":0,"priceCurrency":"EUR"},"syllabusSections":[{"@type":"Syllabus","name":"Lesson 1: The Almanac","description":"A book of every Duskling, Your first read, Why a string?, Asking about one Duskling, Whose is it?, Filling the Almanac, Every digit counts, When the node is down, The finished Almanac"},{"@type":"Syllabus","name":"Lesson 2: Hatching from the web","description":"From reading to writing, Preparing a hatch, A seed from a name, Arguments that keep every digit, Several arguments, Your hatch request"}]}</script>
+  <!-- /seo:head -->
   <link rel="stylesheet" href="academy/style.css">
   <script type="module" src="academy/almanac-app.js"></script>
 </head>
@@ -15,7 +32,7 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Dusklings home">DUSKLINGS</a>
       <button class="lesson-button" id="menu-button" aria-haspopup="dialog"><span class="kicker" id="lesson-kicker">Lesson 1</span> <span id="lesson-title">The Almanac</span> <span aria-hidden="true">▾</span></button>
-      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="count" aria-live="polite">1 / 14</span></div>
+      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="chapter-count" aria-live="polite">1 / 14</span></div>
     </header>
 
     <main class="stage">
@@ -92,5 +109,40 @@
     <pre class="diff" id="diff"></pre>
     <div class="row end"><button class="primary" id="use-answer">Use this code</button></div>
   </dialog>
+  <!-- seo:syllabus -->
+  <section class="syllabus" aria-labelledby="syllabus-title">
+    <p class="kicker">dApps in JavaScript</p>
+    <h2 id="syllabus-title">The Almanac</h2>
+    <p>Build a JavaScript dApp that reads a Dusk contract with Dusk Connect and its data-driver, then prepares hatch and transfer calls for a wallet to sign.</p>
+    <div class="syllabus-units">
+      <section>
+        <h3>Lesson 1: The Almanac</h3>
+        <ol>
+          <li><a href="#almanac-intro">A book of every Duskling</a></li>
+          <li><a href="#count">Your first read</a></li>
+          <li><a href="#exact-count">Why a string?</a></li>
+          <li><a href="#dna">Asking about one Duskling</a></li>
+          <li><a href="#owner">Whose is it?</a></li>
+          <li><a href="#gallery">Filling the Almanac</a></li>
+          <li><a href="#digits">Every digit counts</a></li>
+          <li><a href="#offline">When the node is down</a></li>
+          <li><a href="#almanac-lab">The finished Almanac</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Lesson 2: Hatching from the web</h3>
+        <ol>
+          <li><a href="#web-intro">From reading to writing</a></li>
+          <li><a href="#prepare-hatch">Preparing a hatch</a></li>
+          <li><a href="#seed-name">A seed from a name</a></li>
+          <li><a href="#exact-seed">Arguments that keep every digit</a></li>
+          <li><a href="#prepare-transfer">Several arguments</a></li>
+          <li><a href="#hatch-lab">Your hatch request</a></li>
+        </ol>
+      </section>
+    </div>
+    <p class="muted"><a href="./">All paths</a></p>
+  </section>
+  <!-- /seo:syllabus -->
 </body>
 </html>

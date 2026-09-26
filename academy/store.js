@@ -59,9 +59,3 @@ export function loadKeeper() {
   return keeper;
 }
 export const saveKeeper = keeper => store('keeper', keeper);
-
-// Uses a Duskling sprite as the tab icon.
-export function favicon(canvas) {
-  const link = document.querySelector('link[rel=icon]') ?? document.head.appendChild(Object.assign(document.createElement('link'), {rel: 'icon'}));
-  link.href = canvas.toDataURL('image/png');
-}

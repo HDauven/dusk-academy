@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /creatures.html
+
+Sitemap: https://dusklings.com/sitemap.xml

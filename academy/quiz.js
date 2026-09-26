@@ -1,8 +1,8 @@
 import {levels, chapters, levelQuizzes} from './journey.js';
 import {nextPathsHtml} from './next-paths.js';
 import {createScene, eggSprite} from './scene.js';
-import {drawCreature, sprite, traitNames, GENE_COLORS, GEAR_INFO} from './creature.js';
-import {load, store, favicon, loadKeeper, saveKeeper} from './store.js';
+import {drawCreature, traitNames, GENE_COLORS, GEAR_INFO} from './creature.js';
+import {load, store, loadKeeper, saveKeeper} from './store.js';
 import {WICK, SAMPLE, deploy, reference, seedFromName, pad16, friendly} from './lesson1.js';
 
 const $ = s => document.querySelector(s);
@@ -12,7 +12,6 @@ const persist = () => store('journey', save);
 let keeper = loadKeeper();
 
 const scene = createScene($('#scene'), {kind: 'harbor'});
-favicon(sprite(WICK));
 drawCreature($('#wick-face'), WICK, {scale: 2});
 
 let at = 0;
@@ -33,7 +32,7 @@ function paintScene(animate) {
 function renderProgress() {
   const l = chapter().level, list = chapters.filter(c => c.level === l);
   $('#pips').innerHTML = list.map(c => `<li class="${done(c) ? 'done' : ''} ${c === chapter() ? 'here' : ''}"></li>`).join('');
-  $('#count').textContent = `${list.indexOf(chapter()) + 1} / ${list.length}`;
+  $('#chapter-count').textContent = `${list.indexOf(chapter()) + 1} / ${list.length}`;
   $('#level-kicker').textContent = `Level ${l + 1}`;
   $('#level-title').textContent = levels[l].title;
   $('#menu-list').innerHTML = levels.map((lv, i) => {
@@ -322,7 +321,8 @@ $('#prev').addEventListener('click', () => show(at - 1));
 $('#menu-button').addEventListener('click', () => { renderProgress(); $('#menu').showModal(); });
 $('#menu-list').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) { $('#menu').close(); show(Number(b.dataset.go)); } });
 $('#reset').addEventListener('click', () => { save = structuredClone(DEFAULTS); persist(); keeper = {...keeper, gear: []}; saveKeeper(keeper); $('#menu').close(); show(0); });
-window.addEventListener('hashchange', () => { const i = chapters.findIndex(c => '#' + c.id === location.hash); if (i >= 0 && i !== at) show(i); });
+// A chapter link, e.g. from the syllabus below the app, opens that chapter at the top of the page.
+window.addEventListener('hashchange', () => { const i = chapters.findIndex(c => '#' + c.id === location.hash); if (i < 0) return; if (i !== at) show(i); window.scrollTo(0, 0); });
 
 const fromHash = chapters.findIndex(c => '#' + c.id === location.hash);
 show(fromHash >= 0 ? fromHash : save.at ?? 0, {focus: false});

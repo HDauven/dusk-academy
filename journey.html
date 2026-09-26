@@ -3,10 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c0d1d">
-  <title>Keeper's Journey | Dusklings</title>
+  <!-- seo:head -->
+  <title>Keeper's journey: how Dusk works | Dusklings</title>
+  <meta name="description" content="A no-code introduction to Dusk in five levels: blockchain basics, zero-knowledge privacy, identity and credentials, regulated assets and the network.">
+  <link rel="canonical" href="https://dusklings.com/journey.html">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="assets/icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dusklings">
+  <meta property="og:title" content="Keeper's journey: how Dusk works | Dusklings">
+  <meta property="og:description" content="A no-code introduction to Dusk in five levels: blockchain basics, zero-knowledge privacy, identity and credentials, regulated assets and the network.">
+  <meta property="og:url" content="https://dusklings.com/journey.html">
+  <meta property="og:image" content="https://dusklings.com/assets/og/journey.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Keeper's journey, a Dusklings path: No code">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","@id":"https://dusklings.com/journey.html#course","name":"Keeper's journey","description":"A no-code introduction to Dusk in five levels: blockchain basics, zero-knowledge privacy, identity and credentials, regulated assets and the network.","url":"https://dusklings.com/journey.html","inLanguage":"en","isAccessibleForFree":true,"educationalLevel":"Beginner","teaches":["Blockchain basics","Privacy","Identity and credentials","Regulated assets","The network"],"about":{"@type":"Thing","name":"Dusk","url":"https://dusk.network"},"provider":{"@type":"Organization","name":"Dusklings","url":"https://dusklings.com/"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"Online"},"offers":{"@type":"Offer","category":"Free","price":0,"priceCurrency":"EUR"},"syllabusSections":[{"@type":"Syllabus","name":"Level 1: First egg","description":"An egg with your name on it, The shared ledger, Records and displays, Keys and signatures, The recovery phrase, Sending a transaction, Gas and fees, Contracts make the rules, Your Duskling hatches"},{"@type":"Syllabus","name":"Level 2: Out of sight","description":"Everyone wants a look, Public means public, Patterns give you away, Moonlight: public accounts, Proving without showing, Phoenix: shielded notes, Spent once, Who called?, Signed, not seen, Build your own private apps, Privacy is designed, A cloak for the shadows"},{"@type":"Syllabus","name":"Level 3: Papers, please","description":"The Night Arena, Who vouches for you?, How Citadel works, Keep documents off-chain, Show only what's needed, Hard to follow, Valid isn't forever, The gate's checklist, Welcome to the Guild"},{"@type":"Syllabus","name":"Level 4: The market","description":"The harbor market, What a token is, Rules travel with the asset, Proving you may buy, Why markets need privacy, Showing the auditor, Both sides or neither, When a trade is done, Open for business"},{"@type":"Syllabus","name":"Level 5: The lighthouse","description":"Who keeps the light on?, What a node does, Spreading the word, Provisioners, Drawing the committee, Succinct Attestation, Missing a turn, What DUSK is for, The light stays on"}]}</script>
+  <!-- /seo:head -->
   <link rel="stylesheet" href="academy/style.css">
   <script type="module" src="academy/quiz.js"></script>
 </head>
@@ -15,7 +32,7 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Dusklings home">DUSKLINGS</a>
       <button class="lesson-button" id="menu-button" aria-haspopup="dialog"><span class="kicker" id="level-kicker">Level 1</span> <span id="level-title">First egg</span> <span aria-hidden="true">▾</span></button>
-      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="count" aria-live="polite">1 / 9</span></div>
+      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="chapter-count" aria-live="polite">1 / 9</span></div>
     </header>
 
     <main class="stage">
@@ -58,5 +75,93 @@
     <ol id="menu-list"></ol>
     <button class="ghost small" id="reset">Reset progress</button>
   </dialog>
+  <!-- seo:syllabus -->
+  <section class="syllabus" aria-labelledby="syllabus-title">
+    <p class="kicker">No code</p>
+    <h2 id="syllabus-title">Keeper's journey</h2>
+    <p>A no-code introduction to Dusk in five levels: blockchain basics, zero-knowledge privacy, identity and credentials, regulated assets and the network.</p>
+    <div class="syllabus-units">
+      <section>
+        <h3>Level 1: First egg</h3>
+        <p class="muted">Blockchain basics</p>
+        <ol>
+          <li><a href="#egg">An egg with your name on it</a></li>
+          <li><a href="#ledger">The shared ledger</a></li>
+          <li><a href="#displays">Records and displays</a></li>
+          <li><a href="#keys">Keys and signatures</a></li>
+          <li><a href="#phrase">The recovery phrase</a></li>
+          <li><a href="#transactions">Sending a transaction</a></li>
+          <li><a href="#gas">Gas and fees</a></li>
+          <li><a href="#contracts">Contracts make the rules</a></li>
+          <li><a href="#hatch">Your Duskling hatches</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Level 2: Out of sight</h3>
+        <p class="muted">Privacy</p>
+        <ol>
+          <li><a href="#seen">Everyone wants a look</a></li>
+          <li><a href="#public">Public means public</a></li>
+          <li><a href="#metadata">Patterns give you away</a></li>
+          <li><a href="#moonlight">Moonlight: public accounts</a></li>
+          <li><a href="#proofs">Proving without showing</a></li>
+          <li><a href="#phoenix">Phoenix: shielded notes</a></li>
+          <li><a href="#spent-once">Spent once</a></li>
+          <li><a href="#sender">Who called?</a></li>
+          <li><a href="#signed">Signed, not seen</a></li>
+          <li><a href="#zk-apps">Build your own private apps</a></li>
+          <li><a href="#design">Privacy is designed</a></li>
+          <li><a href="#cloak">A cloak for the shadows</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Level 3: Papers, please</h3>
+        <p class="muted">Identity and credentials</p>
+        <ol>
+          <li><a href="#arena">The Night Arena</a></li>
+          <li><a href="#claims">Who vouches for you?</a></li>
+          <li><a href="#citadel">How Citadel works</a></li>
+          <li><a href="#documents">Keep documents off-chain</a></li>
+          <li><a href="#disclosure">Show only what's needed</a></li>
+          <li><a href="#unlinkable">Hard to follow</a></li>
+          <li><a href="#expiry">Valid isn't forever</a></li>
+          <li><a href="#checks">The gate's checklist</a></li>
+          <li><a href="#badge">Welcome to the Guild</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Level 4: The market</h3>
+        <p class="muted">Regulated assets</p>
+        <ol>
+          <li><a href="#stalls">The harbor market</a></li>
+          <li><a href="#tokens">What a token is</a></li>
+          <li><a href="#rules">Rules travel with the asset</a></li>
+          <li><a href="#eligible">Proving you may buy</a></li>
+          <li><a href="#confidential">Why markets need privacy</a></li>
+          <li><a href="#auditor">Showing the auditor</a></li>
+          <li><a href="#atomic">Both sides or neither</a></li>
+          <li><a href="#settled">When a trade is done</a></li>
+          <li><a href="#satchel">Open for business</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Level 5: The lighthouse</h3>
+        <p class="muted">The network</p>
+        <ol>
+          <li><a href="#keepers-of-light">Who keeps the light on?</a></li>
+          <li><a href="#nodes">What a node does</a></li>
+          <li><a href="#kadcast">Spreading the word</a></li>
+          <li><a href="#provisioners">Provisioners</a></li>
+          <li><a href="#sortition">Drawing the committee</a></li>
+          <li><a href="#attestation">Succinct Attestation</a></li>
+          <li><a href="#faults">Missing a turn</a></li>
+          <li><a href="#dusk-token">What DUSK is for</a></li>
+          <li><a href="#lantern">The light stays on</a></li>
+        </ol>
+      </section>
+    </div>
+    <p class="muted"><a href="./">All paths</a></p>
+  </section>
+  <!-- /seo:syllabus -->
 </body>
 </html>

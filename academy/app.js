@@ -3,8 +3,8 @@ import {deploy, friendly, seedFromName, pad16, WICK, KEEPERS} from './contract.j
 import {Rejection} from './rust-runtime.js';
 import {createScene} from './scene.js';
 import {createEditor, diffHtml} from './editor.js';
-import {drawCreature, genes, traitNames, TRAITS, sprite, GENE_COLORS} from './creature.js';
-import {load, store, favicon, loadKeeper, saveKeeper} from './store.js';
+import {drawCreature, genes, traitNames, TRAITS, GENE_COLORS} from './creature.js';
+import {load, store, loadKeeper, saveKeeper} from './store.js';
 import {courseEndHtml, drawTiles} from './next-paths.js';
 
 const $ = s => document.querySelector(s);
@@ -12,7 +12,6 @@ const DEFAULTS = {at: 0, passed: {}, drafts: {}, name: '', duskling: null};
 
 let save = load('hatchery', DEFAULTS);
 const persist = () => store('hatchery', save);
-favicon(sprite(WICK));
 
 const scene = createScene($('#scene'));
 scene.show({keeper: WICK, animate: false});
@@ -53,7 +52,7 @@ const done = c => c.kind === 'code' ? !!save.passed[c.id] : c.kind === 'intro' ?
 function renderProgress() {
   const c = chapter(), list = chapters.filter(x => x.lesson === c.lesson), l = lessonOf(c);
   $('#pips').innerHTML = list.map(x => `<li class="${done(x) ? 'done' : ''} ${x === c ? 'here' : ''}"></li>`).join('');
-  $('#count').textContent = `${list.indexOf(c) + 1} / ${list.length}`;
+  $('#chapter-count').textContent = `${list.indexOf(c) + 1} / ${list.length}`;
   $('#lesson-kicker').textContent = `Lesson ${l.n}`;
   $('#lesson-title').textContent = l.title;
   $('#menu-list').innerHTML = lessons.map((lesson, i) => {
@@ -287,4 +286,5 @@ $('#play-next').addEventListener('click', () => show(at + 1));
 // ---- Start ----------------------------------------------------------------------------------
 const fromHash = chapters.findIndex(c => '#' + c.id === location.hash);
 show(fromHash >= 0 ? fromHash : save.at ?? 0, {focus: false});
-window.addEventListener('hashchange', () => { const i = chapters.findIndex(c => '#' + c.id === location.hash); if (i >= 0 && i !== at) show(i); });
+// A chapter link, e.g. from the syllabus below the app, opens that chapter at the top of the page.
+window.addEventListener('hashchange', () => { const i = chapters.findIndex(c => '#' + c.id === location.hash); if (i < 0) return; if (i !== at) show(i); window.scrollTo(0, 0); });

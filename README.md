@@ -43,7 +43,7 @@ Dusk facts in the journey were checked against the Dusk sources: `dusk-core` hos
 ## Checks
 
 ```sh
-npm test            # interpreter limits and rollback; every chapter passes with its answer and fails from its start
+npm test            # interpreter limits and rollback; every chapter passes with its answer and fails from its start; search files up to date
 npm run test:e2e    # the whole site over static HTTP in Chromium: every chapter, playgrounds, narrow screens, axe audits
 npm run test:rust   # every contract and circuit answer, compiled for real; vendored artifacts rebuilt byte for byte
 npm run test:vm     # every contract answer and playground, replayed call by call in Dusk's VM
@@ -51,6 +51,16 @@ npm run test:vm     # every contract answer and playground, replayed call by cal
 
 - **`test:e2e`** needs Playwright (and optionally `@axe-core/playwright`). `CHROMIUM_PATH` picks a Chromium and `NODE_PATH` points at an external `node_modules`.
 - **`test:rust`** and **`test:vm`** need Rust with the `wasm32-unknown-unknown` target. `RUST_TOOLCHAIN=stable` swaps the pinned 1.98.0 for an installed toolchain, and `CARGO_NET_OFFLINE=true` builds from cached crates only.
+
+## Search and link previews
+
+Crawlers that don't run JavaScript, including most AI crawlers, read these instead of the game. `npm run build:seo` writes them from the lesson data, and `npm test` fails when they're out of date:
+
+- each page's title, description, canonical URL on `https://dusklings.com`, link-preview tags and JSON-LD (a `Course` per path);
+- a syllabus below each path's app, linking every chapter;
+- `robots.txt`, `sitemap.xml`, `llms.txt` and `llms-full.txt`, which holds every chapter's text, questions, tasks and finished code as Markdown.
+
+`npm run build:images` renders the icons and the 1200×630 preview cards in `assets/og/` with the game's own sprites and scenes. It needs Playwright, like `test:e2e`.
 
 ## Layout
 
@@ -67,7 +77,8 @@ npm run test:vm     # every contract answer and playground, replayed call by cal
   - `vendor/`: Dusk Connect, the circuit engine, the Hatchery data-driver and the practice-node fixture, with hashes in `circuit-engine.json` and `almanac.json`. Rebuild them with `npm run build:circuit` and `npm run build:almanac`.
 - `examples/hatchery/`: the finished contract as a Forge crate.
 - `engines/circuit/`: the browser's PLONK engine. `engines/almanac-fixture/` generates the practice node's answers. `engines/vm-runner/` replays calls in Dusk's VM for `test:vm`, with the Moth Nest contract in `moth_nest.rs`.
-- `tools/`: builds for the vendored artifacts, the end-to-end test and the Rust checks.
+- `tools/`: builds for the vendored artifacts, the search files and images, the end-to-end test and the Rust checks.
+- `assets/`: fonts, icons (`icons/`) and link-preview cards (`og/`). `favicon.ico`, `robots.txt`, `sitemap.xml`, `llms.txt` and `llms-full.txt` sit at the root.
 
 The classic registration-counter academy was replaced by this one. It's preserved at the git tag `classic-academy`.
 

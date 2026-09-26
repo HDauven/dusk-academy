@@ -3,10 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c0d1d">
-  <title>The Hatchery | Dusklings</title>
+  <!-- seo:head -->
+  <title>The Hatchery: Dusk smart contracts in Rust | Dusklings</title>
+  <meta name="description" content="Write a Dusk Forge smart contract in Rust over five lessons: state, events, calls between contracts, block height and approvals.">
+  <link rel="canonical" href="https://dusklings.com/hatchery.html">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="assets/icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dusklings">
+  <meta property="og:title" content="The Hatchery: Dusk smart contracts in Rust | Dusklings">
+  <meta property="og:description" content="Write a Dusk Forge smart contract in Rust over five lessons: state, events, calls between contracts, block height and approvals.">
+  <meta property="og:url" content="https://dusklings.com/hatchery.html">
+  <meta property="og:image" content="https://dusklings.com/assets/og/hatchery.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Hatchery, a Dusklings path: Smart contracts in Rust">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","@id":"https://dusklings.com/hatchery.html#course","name":"The Hatchery","description":"Write a Dusk Forge smart contract in Rust over five lessons: state, events, calls between contracts, block height and approvals.","url":"https://dusklings.com/hatchery.html","inLanguage":"en","isAccessibleForFree":true,"educationalLevel":"Beginner","teaches":["Rust","Dusk Forge smart contracts","Contract state and events","Calls between contracts","Block height","Approvals and transfers"],"about":{"@type":"Thing","name":"Dusk","url":"https://dusk.network"},"provider":{"@type":"Organization","name":"Dusklings","url":"https://dusklings.com/"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"Online"},"offers":{"@type":"Offer","category":"Free","price":0,"priceCurrency":"EUR"},"syllabusSections":[{"@type":"Syllabus","name":"Lesson 1: The Hatchery","description":"Dusk falls, Contracts, Constants and integers, Math, Structs, Vectors, Functions, Making a Duskling, Private functions, Return values, Mixing the seed, Putting it together, Event types, Emitting events, Hatch your Duskling"},{"@type":"Syllabus","name":"Lesson 2: Keepers","description":"Every Duskling needs a keeper, Reading state, Maybe there, maybe not, Who's calling?, Recording the keeper, Whose is it?, Counting with iterators, One hatch per keeper, Keepers of the harbor"},{"@type":"Syllabus","name":"Lesson 3: Moth hunt","description":"Something to eat, Contract addresses, Calling another contract, Mixing DNA, Moth-born, Only your own Duskling, The feast, A second event type, Telling the world, The moth feast"},{"@type":"Syllabus","name":"Lesson 4: Night battles","description":"The Night Arena, A place to rest, The chain's clock, Resting, Don't repeat yourself, Wins and losses, Rolling the dice (sort of), Into the arena, Win or lose, Arena night"},{"@type":"Syllabus","name":"Lesson 5: Trading","description":"Trading day, Handing it over, A receipt, Room for an approval, Approving a keeper, Collecting it, The stale approval, Trade day"}]}</script>
+  <!-- /seo:head -->
   <link rel="stylesheet" href="academy/style.css">
   <script type="module" src="academy/app.js"></script>
 </head>
@@ -15,7 +32,7 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Dusklings home">DUSKLINGS</a>
       <button class="lesson-button" id="menu-button" aria-haspopup="dialog"><span class="kicker" id="lesson-kicker">Lesson 1</span> <span id="lesson-title">The Hatchery</span> <span aria-hidden="true">▾</span></button>
-      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="count" aria-live="polite">1 / 14</span></div>
+      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="chapter-count" aria-live="polite">1 / 14</span></div>
     </header>
 
     <main class="stage">
@@ -133,5 +150,92 @@
     <pre class="diff" id="diff"></pre>
     <div class="row end"><button class="primary" id="use-answer">Use this code</button></div>
   </dialog>
+  <!-- seo:syllabus -->
+  <section class="syllabus" aria-labelledby="syllabus-title">
+    <p class="kicker">Smart contracts in Rust</p>
+    <h2 id="syllabus-title">The Hatchery</h2>
+    <p>Write a Dusk Forge smart contract in Rust over five lessons: state, events, calls between contracts, block height and approvals.</p>
+    <div class="syllabus-units">
+      <section>
+        <h3>Lesson 1: The Hatchery</h3>
+        <ol>
+          <li><a href="#dusk-falls">Dusk falls</a></li>
+          <li><a href="#contract">Contracts</a></li>
+          <li><a href="#constants">Constants and integers</a></li>
+          <li><a href="#math">Math</a></li>
+          <li><a href="#structs">Structs</a></li>
+          <li><a href="#vectors">Vectors</a></li>
+          <li><a href="#functions">Functions</a></li>
+          <li><a href="#first-duskling">Making a Duskling</a></li>
+          <li><a href="#private">Private functions</a></li>
+          <li><a href="#returns">Return values</a></li>
+          <li><a href="#mixing">Mixing the seed</a></li>
+          <li><a href="#hatch">Putting it together</a></li>
+          <li><a href="#event-type">Event types</a></li>
+          <li><a href="#events">Emitting events</a></li>
+          <li><a href="#finale">Hatch your Duskling</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Lesson 2: Keepers</h3>
+        <ol>
+          <li><a href="#keepers">Every Duskling needs a keeper</a></li>
+          <li><a href="#getters">Reading state</a></li>
+          <li><a href="#dna-of">Maybe there, maybe not</a></li>
+          <li><a href="#sender">Who's calling?</a></li>
+          <li><a href="#owner">Recording the keeper</a></li>
+          <li><a href="#owner-of">Whose is it?</a></li>
+          <li><a href="#count-of">Counting with iterators</a></li>
+          <li><a href="#one-free">One hatch per keeper</a></li>
+          <li><a href="#keepers-play">Keepers of the harbor</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Lesson 3: Moth hunt</h3>
+        <ol>
+          <li><a href="#moths">Something to eat</a></li>
+          <li><a href="#nest-id">Contract addresses</a></li>
+          <li><a href="#call">Calling another contract</a></li>
+          <li><a href="#blend">Mixing DNA</a></li>
+          <li><a href="#mothborn">Moth-born</a></li>
+          <li><a href="#hunt">Only your own Duskling</a></li>
+          <li><a href="#feed">The feast</a></li>
+          <li><a href="#hunted-type">A second event type</a></li>
+          <li><a href="#hunted">Telling the world</a></li>
+          <li><a href="#moth-feast">The moth feast</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Lesson 4: Night battles</h3>
+        <ol>
+          <li><a href="#arena">The Night Arena</a></li>
+          <li><a href="#ready-at">A place to rest</a></li>
+          <li><a href="#block-height">The chain's clock</a></li>
+          <li><a href="#is-ready">Resting</a></li>
+          <li><a href="#only-keeper">Don't repeat yourself</a></li>
+          <li><a href="#record">Wins and losses</a></li>
+          <li><a href="#roll">Rolling the dice (sort of)</a></li>
+          <li><a href="#battle">Into the arena</a></li>
+          <li><a href="#outcome">Win or lose</a></li>
+          <li><a href="#arena-night">Arena night</a></li>
+        </ol>
+      </section>
+      <section>
+        <h3>Lesson 5: Trading</h3>
+        <ol>
+          <li><a href="#trading">Trading day</a></li>
+          <li><a href="#transfer">Handing it over</a></li>
+          <li><a href="#transferred">A receipt</a></li>
+          <li><a href="#approved-field">Room for an approval</a></li>
+          <li><a href="#approve">Approving a keeper</a></li>
+          <li><a href="#take">Collecting it</a></li>
+          <li><a href="#stale">The stale approval</a></li>
+          <li><a href="#trade-day">Trade day</a></li>
+        </ol>
+      </section>
+    </div>
+    <p class="muted"><a href="./">All paths</a></p>
+  </section>
+  <!-- /seo:syllabus -->
 </body>
 </html>
