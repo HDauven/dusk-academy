@@ -1,4 +1,5 @@
 import {levels, chapters, levelQuizzes} from './journey.js';
+import {nextPathsHtml} from './next-paths.js';
 import {createScene, eggSprite} from './scene.js';
 import {drawCreature, sprite, traitNames, GENE_COLORS, GEAR_INFO} from './creature.js';
 import {load, store, favicon, loadKeeper, saveKeeper} from './store.js';
@@ -136,7 +137,7 @@ const VISUALS = {
          <p>${keeper.dna ? `${escapeHtml(keeper.name)} is wearing it now, in every path.` : 'Hatch your Duskling at the end of Level 1 and it will wear this.'}</p>
          ${keeper.dna ? '' : '<button type="button" class="ghost small" data-goto="hatch">Go to the hatching</button>'}</div>`
       : `<div><p class="kicker">Reward: ${GEAR_INFO[gear]}</p>${remaining(l)}</div>`}</div>
-      ${last ? pathTiles() : ''}`;
+      ${last ? nextPathsHtml('journey') : ''}`;
   },
 };
 
@@ -149,13 +150,6 @@ function keeperCard() {
   return `<div class="card small-card">${creature(keeper.dna, 128)}<div><p class="kicker">Your Duskling</p><h2>${escapeHtml(keeper.name)}</h2>
     <p class="dna">${[...Array(8)].map((_, i) => `<b style="color:${GENE_COLORS[i]}">${keeper.dna.slice(i * 2, i * 2 + 2)}</b>`).join('')}</p>
     <dl class="traits">${traitNames(keeper.dna).map(t => `<dt>${t.label}</dt><dd>${t.value}</dd>`).join('')}</dl></div></div>`;
-}
-function pathTiles() {
-  return `<div class="paths-grid">
-    <a class="path-tile" href="hatchery.html">${creature(SAMPLE[1], 64, [])}<span class="kicker">Contracts</span><strong>The Hatchery</strong><span class="muted">Write the Rust contract that hatched your Duskling.</span></a>
-    <a class="path-tile" href="almanac.html">${creature(SAMPLE[2], 64, [])}<span class="kicker">dApps</span><strong>The Almanac</strong><span class="muted">Read every Duskling from a browser with Dusk Connect.</span></a>
-    <a class="path-tile" href="secret-stats.html">${creature('1335947248835871', 64, [])}<span class="kicker">Circuits</span><strong>Secret stats</strong><span class="muted">Prove your Duskling's power without revealing its stats.</span></a>
-  </div><a class="ghost home-link" href="./">Back to all paths</a>`;
 }
 
 function drawCanvases(box) {

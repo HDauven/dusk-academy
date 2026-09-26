@@ -5,6 +5,7 @@ import {createScene} from './scene.js';
 import {createEditor, diffHtml} from './editor.js';
 import {drawCreature, genes, traitNames, TRAITS, sprite, GENE_COLORS} from './creature.js';
 import {load, store, favicon, loadKeeper, saveKeeper} from './store.js';
+import {courseEndHtml, drawTiles} from './next-paths.js';
 
 const $ = s => document.querySelector(s);
 const DEFAULTS = {at: 0, passed: {}, drafts: {}, name: '', duskling: null};
@@ -245,6 +246,10 @@ function preparePlayground(c) {
   const keeper = loadKeeper();
   $('#play-source').textContent = own ? `Running the contract you finished in “${last.title}”.` : `You haven’t passed “${last.title}” yet, so this runs the reference contract.`;
   $('#play-next').hidden = at === chapters.length - 1;
+  // The last playground closes the Hatchery: what was built, and where to go next.
+  $('#course-end').innerHTML = at === chapters.length - 1 ? courseEndHtml('hatchery', {kicker: 'Hatchery complete',
+    text: 'Your contract hatches Dusklings, gives them keepers, calls the Moth Nest, runs battles and handles trades. The finished code is in <a href="https://github.com/HDauven/dusklings/tree/main/examples/hatchery">examples/hatchery</a>, ready to build with Dusk Forge.'}) : '';
+  drawTiles($('#course-end'));
   $('#play-next').innerHTML = `Lesson ${lesson.n + 1} <span aria-hidden="true">→</span>`;
   const start = () => {
     const contract = deploy(own ?? lesson.reference);

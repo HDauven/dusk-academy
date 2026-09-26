@@ -253,6 +253,8 @@ a.path-tile:hover { border-color: var(--accent); }
 .path-tile canvas { width: 64px; height: 64px; image-rendering: pixelated; }
 .path-tile strong { font-size: 16px; }
 .path-tile.soon { opacity: .6; }
+.course-end { margin-top: 18px; }
+.course-end .paths-grid { margin: 14px 0 12px; }
 .home-link { justify-self: start; text-decoration: none; }
 .map-start { justify-self: start; margin-top: 16px; }
 .node em.busy { color: var(--accent); }

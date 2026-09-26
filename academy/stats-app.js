@@ -72,6 +72,7 @@ function finale(c, ctx) {
 
 startPath({
   key: 'stats', lessons, chapters, language: 'rust', pathName: 'Secret stats',
+  ending: {kicker: 'Secret stats complete', text: 'Your circuit proves a Duskling\'s power, and that it\'s at least 50, without revealing its strength or agility.'},
   check: (c, source, signal) => c.check(source, samples => prove(source, samples, signal)),
   finale,
 });

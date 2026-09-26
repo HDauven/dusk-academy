@@ -5,12 +5,13 @@ import {createEditor, diffHtml} from './editor.js';
 import {drawCreature, sprite} from './creature.js';
 import {load, store, favicon} from './store.js';
 import {friendly, WICK, KEEPERS} from './contract.js';
+import {courseEndHtml, drawTiles} from './next-paths.js';
 
 const $ = s => document.querySelector(s);
 export const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 export const codeHtml = s => escapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 
-export function startPath({key, lessons, chapters, language, pathName, check: runCheck, finale, sceneKind = 'hatchery'}) {
+export function startPath({key, lessons, chapters, language, pathName, check: runCheck, finale, ending, sceneKind = 'hatchery'}) {
   const DEFAULTS = {at: 0, passed: {}, drafts: {}, labs: {}};
   let save = load(key, DEFAULTS);
   const persist = () => store(key, save);
@@ -91,12 +92,17 @@ export function startPath({key, lessons, chapters, language, pathName, check: ru
       $('#overview-count').textContent = `${passed} of ${code.length} code chapters passed.`;
     }
     if (pane === 'lab') {
-      const last = lessonCode(c.lesson).at(-1);
-      finale(c, {
+      const last = lessonCode(c.lesson).at(-1), signal = (running = new AbortController()).signal;
+      Promise.resolve(finale(c, {
         pane: $('#lab-pane'), paintScene, codeHtml, escapeHtml,
         source: save.passed[last.id] ?? l.reference, own: !!save.passed[last.id], lastTitle: last.title,
         played() { save.labs[c.id] = true; persist(); renderProgress(); },
-        signal: (running = new AbortController()).signal,
+        signal,
+      })).then(() => {
+        // The path's last lab closes with what was built and where to go next.
+        if (at !== chapters.length - 1 || signal.aborted || !ending) return;
+        $('#lab-pane').insertAdjacentHTML('beforeend', courseEndHtml(key, ending));
+        drawTiles($('#lab-pane'));
       });
     }
     renderProgress(); setNext();

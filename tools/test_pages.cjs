@@ -100,6 +100,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
         assert.equal(await page.locator('#play-log .bad').count(), 0, `${c.id}: playground actions only succeed or refuse`);
         assert.ok(await page.locator('#play-log .refused, #play-log .ok').count() >= c.playground.actions.length);
         if (c.id === 'trade-day') await audit('playground');
+        if (c === code.at(-1)) assert.equal(await page.locator('.course-end .path-tile').count(), 3, 'the Hatchery ends with the other paths');
       }
     }
 
@@ -134,6 +135,7 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
           await page.waitForSelector('#lab-log .refused', {timeout: 60000});
           assert.match(await page.textContent('#lab-log'), /fnName: "hatch"/);
         }
+        if (c === list.at(-1)) { await page.waitForSelector('.course-end', {timeout: 60000}); assert.equal(await page.locator('.course-end .path-tile').count(), 3, `${file} ends with the other paths`); }
       }
     }
 

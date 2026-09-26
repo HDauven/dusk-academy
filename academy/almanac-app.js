@@ -76,6 +76,7 @@ function hatchLab(c, ctx) {
 
 startPath({
   key: 'almanac', lessons, chapters, language: 'js', pathName: 'The Almanac',
+  ending: {kicker: 'Almanac complete', text: 'Your page reads every Duskling from the Hatchery with Dusk Connect, keeps big numbers exact, copes with a node that\'s down, and prepares calls for a wallet to sign.'},
   async check(c, source, signal) {
     await getFixture();
     return c.check(await run(source, c.plan, signal), fixture);
