@@ -1,0 +1,20 @@
+# Dusklings
+
+> Learn how the Dusk blockchain works, then write Rust smart contracts with Dusk Forge, zero-knowledge circuits and dApps, raising pixel Dusklings as you go.
+
+Dusklings is a set of browser lessons about the Dusk blockchain. Learners share one pixel creature, a Duskling, across four independent paths. Progress is saved in the browser. Contract checks run a Rust-subset interpreter in the page, and every reference answer is also compiled with Dusk Forge and replayed in Dusk's VM. Circuit checks make and verify real PLONK proofs.
+
+## Paths
+
+- [Keeper's journey](https://dusklings.com/journey.html): A no-code introduction to Dusk in five levels: blockchain basics, zero-knowledge privacy, identity and credentials, regulated assets and the network.
+- [The Hatchery](https://dusklings.com/hatchery.html): Write a Dusk Forge smart contract in Rust over five lessons: state, events, calls between contracts, block height and approvals.
+- [The Almanac](https://dusklings.com/almanac.html): Build a JavaScript dApp that reads a Dusk contract with Dusk Connect and its data-driver, then prepares hatch and transfer calls for a wallet to sign.
+- [Secret stats](https://dusklings.com/secret-stats.html): Write dusk-plonk circuits that prove a Duskling's power without revealing its stats, then that it's at least 50. Each check makes a real PLONK proof.
+
+## Full text
+
+- [Every lesson as Markdown](https://dusklings.com/llms-full.txt): each chapter's explanation, questions with explained answers, tasks and finished code
+
+## Optional
+
+- [Source code](https://github.com/HDauven/dusklings): the game, the lessons and the tools that check every answer against Dusk's VM

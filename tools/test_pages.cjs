@@ -69,6 +69,15 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
     assert.match(await page.textContent('#hero-primary'), /journey/i);
     await audit('home');
 
+    // A path page's syllabus, below the app, opens a chapter at the top of the page.
+    await go('hatchery.html');
+    const structs = page.locator('.syllabus a[href="#structs"]');
+    await structs.scrollIntoViewIfNeeded();
+    assert.ok(await page.evaluate(() => scrollY) > 0, 'the syllabus sits below the app');
+    await structs.click();
+    await page.waitForFunction(() => location.hash === '#structs' && scrollY === 0);
+    assert.equal(await page.textContent('#chapter-title'), 'Structs');
+
     // Keeper's journey: every chapter, one wrong answer, the hatch and all the gear.
     for (const c of journey) {
       await go('journey.html', c.id);

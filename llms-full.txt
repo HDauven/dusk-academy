@@ -1,0 +1,2745 @@
+# Dusklings: every lesson
+
+> Learn how the Dusk blockchain works, then write Rust smart contracts with Dusk Forge, zero-knowledge circuits and dApps, raising pixel Dusklings as you go.
+
+Each chapter's text as it appears on https://dusklings.com. Journey chapters end with their question, every answer and why it is right or wrong. Code chapters end with their task, and each code lesson ends with its finished code.
+
+# Keeper's journey
+
+A no-code introduction to Dusk in five levels: blockchain basics, zero-knowledge privacy, identity and credentials, regulated assets and the network.
+
+URL: https://dusklings.com/journey.html
+
+## Level 1: First egg (Blockchain basics)
+
+### An egg with your name on it
+
+URL: https://dusklings.com/journey.html#egg
+
+Dusk is a blockchain network built for finance. Level 1 covers the basics every Dusk user needs: the shared ledger, wallets and keys, and what really happens when you send a transaction.
+
+No code, no wallet and no crypto needed. Each chapter asks one question, and each right answer lights a lantern. Light them all and your egg hatches.
+
+### The shared ledger
+
+URL: https://dusklings.com/journey.html#ledger
+
+The harbor keeps one ledger of every Duskling. On a blockchain, that ledger isn't stored by one company. Many independent computers called **nodes** each keep a copy and check every update against the same rules.
+
+Updates are grouped into **blocks**, and the nodes use **consensus** to agree on a single history. A block is **final** once the network treats it as settled and it can no longer be replaced.
+
+> One business can often just use a database. A blockchain is worth it when independent parties need a common record and rules they can all check.
+
+**Question:** Why keep the Duskling ledger on a blockchain instead of in the hatchery's own database?
+
+- [right] So independent keepers can check the same record and rules without trusting the hatchery alone.
+  Right. Nobody has to take the hatchery's word for it: every node checks the same rules.
+- [wrong] Because a blockchain is always faster than a database.
+  That's not the reason. Coordinating many nodes usually costs speed. The benefit is a record nobody controls alone.
+- [wrong] So the ledger doesn't need any rules.
+  It's the opposite: every node checks each update against the same rules.
+
+### Records and displays
+
+URL: https://dusklings.com/journey.html#displays
+
+**State** is what the network currently stores, like the Hatchery's list of Dusklings. Apps *read* that state and display it however they like.
+
+Changing a website's text doesn't change the ledger. A second app can read the same contract on its own. Apps can show stale data, so compare fresh reads of the same finalized state.
+
+**Question:** The Hatchery holds 5 Dusklings. The Almanac website and a keeper's phone app both make a fresh read of the same finalized state. What do they get?
+
+- [wrong] Each app keeps its own count, so they may disagree.
+  The count belongs to the contract, not the apps. Fresh reads of the same finalized state agree.
+- [right] Both get 5, even if they display it differently.
+  Exactly: one record, many displays.
+- [wrong] Whatever number was last typed into either website.
+  Editing a website changes the page, not the ledger.
+
+### Keys and signatures
+
+URL: https://dusklings.com/journey.html#keys
+
+A **wallet** manages your keys. Your **private key** makes **signatures**: proof that the key's owner approved one specific action. The network can check a signature without ever seeing the key.
+
+A signature proves you control a key. It doesn't prove who you are in real life, and it doesn't prove the action was a good idea.
+
+**Question:** Your wallet signs a request to call hatch(). What does the signature prove?
+
+- [wrong] Your legal name and address.
+  A key isn't an identity document. Level 3 covers how to prove things about yourself.
+- [wrong] That the request is safe to approve.
+  A signature shows you approved it, not that approving it was wise. Read what you sign.
+- [right] That whoever holds your key approved this exact request.
+  Right. Nothing more and nothing less.
+
+### The recovery phrase
+
+URL: https://dusklings.com/journey.html#phrase
+
+When you create a wallet, it shows you a **recovery phrase**: a list of words that can rebuild your keys on any device. Whoever has the phrase controls the wallet.
+
+Apps never need it. They ask the wallet to approve an action, and you approve or reject it inside the wallet itself.
+
+**Question:** A website says: “Paste your recovery phrase so we can verify your Duskling.” What do you do?
+
+- [wrong] Paste it. They need it for verification.
+  Never. Anyone with your recovery phrase can take everything the wallet controls.
+- [right] Refuse. Apps ask the wallet for approval and never need the phrase.
+  Right. Anything that asks for your phrase is trying to take your keys.
+- [wrong] Paste only half, to be safe.
+  Half a phrase gives a thief a big head start. Share none of it.
+
+### Sending a transaction
+
+URL: https://dusklings.com/journey.html#transactions
+
+A **transaction** is a request for the network to do something, such as calling `hatch`. You approve it in your wallet and it goes to a node. The network may then include it in a block and execute it.
+
+Submitted, executed and final are three different moments. An app should check each one before it tells you something worked.
+
+**Question:** You submitted hatch() and got a transaction hash back. Is your Duskling safely hatched?
+
+- [wrong] Yes. A hash means it worked.
+  A hash only identifies the request. Execution can still fail.
+- [wrong] Yes, as long as the wallet still shows a balance.
+  Your balance says nothing about whether this particular call succeeded.
+- [right] Not yet. First check that execution succeeded and that its block is final.
+  Right. Submitted, executed and final are separate steps.
+
+### Gas and fees
+
+URL: https://dusklings.com/journey.html#gas
+
+Every transaction makes the network do work: checking signatures, running contract code and storing state. That work is measured in **gas** and paid for as a fee in **DUSK**, the network's token.
+
+The fee pays for the work, not for a good outcome. If a contract call fails, its changes are rolled back, but you still pay. On Dusk, a failed call uses up its whole gas limit.
+
+**Question:** Your hatch() call fails halfway through. What happens?
+
+- [right] Its changes are rolled back, but you still pay the fee.
+  Right. A failed call uses up its whole gas limit, which is why good apps check things before sending.
+- [wrong] Everything is undone, including the fee.
+  The state changes are undone, but the fee isn't. A failed call still pays, in fact for its whole gas limit.
+- [wrong] Half a Duskling hatches.
+  A failed call rolls back all of its changes, so there are no half-hatched Dusklings.
+
+### Contracts make the rules
+
+URL: https://dusklings.com/journey.html#contracts
+
+A **smart contract** is a program whose rules govern its own on-chain state. The Hatchery decides how DNA is made, and nobody can skip that step.
+
+A website can check things early for a smoother experience, but the contract must enforce the rules, because anyone can call a contract directly.
+
+> **DuskVM** runs native Dusk contracts. They're written in Rust and compiled to WebAssembly, using **Dusk Forge** as the tooling. **DuskEVM** is a separate, Ethereum-compatible environment.
+
+**Question:** The Almanac website rejects Duskling names longer than 20 letters. Is that enough to enforce the rule?
+
+- [wrong] Yes. Users can only reach the contract through the website.
+  Contracts are public, and anyone can call them with their own tools.
+- [right] No. The contract has to enforce it, because anyone can call the contract directly.
+  Right. The rule has to live in the one place every call passes through.
+- [wrong] Yes, as long as the website uses HTTPS.
+  HTTPS protects the connection to the website, not the contract.
+
+### Your Duskling hatches
+
+URL: https://dusklings.com/journey.html#hatch
+
+Name your Duskling. Wick runs the **Hatchery** contract: your name becomes a seed, the contract mixes the seed into 16 digits of DNA, and the DNA decides every trait.
+
+In the Contracts path you'll write this same contract yourself, and the same name will hatch the same Duskling.
+
+## Level 2: Out of sight (Privacy)
+
+### Everyone wants a look
+
+URL: https://dusklings.com/journey.html#seen
+
+Level 2 is about privacy on Dusk: what's public on a blockchain, how Moonlight and Phoenix move DUSK, and how zero-knowledge proofs show that something is true without showing the details, in Dusk's own transfers and in apps you build.
+
+### Public means public
+
+URL: https://dusklings.com/journey.html#public
+
+**On-chain** data is recorded by the blockchain. **Off-chain** data lives somewhere else, such as your device or a company's server.
+
+Put something in ordinary contract state and copies exist on nodes around the world. Hiding it on a website doesn't remove those copies. Marking a field private in Rust doesn't encrypt it either; it only controls which code can call or read it.
+
+**Question:** A keeper's real name was stored in public contract state. Now the website hides it. What changed?
+
+- [right] Only the website. The name is still on-chain for anyone to read.
+  Right. Decide what goes on-chain before you publish it, because you can't take it back.
+- [wrong] The name is now confidential on-chain.
+  The chain still holds it, and anyone can read it without the website.
+- [wrong] The chain deleted the old value and every copy.
+  Blockchains keep their history, and nodes still hold copies.
+
+### Patterns give you away
+
+URL: https://dusklings.com/journey.html#metadata
+
+Hiding names and amounts isn't the whole story. Observers also learn from **metadata**: when you act, how often, which accounts you deal with, and patterns that link your accounts together.
+
+Privacy means thinking about everything an observer can see, not just the obvious fields.
+
+**Question:** You never publish your name, but every evening at nine your public account pays the Hatchery exactly 5 DUSK. What might an observer learn?
+
+- [wrong] Nothing. Your name isn't on-chain.
+  A name isn't the only clue. Regular patterns can identify you or link your accounts.
+- [wrong] Only the amounts, because times are encrypted.
+  On a public account, both times and amounts are visible.
+- [right] Your habits, and possibly who you are, from the pattern.
+  Right. Timing, amounts and counterparties are all information.
+
+### Moonlight: public accounts
+
+URL: https://dusklings.com/journey.html#moonlight
+
+**Moonlight** is Dusk's public account model. Each account has a visible balance, and each transfer shows who sent how much to whom, like a bank statement anyone can read.
+
+That's useful when transparency is the point, such as a public treasury that anyone should be able to audit.
+
+**Question:** You pay the Hatchery 25 DUSK from a Moonlight account. Who can see the amount?
+
+- [wrong] Only you and the Hatchery.
+  That's what shielded transfers are for. Moonlight transfers are public.
+- [right] Anyone reading the chain.
+  Right. Moonlight is public by design.
+- [wrong] Only provisioner nodes.
+  Moonlight transfers are visible to everyone who reads the chain, not just nodes.
+
+### Proving without showing
+
+URL: https://dusklings.com/journey.html#proofs
+
+A **zero-knowledge proof** shows that a statement is true without revealing the private inputs behind it.
+
+Say your Duskling has a secret **strength**, a secret **agility** and a public **power** of 9. You can prove that strength + agility = 9 without revealing either number.
+
+> A proof only covers its own statement. It doesn't show that the numbers came from somewhere trustworthy; Level 3 deals with that.
+
+**Question:** The arena verifies your proof that strength + agility = 9. What does it learn?
+
+- [wrong] Your exact strength and agility.
+  Those stay private. That's the whole point of the proof.
+- [right] That your hidden scores add up to 9, and nothing more about them.
+  Right. The statement is shown to be true while the inputs stay secret.
+- [wrong] That the scores were earned fairly.
+  The proof only covers the sum. Where the numbers came from is a separate question.
+
+### Phoenix: shielded notes
+
+URL: https://dusklings.com/journey.html#phoenix
+
+**Phoenix** is Dusk's shielded model. Instead of a public balance, you hold **notes**: pieces of value that only you can spend. A Phoenix transfer hides who paid whom and how much.
+
+So each transfer carries a zero-knowledge proof. Without revealing which notes you spend or how much they hold, it shows that:
+
+- every note you spend exists: it's in the tree of all notes on the chain,
+- you own it: you hold its secret key,
+- each spent note's **nullifier** is worked out correctly (more on that next),
+- the new notes are made correctly, and
+- the amounts add up: what goes in equals what comes out, plus the fee and anything paid into a contract.
+
+**Question:** If a Phoenix transfer hides the amounts, how does the network know you aren't spending DUSK you don't have?
+
+- [wrong] It trusts your wallet.
+  No wallet is trusted blindly. The rules are checked mathematically.
+- [wrong] It checks the amounts later, in secret.
+  Nothing is checked later in secret. The proof is verified before the transfer is accepted.
+- [right] The transfer carries a zero-knowledge proof that it follows the rules.
+  Right. The network checks the proof instead of the private details.
+
+### Spent once
+
+URL: https://dusklings.com/journey.html#spent-once
+
+Nobody can see which note you spend, so the chain can't simply mark it as spent. Instead, spending a note reveals its **nullifier**: a tag worked out from the note's secret key and its place in the tree of notes.
+
+Only the note's owner can compute it, and nobody else can tell which note it belongs to. The proof shows it was worked out correctly, so each note has exactly one. The transfer contract keeps every nullifier it has seen and rejects any transaction that repeats one.
+
+**Question:** Nobody can see which note you spent. What stops you from spending it again?
+
+- [wrong] The chain marks that note as spent.
+  That would reveal which note you spent. Phoenix never points at the note.
+- [right] Its nullifier: the transfer contract rejects any nullifier it has already seen.
+  Right. The same note always gives the same nullifier, and nobody can link that nullifier back to the note.
+- [wrong] Your wallet remembers it and refuses.
+  A wallet can be changed or bypassed. The chain enforces the rule.
+
+### Who called?
+
+URL: https://dusklings.com/journey.html#sender
+
+Contracts can see how they were called. `abi::public_sender()` returns the sender's public account for a Moonlight transaction, and nothing at all for a shielded Phoenix one.
+
+So a contract that needs to know who called it has to decide, on purpose, what to do when the caller is private.
+
+**Question:** A contract calls abi::public_sender() during a shielded Phoenix transaction. What does it get?
+
+- [right] Nothing, because there's no public sender to show.
+  Right. The contract has to handle that case deliberately, and a private caller can still prove who they are, as the next question shows.
+- [wrong] The sender's account, decrypted.
+  Contracts can't unshield a Phoenix transaction.
+- [wrong] The transaction is always rejected.
+  It isn't rejected. The contract simply gets no public sender, and its own logic decides what happens next.
+
+### Signed, not seen
+
+URL: https://dusklings.com/journey.html#signed
+
+A shielded caller can still prove who they are. Instead of asking for the sender, the contract takes a **signature** as part of the call and checks it with a host function: `abi::verify_bls` for account keys, or `abi::verify_schnorr` for the one-time key of a Phoenix address.
+
+Dusk's own genesis contracts work this way. The stake contract never asks who sent a stake: every stake carries signatures from the stake's keys. And before the transfer contract pays out to a Phoenix address, it checks a Schnorr signature from that address's one-time key.
+
+> Sign something that only works once, or anyone could replay an old signature. The transfer contract's signed message includes the transaction's nullifiers, or the Moonlight nonce.
+
+**Question:** The Hatchery wants keepers on shielded transactions to prove they own their Duskling before it battles. How?
+
+- [wrong] Ask the network to reveal the shielded sender.
+  Nobody can unshield a Phoenix transaction, not even the network.
+- [right] Take a signature from the keeper's key in the call, and check it with abi::verify_bls.
+  Right. That's how Dusk's stake and transfer contracts handle callers they can't see. The keeper proves they hold the key, and the rest of the transaction stays shielded.
+- [wrong] Nothing. Shielded callers can never be identified.
+  They can choose to prove who they are. A signature shows they hold the right key.
+
+### Build your own private apps
+
+URL: https://dusklings.com/journey.html#zk-apps
+
+Zero-knowledge proofs aren't only for Dusk's own transfers. Developers can use them too, which is what makes privacy-preserving dApps possible on Dusk.
+
+- You write a **circuit** with `dusk-plonk` describing what must be true.
+- The user's device creates a **proof** from their private data.
+- Your contract checks it with the `abi::verify_plonk` host function. Poseidon, the hash behind `abi::poseidon_hash`, is designed to be cheap inside circuits, so contracts and circuits can agree on the same hashes.
+
+That covers things like private voting, sealed bids, eligibility checks and secret game moves: the contract enforces the rule, and the private data never goes on-chain.
+
+**Question:** A game wants keepers to prove their Duskling's power is at least 50 without revealing its stats. How can that work on Dusk?
+
+- [wrong] The keeper sends the stats to the contract, which keeps them secret.
+  Contract state isn't secret. Remember: public means public.
+- [right] The keeper's device creates a PLONK proof, and the contract verifies it with abi::verify_plonk.
+  Right. The contract checks the rule without ever seeing the stats.
+- [wrong] It can't. Only Phoenix transfers can use zero-knowledge proofs.
+  Any contract can verify PLONK proofs. That's what makes private dApps possible.
+
+### Privacy is designed
+
+URL: https://dusklings.com/journey.html#design
+
+Moonlight and Phoenix are about moving DUSK. Neither one makes a contract's own data private.
+
+Each contract decides for itself what's public, what stays private and how it's checked. Privacy is something you design in, not a default you get for free.
+
+**Question:** Which statement should the Hatchery's developer rely on?
+
+- [wrong] Every Dusk transaction and contract field is private by default.
+  Moonlight transfers are public, and contract state is only as private as its design.
+- [wrong] Only EVM contracts can use privacy on Dusk.
+  Privacy on Dusk isn't tied to the EVM.
+- [right] Moonlight is public and Phoenix shields transfers. Contract privacy needs its own design.
+  Exactly.
+
+### A cloak for the shadows
+
+URL: https://dusklings.com/journey.html#cloak
+
+You can now tell public from shielded, spot the metadata that gives people away, explain what a zero-knowledge proof does and doesn't show, and describe how contracts verify proofs to build private apps.
+
+## Level 3: Papers, please (Identity and credentials)
+
+### The Night Arena
+
+URL: https://dusklings.com/journey.html#arena
+
+Level 3 covers identity and compliance: credentials, Dusk's Citadel protocol, selective disclosure, and why a valid proof still needs rules around it.
+
+### Who vouches for you?
+
+URL: https://dusklings.com/journey.html#claims
+
+Typing “I'm licensed” at the arena gate is only a claim. A **credential** ties that claim to an **issuer** the arena is prepared to trust, here the Keepers' Guild.
+
+A credential is only as good as its issuer. The arena decides which issuers it accepts.
+
+**Question:** A keeper at the arena gate says “Trust me, I'm licensed.” What turns that claim into something the arena can check?
+
+- [right] A credential from an issuer the arena trusts, which the keeper can prove they hold.
+  Right. The Guild vouches for it, and the keeper proves it.
+- [wrong] Connecting a wallet.
+  A wallet shows you control a key. It doesn't show that the Guild licensed you.
+- [wrong] Signing the claim with their own key.
+  A signature shows which key made the claim, not that anyone trustworthy agrees with it.
+
+### How Citadel works
+
+URL: https://dusklings.com/journey.html#citadel
+
+**Citadel 2** is Dusk's private credential protocol. It involves three parties: the keeper, a license provider (the Guild) and a service (the arena).
+
+The Guild checks the keeper off-chain, signs the relevant attributes and registers a license. The keeper then proves to the arena that they hold a valid license. The arena never sees the documents the Guild checked.
+
+**Question:** In a Citadel flow, who looks at the keeper's identity documents?
+
+- [wrong] The arena, at the gate.
+  The arena gets a proof of a valid license, not the documents.
+- [right] The license provider, off-chain, before it issues the license.
+  Right. The arena only ever sees a proof.
+- [wrong] Everyone, because the documents are stored on-chain.
+  Identity documents never go on-chain in this flow.
+
+### Keep documents off-chain
+
+URL: https://dusklings.com/journey.html#documents
+
+Sensitive attributes belong **off-chain**. Where the protocol supports it, verify the required claim and disclose only what the service needs.
+
+Off-chain storage still needs access controls and a retention policy. Make this decision before publishing: privacy can't be added later to data that's already public.
+
+**Question:** Which design avoids publishing a keeper's identity document?
+
+- [wrong] Store the document in a contract and hide it on the website.
+  Hiding it on the website doesn't remove it from the chain.
+- [wrong] Publish it now and add privacy to the contract later.
+  Once it's public, it stays public. Privacy can't be added afterwards.
+- [right] Keep it off-chain and verify the required claim with a credential proof.
+  Right. Prove the claim, keep the document.
+
+### Show only what's needed
+
+URL: https://dusklings.com/journey.html#disclosure
+
+**Selective disclosure** means revealing only the fact a service needs, or proving a condition, instead of handing over a whole record.
+
+The arena's rule is “holds a valid Guild license.” It doesn't need your name, birthday or address, so it shouldn't ask for them.
+
+**Question:** What should the arena ask keepers to show?
+
+- [wrong] Every attribute, because more data means more safety.
+  More data means more to leak and more to protect, and the rule doesn't need it.
+- [right] Proof of what its rule requires, a valid Guild license, and nothing else.
+  Right. Ask for the evidence the rule needs, not the whole identity.
+- [wrong] Nothing. Connecting a wallet proves eligibility.
+  A wallet connection says nothing about a Guild license.
+
+### Hard to follow
+
+URL: https://dusklings.com/journey.html#unlinkable
+
+A Citadel proof shows that you hold a valid license without revealing *which* license. If every visit revealed the same license ID, services could compare notes and follow you around.
+
+A proof can still expose public inputs or metadata, so apps have to think about those too.
+
+**Question:** Why does it help that the arena can't tell which license you used?
+
+- [wrong] It makes licenses impossible to forge.
+  Forgery is prevented by the Guild's signature and the proof, not by hiding the license ID.
+- [wrong] It makes the gate faster.
+  Speed isn't the point. Hiding the license ID is about privacy.
+- [right] Your visits can't be linked together through a shared license ID.
+  Right. Less linkable data means less tracking.
+
+### Valid isn't forever
+
+URL: https://dusklings.com/journey.html#expiry
+
+A proof doesn't decide how long access lasts, or whether the same proof can be used twice. The service needs real rules for **expiry**, **revocation** and **replay**.
+
+Evidence meant for a different service, or a one-time session that was already used, shouldn't quietly grant fresh access. Writing a policy down isn't the same as enforcing it.
+
+**Question:** A keeper's session is cryptographically valid, but the arena's policy says it expired yesterday. Let them in?
+
+- [right] No. The session must also satisfy the arena's current policy.
+  Right. A valid proof is necessary, but not sufficient.
+- [wrong] Yes. Cryptographic validity overrides the policy.
+  The math says the proof is genuine. The policy decides whether it's still acceptable.
+- [wrong] Only if they publish their full identity.
+  That throws away the privacy the proof gave them.
+
+### The gate's checklist
+
+URL: https://dusklings.com/journey.html#checks
+
+Put it all together: a signature, a public state change and a private credential proof are different things, and none of them is a universal “compliant” stamp.
+
+The service still decides which issuers it trusts, which claims it needs, and how it handles expiry, revocation and replay.
+
+**Question:** A keeper's license proof verifies. What must the arena still check before opening the gate?
+
+- [wrong] Nothing. A valid proof is enough.
+  A valid proof is necessary, but it isn't enough on its own.
+- [right] That the issuer is trusted, the license isn't expired or revoked, and the proof hasn't already been used here.
+  Right. Privacy and rules work together.
+- [wrong] The keeper's full identity, published on-chain.
+  That undoes everything the credential was for.
+
+### Welcome to the Guild
+
+URL: https://dusklings.com/journey.html#badge
+
+You know the difference between a claim and a credential, how Citadel keeps documents off-chain, and why a valid proof still needs rules around it.
+
+## Level 4: The market (Regulated assets)
+
+### The harbor market
+
+URL: https://dusklings.com/journey.html#stalls
+
+Level 4 covers regulated assets: what a token is and isn't, how rules and eligibility travel with an asset, why markets need confidentiality (and auditors), and how trades settle.
+
+### What a token is
+
+URL: https://dusklings.com/journey.html#tokens
+
+A **token** is an entry in a contract that records who holds how much of something. It can represent a real asset, such as a share or a bond.
+
+The software alone doesn't create the legal rights. Those come from legal agreements and a properly authorised issuer. The token records ownership and enforces the rules the issuer sets.
+
+**Question:** A contract mints a token called Harbor Bond. What makes it an actual bond?
+
+- [wrong] Its name.
+  Calling a token a bond doesn't make it one.
+- [right] The legal agreement and the authorised issuer behind it.
+  Right. The token tracks ownership, and the law defines the rights.
+- [wrong] Being traded at a price.
+  Anything can have a price. Legal rights come from the agreement behind it.
+
+### Rules travel with the asset
+
+URL: https://dusklings.com/journey.html#rules
+
+Securities come with rules: who may hold them, how many holders there can be, when they can be transferred.
+
+On Dusk, those rules can live in the asset's contract, so every transfer is checked, whichever app sent it. Remember Level 1: a website can be skipped, but a contract can't.
+
+**Question:** A bond may only be held by approved investors. Where should that rule be enforced?
+
+- [wrong] In the trading website.
+  Other apps can call the contract directly and skip your website.
+- [wrong] By emailing buyers a reminder.
+  A reminder isn't enforcement.
+- [right] In the bond's contract, on every transfer.
+  Right. The contract is the one place every transfer passes through.
+
+### Proving you may buy
+
+URL: https://dusklings.com/journey.html#eligible
+
+How does the contract know a buyer is approved without putting their identity on-chain? Level 3 comes back here.
+
+The buyer proves they hold a valid credential from an issuer the asset trusts. The contract checks the proof, not the person's documents.
+
+**Question:** How can a buyer show they're an approved investor without publishing their identity?
+
+- [right] Prove they hold a valid credential from a trusted issuer.
+  Right. Eligibility is proven while identity stays private.
+- [wrong] Upload their passport to the contract.
+  That publishes exactly what we wanted to keep private.
+- [wrong] Connect a wallet with a large balance.
+  A balance says nothing about whether someone is approved.
+
+### Why markets need privacy
+
+URL: https://dusklings.com/journey.html#confidential
+
+On a fully public chain, everyone sees every position and every trade as it happens. For a fund, that's a problem: others can read its strategy and trade ahead of it, and its clients' holdings are exposed.
+
+Regulated markets need confidentiality for participants while the rules are still enforced.
+
+**Question:** A fund's trades are all public in real time. What's the risk?
+
+- [wrong] None. Transparency is always good.
+  It's good for the rules to be transparent, but exposing every participant's positions isn't.
+- [right] Others can see its moves and trade ahead of them, and its clients' holdings are exposed.
+  Right. That's why confidentiality matters in markets.
+- [wrong] Its trades settle more slowly.
+  Visibility doesn't change how fast trades settle. It changes who knows what.
+
+### Showing the auditor
+
+URL: https://dusklings.com/journey.html#auditor
+
+Confidential doesn't have to mean hidden from everyone. Regulated firms have auditors who need to check what they hold.
+
+Phoenix has **view keys** for this. A view key can find the notes that belong to an account and read what they're worth, but it can't spend them; spending needs the secret key. A fund can give its auditor a view key while the rest of the world still sees nothing.
+
+**Question:** An auditor needs to check a fund's shielded holdings. What can the fund safely share?
+
+- [wrong] Its secret key, so the auditor can look at everything.
+  A secret key can spend the funds. Never hand it over for an audit.
+- [wrong] Nothing. It has to move everything to a public account first.
+  It doesn't need to give up privacy for everyone just to show one auditor.
+- [right] A view key, which lets the auditor see its notes and their values but not spend them.
+  Right. Read access for the auditor, and privacy for everyone else.
+
+### Both sides or neither
+
+URL: https://dusklings.com/journey.html#atomic
+
+A trade has two sides: the asset goes to the buyer and the payment goes to the seller. If both happen in one contract call, and a failure on either side fails the whole call, they succeed or fail together.
+
+This is called **delivery versus payment**. It removes the risk of one side delivering while the other doesn't.
+
+> The contract has to treat a failed payment as fatal, for example with `expect`. If it ignored the error from another contract, the bond could still move.
+
+**Question:** A single contract call moves the bond to the buyer and DUSK to the seller. The payment fails. What happens to the bond?
+
+- [wrong] The buyer keeps it.
+  Then the seller would lose the bond without being paid.
+- [right] Its transfer is rolled back too, because the failed payment fails the whole call.
+  Right. Either both sides move or neither does.
+- [wrong] It's split between them.
+  Nothing gets split. A call that fails rolls back all of its changes.
+
+### When a trade is done
+
+URL: https://dusklings.com/journey.html#settled
+
+For a market, a trade only counts once it can't be undone. On Dusk, a block becomes **final** through consensus, which you'll see in Level 5. After that, it can't be replaced.
+
+Final settlement lets both sides rely on the trade right away, instead of waiting for separate systems to reconcile.
+
+**Question:** Why does a market care whether a block is final?
+
+- [wrong] Final blocks have lower fees.
+  Finality is about certainty, not cost.
+- [wrong] Final blocks are private.
+  Finality says nothing about privacy.
+- [right] A final trade can't be replaced, so both sides can rely on it.
+  Right.
+
+### Open for business
+
+URL: https://dusklings.com/journey.html#satchel
+
+You can explain what a token does and doesn't prove, where an asset's rules belong, why markets need confidentiality and how auditors still get to look, and why settlement has to be all-or-nothing and final.
+
+## Level 5: The lighthouse (The network)
+
+### Who keeps the light on?
+
+URL: https://dusklings.com/journey.html#keepers-of-light
+
+Level 5 covers the network itself: nodes, how messages spread, provisioners and staking, and how Succinct Attestation turns votes into final blocks.
+
+### What a node does
+
+URL: https://dusklings.com/journey.html#nodes
+
+Dusk nodes run **Rusk**, Dusk's node software. Each node keeps a copy of the chain, checks new transactions and blocks against the rules, runs contracts, and passes messages to other nodes.
+
+Because every node checks for itself, nobody has to take a single server's word for the state of the chain.
+
+**Question:** What does a Dusk node do?
+
+- [right] Keeps a copy of the chain, checks blocks against the rules and relays messages.
+  Right.
+- [wrong] Stores everyone's private keys.
+  Your keys stay in your wallet. Nodes never need them.
+- [wrong] Hosts dApp websites.
+  Websites live elsewhere. Nodes keep and check the ledger.
+
+### Spreading the word
+
+URL: https://dusklings.com/journey.html#kadcast
+
+New transactions and blocks have to reach every node quickly. Dusk uses **Kadcast**, a structured broadcast protocol.
+
+Nodes are organised into a routing structure, and each message is passed along it. It spreads quickly without every node sending it to every other node.
+
+**Question:** Why use a structured broadcast like Kadcast?
+
+- [wrong] It keeps transactions secret.
+  Kadcast is about delivery, not privacy. Privacy comes from Phoenix and proofs.
+- [right] Messages reach every node quickly, with far less duplicate traffic than flooding.
+  Right.
+- [wrong] It routes everything through one central server.
+  There's no central server. That's the point of a network.
+
+### Provisioners
+
+URL: https://dusklings.com/journey.html#provisioners
+
+**Provisioners** are the nodes that take part in consensus. To become one, a node stakes DUSK, at least 1,000 DUSK by default.
+
+Staked DUSK is a commitment: provisioners earn rewards for doing their job and risk penalties for failing it.
+
+**Question:** What makes a node a provisioner?
+
+- [wrong] It has the fastest internet connection.
+  Speed helps, but taking part requires stake.
+- [wrong] A central authority approves it.
+  No approval is needed. The stake is the ticket in.
+- [right] It stakes DUSK to take part in consensus.
+  Right.
+
+### Drawing the committee
+
+URL: https://dusklings.com/journey.html#sortition
+
+For each step of consensus, a committee of provisioners is chosen by **deterministic sortition**: a lottery weighted by stake, seeded so that every node computes the same result.
+
+More stake means more chances. Nobody picks the committee by hand.
+
+**Question:** How are committee members chosen?
+
+- [right] By a stake-weighted lottery that every node can recompute.
+  Right. Because it's deterministic, every node agrees on the result.
+- [wrong] The provisioners with the most stake, every time.
+  More stake gives more chances, not a guaranteed seat.
+- [wrong] By a public vote of DUSK holders each round.
+  There's no vote each round. Sortition decides.
+
+### Succinct Attestation
+
+URL: https://dusklings.com/journey.html#attestation
+
+**Succinct Attestation** is Dusk's consensus protocol. Each attempt to add a block, called an **iteration**, has three steps: one chosen provisioner **proposes** a block, a committee **validates** it, and another committee **ratifies** the result. If an attempt fails, a new one starts with fresh committees.
+
+Votes are signed with BLS signatures and combined into one compact attestation. A block that gets enough stake-weighted votes on the first attempt is attested. As more blocks are built on top of it, it becomes confirmed and then **final**.
+
+**Question:** What happens after a block is proposed in Succinct Attestation?
+
+- [wrong] It's final immediately.
+  A proposal is only a candidate until the committees vote on it.
+- [right] One committee validates it, another ratifies it, and enough votes attest it.
+  Right: proposal, validation, ratification.
+- [wrong] Miners race to solve a puzzle.
+  That's proof of work. Dusk uses proof of stake with committees.
+
+### Missing a turn
+
+URL: https://dusklings.com/journey.html#faults
+
+Provisioners are rewarded for doing their job and penalised for failing it. If a provisioner chosen to propose a block produces nothing, that's a **fault**. The first one is only a warning. After that, the provisioner is suspended for a while and part of its stake is **locked**.
+
+Dusk treats every fault this way, as a **soft** fault: a provisioner that fails its job is sidelined for a while and part of its stake is locked, not burned.
+
+**Question:** A provisioner is chosen to propose a block several times and never does. What happens?
+
+- [wrong] Nothing. Missing a turn is free.
+  A missed turn costs the network time, so it's penalised.
+- [right] After a warning, it's suspended for a while and part of its stake is locked.
+  Right. Dusk treats every fault as a soft fault: a suspension and locked stake, not burned stake.
+- [wrong] It's banned forever and loses all its stake.
+  Faults lead to a suspension and locked stake, not a ban. Dusk doesn't burn provisioners' stake.
+
+### What DUSK is for
+
+URL: https://dusklings.com/journey.html#dusk-token
+
+**DUSK** is the network's native token. It pays for gas, so every transaction and contract call is paid for in DUSK. It's also what provisioners stake to secure the network and earn rewards.
+
+Moonlight and Phoenix are two ways of holding and moving the same DUSK.
+
+**Question:** What is DUSK used for on the network?
+
+- [wrong] Only for voting on proposals.
+  DUSK pays for gas and secures consensus through staking.
+- [right] Paying transaction fees, and staking by provisioners.
+  Right.
+- [wrong] Nothing. It's just a collectible.
+  Every transaction pays its fee in DUSK.
+
+### The light stays on
+
+URL: https://dusklings.com/journey.html#lantern
+
+You've finished the keeper's journey: the ledger, privacy, credentials, markets and the network that runs them all.
+
+Next, try building. The paths are independent, so start wherever you like.
+
+# The Hatchery
+
+Write a Dusk Forge smart contract in Rust over five lessons: state, events, calls between contracts, block height and approvals.
+
+URL: https://dusklings.com/hatchery.html
+
+## Lesson 1: The Hatchery
+
+### Dusk falls
+
+URL: https://dusklings.com/hatchery.html#dusk-falls
+
+In this lesson you'll write **the Hatchery**: a Dusk smart contract, in Rust, that hatches Dusklings and remembers every one of them.
+
+Every Duskling is made from **16 digits of DNA**. Each pair of digits picks one trait: body, eyes, crown, wings, markings, color, glow and mouth.
+
+Play with the DNA on the right. By the end of the lesson, *your* contract will generate DNA like this, and you'll hatch a Duskling of your own.
+
+### Contracts
+
+URL: https://dusklings.com/hatchery.html#contract
+
+Dusk contracts are Rust, compiled to WebAssembly and run by **DuskVM**. **Dusk Forge** turns an ordinary Rust module into a contract: mark a `mod` with `#[dusk_forge::contract]` and Forge wires up the rest.
+
+A contract module holds **exactly one `pub struct`**. That struct *is* the contract's state: whatever it holds is stored on-chain between calls. `new()` describes the starting state. It's a `const fn`, so Rust works it out when the contract is compiled, and the contract starts life with that state.
+
+```rust
+#[dusk_forge::contract]
+mod lighthouse {
+    pub struct Lighthouse {}
+
+    impl Lighthouse {
+        pub const fn new() -> Self {
+            Self {}
+        }
+    }
+}
+```
+
+> `#![no_std]` at the top means there's no Rust standard library, because there's no operating system inside the VM. The supplied `use dusk_core::abi;` brings in Dusk's contract interface, which you'll use later. Dusk's core library also supplies the memory allocator and panic handler that a `no_std` contract needs.
+
+**Task:**
+
+1. Inside `mod hatchery`, above the `impl` block, declare an empty public struct named `Hatchery`.
+
+### Constants and integers
+
+URL: https://dusklings.com/hatchery.html#constants
+
+DNA is 16 digits long. Let's write that down once, as a **constant**. A `const` is fixed when the contract is compiled, so it's part of the code and takes no storage.
+
+Rust makes you say what kind of number you mean. Unsigned integers can't go below zero:
+
+- `u8`: 0 to 255
+- `u32`: up to about 4.3 billion
+- `u64`: up to about 18.4 quintillion
+
+```rust
+const MAX_EGGS: u32 = 12;
+```
+
+**Task:**
+
+1. Declare a constant `DNA_DIGITS` of type `u32` equal to `16`, inside the module above `pub struct Hatchery`.
+
+### Math
+
+URL: https://dusklings.com/hatchery.html#math
+
+Rust has the usual operators: `+ - * /`, and `%` for the remainder. `%` is how we'll trim a big number to 16 digits: `123456 % 1000` is `456`. It keeps the last three digits.
+
+To keep 16 digits we need 10 to the power of 16: `10u64.pow(DNA_DIGITS)`. The `u64` suffix tells Rust that this 10 is a u64.
+
+> The Dusk Forge contract template builds with **overflow checks on**, and Forge's docs say never to turn them off. Math that goes past a type's limit makes the call fail instead of quietly wrapping around. 10¹⁶ fits easily in a u64, whose limit is about 1.8 × 10¹⁹.
+
+**Task:**
+
+1. Below `DNA_DIGITS`, declare a `u64` constant `DNA_MODULUS` equal to `10u64.pow(DNA_DIGITS)`.
+
+### Structs
+
+URL: https://dusklings.com/hatchery.html#structs
+
+A Duskling needs more than one value, so we group its values in a `struct`:
+
+```rust
+struct Egg {
+    size: u32,
+    warm: bool,
+}
+```
+
+Notice there's no `pub`. Remember the Forge rule: exactly one `pub struct` per contract, and it's the state. Helper types like `Duskling` stay private to the module.
+
+**Task:**
+
+1. Above `pub struct Hatchery`, declare a (non-public) struct `Duskling` with two fields: `dna` of type `u64` and `level` of type `u32`.
+
+### Vectors
+
+URL: https://dusklings.com/hatchery.html#vectors
+
+One Duskling doesn't make a hatchery. We need a list that can grow: a **vector**. `Vec<Duskling>` is a vector of Dusklings.
+
+Without the standard library, `Vec` comes from Rust's `alloc` crate. The two new lines at the top (`extern crate alloc;` and `use alloc::vec::Vec;`) bring it in.
+
+```rust
+pub struct Nest {
+    eggs: Vec<u64>,
+}
+// in new():
+Self { eggs: Vec::new() }
+```
+
+Fields of the state struct are on-chain state, so the list survives between calls.
+
+**Task:**
+
+1. Give `Hatchery` a field `dusklings` of type `Vec<Duskling>`.
+2. In `new()`, start it empty with `Vec::new()`.
+
+### Functions
+
+URL: https://dusklings.com/hatchery.html#functions
+
+Contract methods live in the `impl` block:
+
+```rust
+pub fn warm(&mut self, degrees: u32) {
+}
+```
+
+- `pub` makes it callable from outside the contract.
+- `&mut self` means it may change the contract's state.
+- Each parameter is `name: Type`.
+
+**Task:**
+
+1. After `new()`, add a public method `create_duskling` that takes `&mut self` and `dna: u64`. Leave its body empty for now.
+
+### Making a Duskling
+
+URL: https://dusklings.com/hatchery.html#first-duskling
+
+Build a struct by naming each field. When a variable has the same name as the field, you can write `dna` instead of `dna: dna`:
+
+```rust
+let egg = Egg { size, warm: true };
+```
+
+Then add it to a vector with `push`:
+
+```rust
+self.eggs.push(egg);
+```
+
+**Task:**
+
+1. In `create_duskling`, push a new `Duskling` with the given `dna` and `level: 1` onto `self.dusklings`.
+
+### Private functions
+
+URL: https://dusklings.com/hatchery.html#private
+
+Every `pub fn` in a Forge contract is an **entry point**: anyone on the network can call it, with any arguments they like.
+
+The DNA should come from the contract, not from the caller. Drop the `pub` and `create_duskling` becomes a **private helper**. Other methods can still call it with `self.create_duskling(…)`, but nobody outside the contract can.
+
+**Task:**
+
+1. Make `create_duskling` private by removing `pub`.
+
+### Return values
+
+URL: https://dusklings.com/hatchery.html#returns
+
+Next, a helper that turns a **seed** number into DNA. Declare what a method returns with `->`. Use `&self` without `mut` to promise the method only reads state.
+
+```rust
+fn egg_size(&self, n: u64) -> u64 {
+    n % 100
+}
+```
+
+In Rust, the **last expression** of a function is its return value, as long as it has **no semicolon**.
+
+**Task:**
+
+1. Add a private method `generate_dna` that takes `&self` and `seed: u64` and returns a `u64`: the seed modulo `DNA_MODULUS`.
+
+### Mixing the seed
+
+URL: https://dusklings.com/hatchery.html#mixing
+
+Right now seed 7 becomes DNA `0000000000000007`, and seed 8 is almost identical. We want every digit to change when the seed changes.
+
+A contract can't roll dice: every node that runs it must get exactly the same answer. So instead of randomness we **mix** the seed. We multiply it by a huge odd number and let the result overflow on purpose.
+
+Normally overflow makes the call fail. `wrapping_mul` says the overflow is intended and wraps the result around instead. The `MIX` constant is already in the file.
+
+> Anyone can compute this in advance, so it isn't fair randomness. It even runs backwards: `MIX` is odd, so anyone can work out the seed that gives the DNA they want. A hash such as `abi::keccak256` can't be run backwards, but people can still try seeds until they like the result. We'll come back to fairness when Dusklings start battling.
+
+**Task:**
+
+1. Change `generate_dna` to return `seed.wrapping_mul(MIX) % DNA_MODULUS`.
+
+### Putting it together
+
+URL: https://dusklings.com/hatchery.html#hatch
+
+All the pieces are ready. Keepers need one public method that goes from seed to Duskling: `hatch`.
+
+Call one method from another through `self`, and store results with `let`:
+
+```rust
+let size = self.egg_size(n);
+self.store_egg(size);
+```
+
+**Task:**
+
+1. Add a public method `hatch(&mut self, seed: u64)`.
+2. Inside it, generate DNA from the seed, then pass that DNA to `create_duskling`.
+
+### Event types
+
+URL: https://dusklings.com/hatchery.html#event-type
+
+When a Duskling hatches, the outside world should hear about it: wallets, explorers, and this very page. Contracts announce things with **events**, receipts attached to the transaction. Apps listen for them, but they aren't contract state.
+
+In Forge, each kind of event is a **type**: a struct holding the event's data. Event types live at the top of the file, outside the contract module. A new `Hatched` type is waiting there for its fields.
+
+- The three attribute lines let **rkyv** encode the event on chain, and **serde** turn it into JSON for apps. Every event type carries them.
+- `impl ContractEvent` lists its **topics**: the names it's emitted under.
+
+Then **register** the type in the contract attribute. Forge adds it to the contract's schema, so apps can decode it:
+
+```rust
+#[dusk_forge::contract(events = [crate::Warmed])]
+```
+
+> `crate::` is the path from the top of the file. Forge matches paths exactly as written, so you'll use the same path when you emit the event.
+
+**Task:**
+
+1. Give `Hatched` two public fields: `pub id: u64,` and `pub dna: u64,`.
+2. Register it: change `#[dusk_forge::contract]` to `#[dusk_forge::contract(events = [crate::Hatched])]`.
+
+### Emitting events
+
+URL: https://dusklings.com/hatchery.html#events
+
+Time to announce every hatch. `abi::emit` takes a topic and an event, and attaches the event to the transaction:
+
+```rust
+abi::emit("warmed", crate::Warmed { id, degrees });
+```
+
+Use a topic from the type's `TOPICS`, so apps can decode it. `abi::emit` comes from the `abi` module you've had imported since chapter 2.
+
+**Task:**
+
+1. In `create_duskling`, before pushing, save the new id: `let id = self.dusklings.len() as u64;`
+2. After pushing, emit `crate::Hatched { id, dna }` with the topic `"hatched"`.
+
+### Hatch your Duskling
+
+URL: https://dusklings.com/hatchery.html#finale
+
+Give your first Duskling a name. The page turns the name into a seed number, then calls **your contract's** `hatch`. Your code decides its DNA.
+
+Different name, different Duskling. Same name, same Duskling, every time, on every node.
+
+### The code at the end of lesson 1
+
+```rust
+#![no_std]
+
+extern crate alloc;
+
+use bytecheck::CheckBytes;
+use dusk_forge::ContractEvent;
+use rkyv::{Archive, Deserialize, Serialize};
+
+/// A Duskling hatched.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hatched {
+    pub id: u64,
+    pub dna: u64,
+}
+
+impl ContractEvent for Hatched {
+    const TOPICS: &'static [&'static str] = &["hatched"];
+}
+
+#[dusk_forge::contract(events = [crate::Hatched])]
+mod hatchery {
+    use alloc::vec::Vec;
+    use dusk_core::abi;
+
+    const DNA_DIGITS: u32 = 16;
+    const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);
+    // 2^64 divided by the golden ratio: a classic mixing constant.
+    const MIX: u64 = 0x9E37_79B9_7F4A_7C15;
+
+    struct Duskling {
+        dna: u64,
+        level: u32,
+    }
+
+    pub struct Hatchery {
+        dusklings: Vec<Duskling>,
+    }
+
+    impl Hatchery {
+        pub const fn new() -> Self {
+            Self { dusklings: Vec::new() }
+        }
+
+        fn create_duskling(&mut self, dna: u64) {
+            let id = self.dusklings.len() as u64;
+            self.dusklings.push(Duskling { dna, level: 1 });
+            abi::emit("hatched", crate::Hatched { id, dna });
+        }
+
+        fn generate_dna(&self, seed: u64) -> u64 {
+            seed.wrapping_mul(MIX) % DNA_MODULUS
+        }
+
+        pub fn hatch(&mut self, seed: u64) {
+            let dna = self.generate_dna(seed);
+            self.create_duskling(dna);
+        }
+    }
+}
+```
+
+## Lesson 2: Keepers
+
+### Every Duskling needs a keeper
+
+URL: https://dusklings.com/hatchery.html#keepers
+
+In this lesson, every Duskling gets a **keeper**: the account that hatched it. You'll add read-only getters for apps, meet Dusk's `abi::public_sender()`, store owners, count Dusklings per keeper, and limit everyone to one hatch each.
+
+You keep working on the same file you finished in Lesson 1.
+
+### Reading state
+
+URL: https://dusklings.com/hatchery.html#getters
+
+Apps read a contract through its public methods. A method that takes `&self` only reads, so calling it changes nothing. Methods like this are often called **getters**.
+
+```rust
+pub fn egg_count(&self) -> u64 {
+    self.eggs.len() as u64
+}
+```
+
+`len()` returns a `usize`, Rust's type for sizes and positions. `as u64` converts it.
+
+**Task:**
+
+1. After `hatch`, add a public getter `duskling_count` that returns how many Dusklings the Hatchery holds, as a `u64`.
+
+### Maybe there, maybe not
+
+URL: https://dusklings.com/hatchery.html#dna-of
+
+What should `dna_of(7)` return when there are only three Dusklings? Rust has no `null`. It has `Option`: either `Some(value)` or `None`.
+
+A vector's `get(i)` returns an `Option`, and `map` transforms the value inside it, if there is one:
+
+```rust
+self.eggs.get(i).map(|e| e.size)
+```
+
+`|e| e.size` is a **closure**: a small unnamed function. This one takes an egg and returns its size.
+
+**Task:**
+
+1. Add a public getter `dna_of(&self, id: u64) -> Option<u64>` that returns the DNA of Duskling `id`, or `None` if it doesn't exist. Vectors are indexed with `usize`, so use `id as usize`.
+
+### Who's calling?
+
+URL: https://dusklings.com/hatchery.html#sender
+
+To know who hatched a Duskling, the contract needs to know who sent the transaction. `abi::public_sender()` returns the sender's public key for a **Moonlight** (public) transaction, and `None` for a shielded **Phoenix** one.
+
+That's a real design choice. We'll require a public sender for hatching, so a shielded hatch fails:
+
+```rust
+let keeper = abi::public_sender().expect("message");
+```
+
+`expect` unwraps `Some(value)`, or panics with your message on `None`. A panic undoes the whole call.
+
+> Rust will warn that `keeper` is unused. The next chapter puts it to work.
+
+**Task:**
+
+1. At the start of `hatch`, store the sender in `keeper`, panicking with `"Hatch from a public Moonlight account"` when there isn't one.
+
+### Recording the keeper
+
+URL: https://dusklings.com/hatchery.html#owner
+
+A public key has a type too: `BlsPublicKey`, from Dusk's signature library. Import it under a shorter name:
+
+```rust
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+```
+
+Keys can be stored in structs and compared with `==`, just like numbers. Now each Duskling can remember its keeper.
+
+**Task:**
+
+1. Add the import above, below the other `use` lines.
+2. Give `Duskling` a field `owner: BlsPublicKey`.
+3. Make `create_duskling` take a second parameter, `owner: BlsPublicKey`, and store it in the new Duskling.
+4. In `hatch`, pass `keeper` to `create_duskling`.
+
+### Whose is it?
+
+URL: https://dusklings.com/hatchery.html#owner-of
+
+Apps will want to show who owns each Duskling, so add a getter. It's the same pattern as `dna_of`, returning the owner instead.
+
+> Remember that ordinary contract state is public: anyone can read which key owns each Duskling, getter or no getter. The getter just makes it convenient.
+
+**Task:**
+
+1. Add a public getter `owner_of(&self, id: u64) -> Option<BlsPublicKey>`.
+
+### Counting with iterators
+
+URL: https://dusklings.com/hatchery.html#count-of
+
+How many Dusklings does one keeper have? Walk the vector with an **iterator**:
+
+```rust
+self.eggs.iter().filter(|e| e.warm).count()
+```
+
+- `iter()` visits each item in turn.
+- `filter` keeps the items where the closure returns `true`.
+- `count()` counts what's left, as a `usize`.
+
+**Task:**
+
+1. Add a public getter `dusklings_of(&self, keeper: BlsPublicKey) -> u64` that counts the Dusklings owned by `keeper`.
+
+### One hatch per keeper
+
+URL: https://dusklings.com/hatchery.html#one-free
+
+`assert!(condition, "message")` panics when the condition is false. Because a panic undoes the whole call, an assert at the top of a method is a clean way to enforce a rule.
+
+```rust
+assert!(self.egg_count() < 12, "The nest is full");
+```
+
+Methods can call other methods, including public getters like `dusklings_of`.
+
+**Task:**
+
+1. In `hatch`, right after getting `keeper`, assert that the keeper has no Dusklings yet, with the message `"Every keeper hatches one Duskling"`.
+
+### Keepers of the harbor
+
+URL: https://dusklings.com/hatchery.html#keepers-play
+
+This is your own contract from this lesson, running in the harbor. Try each action and watch who owns what. Then try to break the rules.
+
+### The code at the end of lesson 2
+
+```rust
+#![no_std]
+
+extern crate alloc;
+
+use bytecheck::CheckBytes;
+use dusk_forge::ContractEvent;
+use rkyv::{Archive, Deserialize, Serialize};
+
+/// A Duskling hatched.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hatched {
+    pub id: u64,
+    pub dna: u64,
+}
+
+impl ContractEvent for Hatched {
+    const TOPICS: &'static [&'static str] = &["hatched"];
+}
+
+#[dusk_forge::contract(events = [crate::Hatched])]
+mod hatchery {
+    use alloc::vec::Vec;
+    use dusk_core::abi;
+    use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+
+    const DNA_DIGITS: u32 = 16;
+    const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);
+    // 2^64 divided by the golden ratio: a classic mixing constant.
+    const MIX: u64 = 0x9E37_79B9_7F4A_7C15;
+
+    struct Duskling {
+        dna: u64,
+        level: u32,
+        owner: BlsPublicKey,
+    }
+
+    pub struct Hatchery {
+        dusklings: Vec<Duskling>,
+    }
+
+    impl Hatchery {
+        pub const fn new() -> Self {
+            Self { dusklings: Vec::new() }
+        }
+
+        fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
+            let id = self.dusklings.len() as u64;
+            self.dusklings.push(Duskling { dna, level: 1, owner });
+            abi::emit("hatched", crate::Hatched { id, dna });
+        }
+
+        fn generate_dna(&self, seed: u64) -> u64 {
+            seed.wrapping_mul(MIX) % DNA_MODULUS
+        }
+
+        pub fn hatch(&mut self, seed: u64) {
+            let keeper = abi::public_sender().expect("Hatch from a public Moonlight account");
+            assert!(self.dusklings_of(keeper) == 0, "Every keeper hatches one Duskling");
+            let dna = self.generate_dna(seed);
+            self.create_duskling(dna, keeper);
+        }
+
+        pub fn duskling_count(&self) -> u64 {
+            self.dusklings.len() as u64
+        }
+
+        pub fn dna_of(&self, id: u64) -> Option<u64> {
+            self.dusklings.get(id as usize).map(|d| d.dna)
+        }
+
+        pub fn owner_of(&self, id: u64) -> Option<BlsPublicKey> {
+            self.dusklings.get(id as usize).map(|d| d.owner)
+        }
+
+        pub fn dusklings_of(&self, keeper: BlsPublicKey) -> u64 {
+            self.dusklings.iter().filter(|d| d.owner == keeper).count() as u64
+        }
+    }
+}
+```
+
+## Lesson 3: Moth hunt
+
+### Something to eat
+
+URL: https://dusklings.com/hatchery.html#moths
+
+In this lesson your Hatchery calls **another contract**. When a Duskling hunts a moth from the Moth Nest, a new moth-born Duskling hatches that mixes both DNAs.
+
+You'll learn contract IDs, cross-contract calls with `abi::call`, `Result`, and why a failed call undoes everything.
+
+### Contract addresses
+
+URL: https://dusklings.com/hatchery.html#nest-id
+
+Every deployed contract has a `ContractId`: 32 bytes that identify it on the chain. To call another contract, you need its ID.
+
+```rust
+const LIGHTHOUSE: ContractId = ContractId::from_bytes([3; 32]);
+```
+
+`[3; 32]` is an array of 32 bytes, all set to 3. A real deployment would use the other contract's actual ID. `ContractId` lives in the same `abi` module, so change your import to bring in both:
+
+```rust
+use dusk_core::abi::{self, ContractId};
+```
+
+> For the next few chapters, Rust will warn that `MOTH_NEST` and the helpers you add aren't used yet. `hunt` puts them to work. Warnings aren't errors.
+
+**Task:**
+
+1. Change `use dusk_core::abi;` to `use dusk_core::abi::{self, ContractId};`
+2. Below `MIX`, add a constant `MOTH_NEST: ContractId` set to `ContractId::from_bytes([7; 32])`.
+
+### Calling another contract
+
+URL: https://dusklings.com/hatchery.html#call
+
+`abi::call` runs a function on another contract and waits for the answer:
+
+```rust
+abi::call::<_, u64>(LIGHTHOUSE, "brightness", &level)
+```
+
+- `::<_, u64>` says what comes back: a `u64`. Rust works out the argument's type (`_`) by itself.
+- The arguments are the contract, the function's name, and a reference to the argument.
+
+The call returns a `Result`: `Ok(value)`, or `Err(error)` if the other contract failed. Like an `Option`, you can `expect` it.
+
+**Task:**
+
+1. Add a private method `moth_dna(&self, moth_id: u64) -> u64`.
+2. Inside, call the Moth Nest's `"moth_dna"` function with `&moth_id`, and `expect` the result with `"The Moth Nest has no such moth"`.
+
+### Mixing DNA
+
+URL: https://dusklings.com/hatchery.html#blend
+
+When a Duskling eats a moth, the new Duskling's DNA sits halfway between the two: their average.
+
+Your DNA is below 10¹⁶, and the Moth Nest promises the same for its moths, so the sum fits easily in a `u64`. If it ever sent something huge, overflow checks would make the hunt fail instead of wrapping around.
+
+**Task:**
+
+1. Add a private method `blend(&self, dna: u64, moth: u64) -> u64` that returns `(dna + moth) / 2`.
+
+### Moth-born
+
+URL: https://dusklings.com/hatchery.html#mothborn
+
+Moth-born Dusklings are special: their DNA always ends in `99`, and any Duskling whose DNA ends in 99 hatches with moth wings and antennae.
+
+To force the last two digits, remove them with `% 100` and add 99:
+
+```rust
+n - n % 100 + 99
+```
+
+With `n = 1234`, that's `1234 - 34 + 99 = 1299`.
+
+**Task:**
+
+1. Change `blend` to store the average in `let mixed`, then return `mixed - mixed % 100 + 99`.
+
+### Only your own Duskling
+
+URL: https://dusklings.com/hatchery.html#hunt
+
+Now the public entry point. Only a Duskling's keeper may send it hunting. Look up the hunter with `get`, then compare owners:
+
+```rust
+let egg = self.eggs.get(id as usize).expect("No such egg");
+assert!(egg.owner == keeper, "Not your egg");
+```
+
+**Task:**
+
+1. Add `pub fn hunt(&mut self, id: u64, moth_id: u64)`.
+2. Get the public sender as `keeper` (`"Hunt from a public Moonlight account"`).
+3. Look up the `hunter` (`"No such Duskling"`) and assert its owner is `keeper` (`"Only its keeper can send a Duskling hunting"`).
+
+### The feast
+
+URL: https://dusklings.com/hatchery.html#feed
+
+Put it together: ask the Moth Nest for the moth's DNA, blend it with the hunter's, and hatch the result for the same keeper.
+
+If the Moth Nest call fails, for example because the moth doesn't exist, `expect` panics and the **whole** hunt is undone. No half-fed Dusklings.
+
+**Task:**
+
+1. After the owner check in `hunt`, compute `let dna = self.blend(hunter.dna, self.moth_dna(moth_id));`
+2. Create the new Duskling for the same keeper: `self.create_duskling(dna, keeper);`
+
+### A second event type
+
+URL: https://dusklings.com/hatchery.html#hunted-type
+
+Apps want to hear about hunts too, so the Hatchery needs a second event type. `Hunted` is already at the top of the file, with the hunter's id and the moth's id.
+
+This time, write its `ContractEvent` impl yourself, then register it next to `Hatched`. The events list takes as many types as you like:
+
+```rust
+#[dusk_forge::contract(events = [crate::Warmed, crate::Cooled])]
+```
+
+**Task:**
+
+1. Below `Hunted`, implement `ContractEvent` with one topic, `"hunted"`. Follow the shape of `Hatched`'s impl.
+2. Register it: add `crate::Hunted` to the events list.
+
+### Telling the world
+
+URL: https://dusklings.com/hatchery.html#hunted
+
+Now emit it once the new Duskling exists. `create_duskling` already emits a `Hatched` event, so a hunt produces two events: the hatch, then the hunt.
+
+**Task:**
+
+1. At the end of `hunt`, emit `crate::Hunted { id, moth_id }` with the topic `"hunted"`.
+
+### The moth feast
+
+URL: https://dusklings.com/hatchery.html#moth-feast
+
+Your contract from this lesson is running, with the Moth Nest on the same chain. Every successful hunt hatches a moth-born Duskling for you.
+
+### The code at the end of lesson 3
+
+```rust
+#![no_std]
+
+extern crate alloc;
+
+use bytecheck::CheckBytes;
+use dusk_forge::ContractEvent;
+use rkyv::{Archive, Deserialize, Serialize};
+
+/// A Duskling hatched.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hatched {
+    pub id: u64,
+    pub dna: u64,
+}
+
+impl ContractEvent for Hatched {
+    const TOPICS: &'static [&'static str] = &["hatched"];
+}
+
+/// A Duskling came back from a hunt.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hunted {
+    pub id: u64,
+    pub moth_id: u64,
+}
+
+impl ContractEvent for Hunted {
+    const TOPICS: &'static [&'static str] = &["hunted"];
+}
+
+#[dusk_forge::contract(events = [crate::Hatched, crate::Hunted])]
+mod hatchery {
+    use alloc::vec::Vec;
+    use dusk_core::abi::{self, ContractId};
+    use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+
+    const DNA_DIGITS: u32 = 16;
+    const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);
+    // 2^64 divided by the golden ratio: a classic mixing constant.
+    const MIX: u64 = 0x9E37_79B9_7F4A_7C15;
+    // The Moth Nest: another team's contract on the same chain.
+    const MOTH_NEST: ContractId = ContractId::from_bytes([7; 32]);
+
+    struct Duskling {
+        dna: u64,
+        level: u32,
+        owner: BlsPublicKey,
+    }
+
+    pub struct Hatchery {
+        dusklings: Vec<Duskling>,
+    }
+
+    impl Hatchery {
+        pub const fn new() -> Self {
+            Self { dusklings: Vec::new() }
+        }
+
+        fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
+            let id = self.dusklings.len() as u64;
+            self.dusklings.push(Duskling { dna, level: 1, owner });
+            abi::emit("hatched", crate::Hatched { id, dna });
+        }
+
+        fn generate_dna(&self, seed: u64) -> u64 {
+            seed.wrapping_mul(MIX) % DNA_MODULUS
+        }
+
+        pub fn hatch(&mut self, seed: u64) {
+            let keeper = abi::public_sender().expect("Hatch from a public Moonlight account");
+            assert!(self.dusklings_of(keeper) == 0, "Every keeper hatches one Duskling");
+            let dna = self.generate_dna(seed);
+            self.create_duskling(dna, keeper);
+        }
+
+        pub fn duskling_count(&self) -> u64 {
+            self.dusklings.len() as u64
+        }
+
+        pub fn dna_of(&self, id: u64) -> Option<u64> {
+            self.dusklings.get(id as usize).map(|d| d.dna)
+        }
+
+        pub fn owner_of(&self, id: u64) -> Option<BlsPublicKey> {
+            self.dusklings.get(id as usize).map(|d| d.owner)
+        }
+
+        pub fn dusklings_of(&self, keeper: BlsPublicKey) -> u64 {
+            self.dusklings.iter().filter(|d| d.owner == keeper).count() as u64
+        }
+
+        fn moth_dna(&self, moth_id: u64) -> u64 {
+            abi::call::<_, u64>(MOTH_NEST, "moth_dna", &moth_id).expect("The Moth Nest has no such moth")
+        }
+
+        fn blend(&self, dna: u64, moth: u64) -> u64 {
+            let mixed = (dna + moth) / 2;
+            mixed - mixed % 100 + 99
+        }
+
+        pub fn hunt(&mut self, id: u64, moth_id: u64) {
+            let keeper = abi::public_sender().expect("Hunt from a public Moonlight account");
+            let hunter = self.dusklings.get(id as usize).expect("No such Duskling");
+            assert!(hunter.owner == keeper, "Only its keeper can send a Duskling hunting");
+            let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
+            self.create_duskling(dna, keeper);
+            abi::emit("hunted", crate::Hunted { id, moth_id });
+        }
+    }
+}
+```
+
+## Lesson 4: Night battles
+
+### The Night Arena
+
+URL: https://dusklings.com/hatchery.html#arena
+
+This lesson adds **time** and **battles**. You'll use the block height as a clock for cooldowns, wrap your ownership check in a reusable helper, and let Dusklings battle. Along the way you'll see why on-chain randomness is harder than it looks.
+
+### A place to rest
+
+URL: https://dusklings.com/hatchery.html#ready-at
+
+After a hunt, a Duskling needs rest. A new field records when it's ready again.
+
+Every place that builds a `Duskling` has to set the new field too, so update `create_duskling`. A newly hatched Duskling is ready straight away.
+
+**Task:**
+
+1. Add a field `ready_at: u64` to `Duskling`.
+2. In `create_duskling`, set `ready_at: 0`.
+
+### The chain's clock
+
+URL: https://dusklings.com/hatchery.html#block-height
+
+Contracts can't read a wall clock, because every node has to agree on the answer. What they can read is the **block height**, the number of the current block, with `abi::block_height()`. New blocks keep coming, so the height works as a clock that every node agrees on.
+
+```rust
+const COOLDOWN: u64 = 360;
+```
+
+**Task:**
+
+1. Below `MOTH_NEST`, add the constant `COOLDOWN: u64 = 360`.
+2. At the end of `hunt`, set the hunter's `ready_at` to `abi::block_height() + COOLDOWN`. Index the vector directly: `self.dusklings[id as usize].ready_at = …;`
+
+### Resting
+
+URL: https://dusklings.com/hatchery.html#is-ready
+
+A small helper makes the rule easy to read:
+
+```rust
+fn is_ready(&self, id: u64) -> bool
+```
+
+It compares the current block height with the Duskling's `ready_at`. Then `hunt` can refuse to send out a tired Duskling.
+
+**Task:**
+
+1. Add a private `is_ready(&self, id: u64) -> bool` that returns whether `abi::block_height()` is at least the Duskling's `ready_at`.
+2. In `hunt`, right after the owner check, assert `self.is_ready(id)` with the message `"Your Duskling is still resting"`.
+
+### Don't repeat yourself
+
+URL: https://dusklings.com/hatchery.html#only-keeper
+
+Hunting, battling and trading all start by checking the sender. A check like that belongs in one helper, so there's exactly one place to get it right. This one checks ownership and returns the keeper:
+
+```rust
+fn only_keeper(&self, id: u64) -> BlsPublicKey {
+    let keeper = abi::public_sender().expect("Use a public Moonlight account");
+    let duskling = self.dusklings.get(id as usize).expect("No such Duskling");
+    assert!(duskling.owner == keeper, "Only its keeper can do that");
+    keeper
+}
+```
+
+**Task:**
+
+1. Add the `only_keeper` helper above.
+2. In `hunt`, replace the first three lines with `let keeper = self.only_keeper(id);`
+3. After the rest check, look up the hunter with `let hunter = &self.dusklings[id as usize];`
+
+### Wins and losses
+
+URL: https://dusklings.com/hatchery.html#record
+
+Battles need a record. `u32` is plenty: four billion wins would take a while.
+
+**Task:**
+
+1. Add `wins: u32` and `losses: u32` to `Duskling`, after `ready_at`.
+2. Start both at `0` in `create_duskling`.
+
+### Rolling the dice (sort of)
+
+URL: https://dusklings.com/hatchery.html#roll
+
+Battles need some chance, but a contract has no dice. Every node must compute the same result, so any “random” number is really a function of data everyone can see:
+
+```rust
+fn roll(&self, id: u64, target: u64) -> u64 {
+    id.wrapping_mul(MIX)
+        .wrapping_add(target)
+        .wrapping_add(abi::block_height())
+        .wrapping_mul(MIX)
+        % 100
+}
+```
+
+That gives a number from 0 to 99. But anyone can work it out in advance and only battle when the numbers favor them. That's fine for a tutorial game. For anything valuable, use a design where nobody can see the outcome before committing to it, such as a commit–reveal scheme.
+
+**Task:**
+
+1. Add the private `roll` method above.
+
+### Into the arena
+
+URL: https://dusklings.com/hatchery.html#battle
+
+The battle entry point checks three things before anything happens: you keep the attacker, it's rested, and the target is a different Duskling that exists.
+
+`&&` means “and”, and `!=` means “not equal”. `only_keeper` returns the keeper, but we don't need it here, so its result is ignored.
+
+> Rust will warn that `roll` is unused until the next chapter.
+
+**Task:**
+
+1. Add `pub fn battle(&mut self, id: u64, target: u64)`.
+2. Call `self.only_keeper(id);` and assert `self.is_ready(id)` (`"Your Duskling is still resting"`).
+3. Assert `id != target && (target as usize) < self.dusklings.len()` (`"Pick another Duskling to battle"`).
+4. Finally, store `let roll = self.roll(id, target);`
+
+### Win or lose
+
+URL: https://dusklings.com/hatchery.html#outcome
+
+If the roll is below 70, the attacker wins: its wins and level go up, and the target takes a loss. Otherwise it's the other way around. Either way, the attacker rests afterwards.
+
+```rust
+if roll < 70 {
+    // the attacker wins
+} else {
+    // the target wins
+}
+```
+
+**Task:**
+
+1. If `roll < 70`: add 1 to the attacker's `wins` and `level`, and 1 to the target's `losses`.
+2. Otherwise: add 1 to the attacker's `losses` and the target's `wins`.
+3. After the `if`, set the attacker's `ready_at` to `abi::block_height() + COOLDOWN`.
+
+### Arena night
+
+URL: https://dusklings.com/hatchery.html#arena-night
+
+Your contract from this lesson is running. Battle, wait out the cooldown, and peek at the roll before you fight.
+
+### The code at the end of lesson 4
+
+```rust
+#![no_std]
+
+extern crate alloc;
+
+use bytecheck::CheckBytes;
+use dusk_forge::ContractEvent;
+use rkyv::{Archive, Deserialize, Serialize};
+
+/// A Duskling hatched.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hatched {
+    pub id: u64,
+    pub dna: u64,
+}
+
+impl ContractEvent for Hatched {
+    const TOPICS: &'static [&'static str] = &["hatched"];
+}
+
+/// A Duskling came back from a hunt.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hunted {
+    pub id: u64,
+    pub moth_id: u64,
+}
+
+impl ContractEvent for Hunted {
+    const TOPICS: &'static [&'static str] = &["hunted"];
+}
+
+#[dusk_forge::contract(events = [crate::Hatched, crate::Hunted])]
+mod hatchery {
+    use alloc::vec::Vec;
+    use dusk_core::abi::{self, ContractId};
+    use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+
+    const DNA_DIGITS: u32 = 16;
+    const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);
+    // 2^64 divided by the golden ratio: a classic mixing constant.
+    const MIX: u64 = 0x9E37_79B9_7F4A_7C15;
+    // The Moth Nest: another team's contract on the same chain.
+    const MOTH_NEST: ContractId = ContractId::from_bytes([7; 32]);
+    const COOLDOWN: u64 = 360;
+
+    struct Duskling {
+        dna: u64,
+        level: u32,
+        owner: BlsPublicKey,
+        ready_at: u64,
+        wins: u32,
+        losses: u32,
+    }
+
+    pub struct Hatchery {
+        dusklings: Vec<Duskling>,
+    }
+
+    impl Hatchery {
+        pub const fn new() -> Self {
+            Self { dusklings: Vec::new() }
+        }
+
+        fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
+            let id = self.dusklings.len() as u64;
+            self.dusklings.push(Duskling { dna, level: 1, owner, ready_at: 0, wins: 0, losses: 0 });
+            abi::emit("hatched", crate::Hatched { id, dna });
+        }
+
+        fn generate_dna(&self, seed: u64) -> u64 {
+            seed.wrapping_mul(MIX) % DNA_MODULUS
+        }
+
+        pub fn hatch(&mut self, seed: u64) {
+            let keeper = abi::public_sender().expect("Hatch from a public Moonlight account");
+            assert!(self.dusklings_of(keeper) == 0, "Every keeper hatches one Duskling");
+            let dna = self.generate_dna(seed);
+            self.create_duskling(dna, keeper);
+        }
+
+        pub fn duskling_count(&self) -> u64 {
+            self.dusklings.len() as u64
+        }
+
+        pub fn dna_of(&self, id: u64) -> Option<u64> {
+            self.dusklings.get(id as usize).map(|d| d.dna)
+        }
+
+        pub fn owner_of(&self, id: u64) -> Option<BlsPublicKey> {
+            self.dusklings.get(id as usize).map(|d| d.owner)
+        }
+
+        pub fn dusklings_of(&self, keeper: BlsPublicKey) -> u64 {
+            self.dusklings.iter().filter(|d| d.owner == keeper).count() as u64
+        }
+
+        fn moth_dna(&self, moth_id: u64) -> u64 {
+            abi::call::<_, u64>(MOTH_NEST, "moth_dna", &moth_id).expect("The Moth Nest has no such moth")
+        }
+
+        fn blend(&self, dna: u64, moth: u64) -> u64 {
+            let mixed = (dna + moth) / 2;
+            mixed - mixed % 100 + 99
+        }
+
+        pub fn hunt(&mut self, id: u64, moth_id: u64) {
+            let keeper = self.only_keeper(id);
+            assert!(self.is_ready(id), "Your Duskling is still resting");
+            let hunter = &self.dusklings[id as usize];
+            let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
+            self.create_duskling(dna, keeper);
+            abi::emit("hunted", crate::Hunted { id, moth_id });
+            self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
+        }
+
+        fn is_ready(&self, id: u64) -> bool {
+            abi::block_height() >= self.dusklings[id as usize].ready_at
+        }
+
+        fn only_keeper(&self, id: u64) -> BlsPublicKey {
+            let keeper = abi::public_sender().expect("Use a public Moonlight account");
+            let duskling = self.dusklings.get(id as usize).expect("No such Duskling");
+            assert!(duskling.owner == keeper, "Only its keeper can do that");
+            keeper
+        }
+
+        fn roll(&self, id: u64, target: u64) -> u64 {
+            id.wrapping_mul(MIX)
+                .wrapping_add(target)
+                .wrapping_add(abi::block_height())
+                .wrapping_mul(MIX)
+                % 100
+        }
+
+        pub fn battle(&mut self, id: u64, target: u64) {
+            self.only_keeper(id);
+            assert!(self.is_ready(id), "Your Duskling is still resting");
+            assert!(id != target && (target as usize) < self.dusklings.len(), "Pick another Duskling to battle");
+            let roll = self.roll(id, target);
+            if roll < 70 {
+                self.dusklings[id as usize].wins += 1;
+                self.dusklings[id as usize].level += 1;
+                self.dusklings[target as usize].losses += 1;
+            } else {
+                self.dusklings[id as usize].losses += 1;
+                self.dusklings[target as usize].wins += 1;
+            }
+            self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
+        }
+    }
+}
+```
+
+## Lesson 5: Trading
+
+### Trading day
+
+URL: https://dusklings.com/hatchery.html#trading
+
+Ownership only matters if it can change hands. In this lesson you'll add transfers, events for them, and **approvals**, which let someone else collect a Duskling you've agreed to hand over. You'll also close a classic loophole.
+
+### Handing it over
+
+URL: https://dusklings.com/hatchery.html#transfer
+
+A transfer is just a new owner, as long as the right keeper asks. `only_keeper` already does the checking. Its return value isn't needed here, so call it and ignore the result.
+
+**Task:**
+
+1. Add `pub fn transfer(&mut self, id: u64, to: BlsPublicKey)`.
+2. Call `self.only_keeper(id);`, then set the Duskling's `owner` to `to`.
+
+### A receipt
+
+URL: https://dusklings.com/hatchery.html#transferred
+
+Wallets and explorers show ownership changes by listening for events. A key can go in an event just like a number.
+
+A `Transferred` event type is waiting at the top of the file. The key type is imported up there too: the module's imports don't reach outside the module.
+
+**Task:**
+
+1. Give `Transferred` a second field for the new keeper: `pub to: BlsPublicKey,`.
+2. Register it: add `crate::Transferred` to the events list.
+3. At the end of `transfer`, emit `crate::Transferred { id, to }` with the topic `"transferred"`.
+
+### Room for an approval
+
+URL: https://dusklings.com/hatchery.html#approved-field
+
+Sometimes the new keeper should collect the Duskling themselves, for example after paying for it outside the contract. For that, the current keeper **approves** someone in advance.
+
+A Duskling may or may not have an approval, which is a job for `Option`: `Some(key)` or `None`.
+
+> The Hatchery never sees that payment, so one side has to trust the other. “Both sides or neither” in the keeper's journey shows how a single call can do both at once.
+
+**Task:**
+
+1. Add `approved: Option<BlsPublicKey>` to `Duskling`, after `losses`.
+2. Start it as `None` in `create_duskling`.
+
+### Approving a keeper
+
+URL: https://dusklings.com/hatchery.html#approve
+
+Only the current keeper may approve someone. Store the approval wrapped in `Some`.
+
+**Task:**
+
+1. Add `pub fn approve(&mut self, id: u64, to: BlsPublicKey)`.
+2. Check the caller with `self.only_keeper(id);`, then set `approved` to `Some(to)`.
+
+### Collecting it
+
+URL: https://dusklings.com/hatchery.html#take
+
+The approved keeper can now take the Duskling. Borrow it mutably, so you can change several fields through one name:
+
+```rust
+let egg = &mut self.eggs[id as usize];
+egg.warm = true;
+```
+
+Indexing past the end of a vector panics, so a missing Duskling fails the call on its own. Options compare directly: `egg.approved == Some(taker)`. After the handover, clear the approval so it can't be used twice.
+
+**Task:**
+
+1. Add `pub fn take(&mut self, id: u64)`.
+2. Get the sender as `taker` (`"Use a public Moonlight account"`).
+3. Borrow `let duskling = &mut self.dusklings[id as usize];` and assert `duskling.approved == Some(taker)` (`"You're not approved to take this Duskling"`).
+4. Set `owner` to `taker` and `approved` back to `None`.
+
+### The stale approval
+
+URL: https://dusklings.com/hatchery.html#stale
+
+Right now, yes. `transfer` changes the owner but leaves the old approval in place, so Fen can take the Duskling from its new keeper. An approval should end when the Duskling changes hands.
+
+**Task:**
+
+1. In `transfer`, after changing the owner, reset `approved` to `None`.
+
+### Trade day
+
+URL: https://dusklings.com/hatchery.html#trade-day
+
+Your finished contract is running. Approve Fen, let Fen collect, and try the loophole you just closed.
+
+### The code at the end of lesson 5
+
+```rust
+#![no_std]
+
+extern crate alloc;
+
+use bytecheck::CheckBytes;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_forge::ContractEvent;
+use rkyv::{Archive, Deserialize, Serialize};
+
+/// A Duskling hatched.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hatched {
+    pub id: u64,
+    pub dna: u64,
+}
+
+impl ContractEvent for Hatched {
+    const TOPICS: &'static [&'static str] = &["hatched"];
+}
+
+/// A Duskling came back from a hunt.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hunted {
+    pub id: u64,
+    pub moth_id: u64,
+}
+
+impl ContractEvent for Hunted {
+    const TOPICS: &'static [&'static str] = &["hunted"];
+}
+
+/// A Duskling changed hands.
+#[derive(Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "data-driver", derive(serde::Serialize, serde::Deserialize))]
+pub struct Transferred {
+    pub id: u64,
+    pub to: BlsPublicKey,
+}
+
+impl ContractEvent for Transferred {
+    const TOPICS: &'static [&'static str] = &["transferred"];
+}
+
+#[dusk_forge::contract(events = [crate::Hatched, crate::Hunted, crate::Transferred])]
+mod hatchery {
+    use alloc::vec::Vec;
+    use dusk_core::abi::{self, ContractId};
+    use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+
+    const DNA_DIGITS: u32 = 16;
+    const DNA_MODULUS: u64 = 10u64.pow(DNA_DIGITS);
+    // 2^64 divided by the golden ratio: a classic mixing constant.
+    const MIX: u64 = 0x9E37_79B9_7F4A_7C15;
+    // The Moth Nest: another team's contract on the same chain.
+    const MOTH_NEST: ContractId = ContractId::from_bytes([7; 32]);
+    const COOLDOWN: u64 = 360;
+
+    struct Duskling {
+        dna: u64,
+        level: u32,
+        owner: BlsPublicKey,
+        ready_at: u64,
+        wins: u32,
+        losses: u32,
+        approved: Option<BlsPublicKey>,
+    }
+
+    pub struct Hatchery {
+        dusklings: Vec<Duskling>,
+    }
+
+    impl Hatchery {
+        pub const fn new() -> Self {
+            Self { dusklings: Vec::new() }
+        }
+
+        fn create_duskling(&mut self, dna: u64, owner: BlsPublicKey) {
+            let id = self.dusklings.len() as u64;
+            self.dusklings.push(Duskling { dna, level: 1, owner, ready_at: 0, wins: 0, losses: 0, approved: None });
+            abi::emit("hatched", crate::Hatched { id, dna });
+        }
+
+        fn generate_dna(&self, seed: u64) -> u64 {
+            seed.wrapping_mul(MIX) % DNA_MODULUS
+        }
+
+        pub fn hatch(&mut self, seed: u64) {
+            let keeper = abi::public_sender().expect("Hatch from a public Moonlight account");
+            assert!(self.dusklings_of(keeper) == 0, "Every keeper hatches one Duskling");
+            let dna = self.generate_dna(seed);
+            self.create_duskling(dna, keeper);
+        }
+
+        pub fn duskling_count(&self) -> u64 {
+            self.dusklings.len() as u64
+        }
+
+        pub fn dna_of(&self, id: u64) -> Option<u64> {
+            self.dusklings.get(id as usize).map(|d| d.dna)
+        }
+
+        pub fn owner_of(&self, id: u64) -> Option<BlsPublicKey> {
+            self.dusklings.get(id as usize).map(|d| d.owner)
+        }
+
+        pub fn dusklings_of(&self, keeper: BlsPublicKey) -> u64 {
+            self.dusklings.iter().filter(|d| d.owner == keeper).count() as u64
+        }
+
+        fn moth_dna(&self, moth_id: u64) -> u64 {
+            abi::call::<_, u64>(MOTH_NEST, "moth_dna", &moth_id).expect("The Moth Nest has no such moth")
+        }
+
+        fn blend(&self, dna: u64, moth: u64) -> u64 {
+            let mixed = (dna + moth) / 2;
+            mixed - mixed % 100 + 99
+        }
+
+        pub fn hunt(&mut self, id: u64, moth_id: u64) {
+            let keeper = self.only_keeper(id);
+            assert!(self.is_ready(id), "Your Duskling is still resting");
+            let hunter = &self.dusklings[id as usize];
+            let dna = self.blend(hunter.dna, self.moth_dna(moth_id));
+            self.create_duskling(dna, keeper);
+            abi::emit("hunted", crate::Hunted { id, moth_id });
+            self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
+        }
+
+        fn is_ready(&self, id: u64) -> bool {
+            abi::block_height() >= self.dusklings[id as usize].ready_at
+        }
+
+        fn only_keeper(&self, id: u64) -> BlsPublicKey {
+            let keeper = abi::public_sender().expect("Use a public Moonlight account");
+            let duskling = self.dusklings.get(id as usize).expect("No such Duskling");
+            assert!(duskling.owner == keeper, "Only its keeper can do that");
+            keeper
+        }
+
+        fn roll(&self, id: u64, target: u64) -> u64 {
+            id.wrapping_mul(MIX)
+                .wrapping_add(target)
+                .wrapping_add(abi::block_height())
+                .wrapping_mul(MIX)
+                % 100
+        }
+
+        pub fn battle(&mut self, id: u64, target: u64) {
+            self.only_keeper(id);
+            assert!(self.is_ready(id), "Your Duskling is still resting");
+            assert!(id != target && (target as usize) < self.dusklings.len(), "Pick another Duskling to battle");
+            let roll = self.roll(id, target);
+            if roll < 70 {
+                self.dusklings[id as usize].wins += 1;
+                self.dusklings[id as usize].level += 1;
+                self.dusklings[target as usize].losses += 1;
+            } else {
+                self.dusklings[id as usize].losses += 1;
+                self.dusklings[target as usize].wins += 1;
+            }
+            self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;
+        }
+
+        pub fn transfer(&mut self, id: u64, to: BlsPublicKey) {
+            self.only_keeper(id);
+            self.dusklings[id as usize].owner = to;
+            self.dusklings[id as usize].approved = None;
+            abi::emit("transferred", crate::Transferred { id, to });
+        }
+
+        pub fn approve(&mut self, id: u64, to: BlsPublicKey) {
+            self.only_keeper(id);
+            self.dusklings[id as usize].approved = Some(to);
+        }
+
+        pub fn take(&mut self, id: u64) {
+            let taker = abi::public_sender().expect("Use a public Moonlight account");
+            let duskling = &mut self.dusklings[id as usize];
+            assert!(duskling.approved == Some(taker), "You're not approved to take this Duskling");
+            duskling.owner = taker;
+            duskling.approved = None;
+        }
+    }
+}
+```
+
+# The Almanac
+
+Build a JavaScript dApp that reads a Dusk contract with Dusk Connect and its data-driver, then prepares hatch and transfer calls for a wallet to sign.
+
+URL: https://dusklings.com/almanac.html
+
+## Lesson 1: The Almanac
+
+### A book of every Duskling
+
+URL: https://dusklings.com/almanac.html#almanac-intro
+
+A **dApp** is an app whose data lives in a contract. You'll write its data layer in JavaScript with **Dusk Connect**, Dusk's browser SDK, and the Hatchery's **data-driver**. The data-driver is a small WebAssembly module Forge builds from the contract, and it knows how to encode arguments and decode results.
+
+Reading a contract is a **query** that a node runs for you: no wallet, no transaction and no fee.
+
+### Your first read
+
+URL: https://dusklings.com/almanac.html#count
+
+`createApp` is already written. It points Dusk Connect at a node and at the Hatchery, and gives the contract the short name `"hatchery"`.
+
+To call a read-only function, name the contract and the function:
+
+```js
+await dusk.readContract({ contract: "hatchery", functionName: "…" })
+```
+
+**Task:**
+
+1. In `countDusklings`, return the result of reading `duskling_count`.
+
+### Why a string?
+
+URL: https://dusklings.com/almanac.html#exact-count
+
+A Rust `u64` goes up to about 18 quintillion. A JavaScript number holds whole numbers exactly only up to 2^53, about 9 quadrillion. Beyond that it rounds.
+
+So the Hatchery's data-driver sends a returned `u64` as a **string** of digits, keeping every one. `BigInt` turns it into an exact whole number you can compare and do math with.
+
+**Task:**
+
+1. Store the result in `const count`, then return `BigInt(count)`.
+
+### Asking about one Duskling
+
+URL: https://dusklings.com/almanac.html#dna
+
+Functions with parameters take `args`. `dna_of(id)` returns an `Option<u64>`: the DNA, or `null` when there's no Duskling with that ID.
+
+The Hatchery's driver reads `u64` arguments as JSON numbers. A small ID like 3 can simply be a number.
+
+```js
+await dusk.readContract({ contract: "hatchery", functionName: "…", args: id })
+```
+
+**Task:**
+
+1. In `readDna`, return the result of `dna_of` with `args: id`.
+
+### Whose is it?
+
+URL: https://dusklings.com/almanac.html#owner
+
+`owner_of(id)` returns the keeper's public key, or `null`. The driver writes a key as a long base58 string.
+
+> A public key identifies an account, not a person. It's also public: anyone can run this same query.
+
+**Task:**
+
+1. In `readOwner`, return the result of `owner_of` for `id`.
+
+### Filling the Almanac
+
+URL: https://dusklings.com/almanac.html#gallery
+
+Now put the reads together. Loop over every ID below the count and collect each Duskling.
+
+`id < count` compares a number with a BigInt, which JavaScript allows. IDs stay small, so plain numbers are fine as arguments.
+
+**Task:**
+
+1. In `listDusklings`, get the count, then for each `id` from 0 up to the count, push `{ id, dna, owner }` using your read functions. Return the list.
+
+### Every digit counts
+
+URL: https://dusklings.com/almanac.html#digits
+
+Duskling #3's real DNA is `9437186547890123`, but the Almanac shows `9437186547890124`. That's larger than 2^53, and `dna_of` returns an `Option<u64>`. The driver only sends a *top-level* `u64` as a string. Anything nested, like this `Option`, arrives as a plain JSON number. Dusk Connect parses it into a JavaScript number, and those round anything above 2^53.
+
+The app can't get the digits back. It can refuse to trust them: `Number.isSafeInteger(n)` is `true` only for whole numbers small enough to be sure they're exact.
+
+> The real fix is on the contract side: return a plain `u64` for values apps must read exactly, and the driver sends every digit as a string.
+
+**Task:**
+
+1. In the loop, store the DNA in `const dna` and add `exact: Number.isSafeInteger(dna)` to each entry.
+
+### When the node is down
+
+URL: https://dusklings.com/almanac.html#offline
+
+Nodes can be unreachable. A failed read throws, and that's different from a missing Duskling, which is a successful answer of `null`.
+
+Catch the failure where the page loads, so the Almanac can say “try again” instead of crashing:
+
+```js
+try { … } catch (error) { … }
+```
+
+**Task:**
+
+1. In `loadAlmanac`, wrap the existing return in `try`, and in `catch` return `{ status: "unavailable" }`.
+
+### The finished Almanac
+
+URL: https://dusklings.com/almanac.html#almanac-lab
+
+Your data layer is feeding a real page. Every card here comes from your own `loadAlmanac`, running Dusk Connect and the Hatchery's data-driver against the practice node.
+
+### The code at the end of lesson 1
+
+```js
+const { createDuskApp } = await import(
+  new URL("/academy/vendor/dusk-connect.js", location.origin).href
+);
+
+// Connects to a node and to the Hatchery contract through its data-driver.
+export function createApp(nodeUrl, contractId) {
+  return createDuskApp({
+    pinnedNodeUrl: nodeUrl,
+    autoConnect: false,
+    wallet: { waitForProvider: false, rememberLastUsedProvider: false },
+    contracts: {
+      hatchery: {
+        contractId,
+        driverUrl: new URL("/drivers/hatchery.wasm", nodeUrl).href,
+      },
+    },
+  });
+}
+
+export async function countDusklings(dusk) {
+  const count = await dusk.readContract({ contract: "hatchery", functionName: "duskling_count" });
+  return BigInt(count);
+}
+
+export async function readDna(dusk, id) {
+  return await dusk.readContract({ contract: "hatchery", functionName: "dna_of", args: id });
+}
+
+export async function readOwner(dusk, id) {
+  return await dusk.readContract({ contract: "hatchery", functionName: "owner_of", args: id });
+}
+
+export async function listDusklings(dusk) {
+  const count = await countDusklings(dusk);
+  const dusklings = [];
+  for (let id = 0; id < count; id++) {
+    const dna = await readDna(dusk, id);
+    dusklings.push({ id, dna, owner: await readOwner(dusk, id), exact: Number.isSafeInteger(dna) });
+  }
+  return dusklings;
+}
+
+export async function loadAlmanac(dusk) {
+  try {
+    return { status: "ok", dusklings: await listDusklings(dusk) };
+  } catch (error) {
+    return { status: "unavailable" };
+  }
+}
+```
+
+## Lesson 2: Hatching from the web
+
+### From reading to writing
+
+URL: https://dusklings.com/almanac.html#web-intro
+
+A dApp never signs anything itself. It **prepares** a contract call: which contract, which function, the encoded arguments and the options. Then it hands that to the keeper's **wallet**, which asks the keeper to approve, signs and sends it.
+
+This course has no wallet and sends nothing. You'll prepare calls and look at exactly what a wallet would be asked to sign.
+
+### Preparing a hatch
+
+URL: https://dusklings.com/almanac.html#prepare-hatch
+
+`prepareContractCall` encodes the arguments with the data-driver and returns the call's parameters:
+
+```js
+await dusk.prepareContractCall({
+  contract: "hatchery", functionName: "…", args: …,
+  privacy: "public", amount: "0", deposit: "0",
+});
+```
+
+- `privacy` is required. The Hatchery's `hatch` calls `abi::public_sender()`, so a shielded call would panic. It must be `"public"`.
+- `amount` and `deposit` are DUSK values, counted in Lux, DUSK's smallest unit. `deposit` is what the called contract can collect. `hatch` doesn't take any DUSK, so both are `"0"`. The keeper still pays gas: fees are separate from these values.
+
+**Task:**
+
+1. In `prepareHatch`, return a prepared call to `hatch` with `args: seed`, public privacy, and no DUSK attached.
+
+### A seed from a name
+
+URL: https://dusklings.com/almanac.html#seed-name
+
+This site turns your Duskling's name into its seed with **FNV-1a**, a small, well-known hash. You can do the same in the app, so the page knows the seed before anyone hatches.
+
+For each byte: XOR it into the hash (`^=`), multiply by the FNV prime, and keep 64 bits by masking (`& 0xffffffffffffffffn`). The `n` suffix makes a BigInt, so nothing rounds.
+
+**Task:**
+
+1. Inside the loop in `seedFromName`, add `hash ^= BigInt(byte);`
+2. Then `hash = (hash * 0x100000001b3n) & 0xffffffffffffffffn;`
+
+### Arguments that keep every digit
+
+URL: https://dusklings.com/almanac.html#exact-seed
+
+Try hatching with that seed: Dusk Connect turns a BigInt into a JSON *string*, and the driver wants a JSON *number*, so it refuses. A plain number would round a seed this big.
+
+`JSON.rawJSON("…")` gives Dusk Connect raw JSON number text, so every digit reaches the driver.
+
+```js
+args: JSON.rawJSON(seed.toString())
+```
+
+**Task:**
+
+1. In `prepareHatch`, change `args: seed` to `args: JSON.rawJSON(seed.toString())`.
+
+### Several arguments
+
+URL: https://dusklings.com/almanac.html#prepare-transfer
+
+`transfer(id, to)` takes two parameters. Forge bundles several parameters into a tuple, so pass them as an array, in order: `args: [id, to]`.
+
+`to` is a keeper's key: the same base58 string `readOwner` returns.
+
+**Task:**
+
+1. In `prepareTransfer`, return a prepared call to `transfer` with `args: [id, to]`, public, with no DUSK attached.
+
+### Your hatch request
+
+URL: https://dusklings.com/almanac.html#hatch-lab
+
+This is your own `seedFromName` and `prepareHatch` at work. A wallet would show this request, ask you to approve it, then sign and send it. This page stops here: nothing is sent.
+
+> In this practice Hatchery you already keep two Dusklings. A keeper who has one can't hatch another, so the contract would refuse this call.
+
+### The code at the end of lesson 2
+
+```js
+const { createDuskApp } = await import(
+  new URL("/academy/vendor/dusk-connect.js", location.origin).href
+);
+
+// Connects to a node and to the Hatchery contract through its data-driver.
+export function createApp(nodeUrl, contractId) {
+  return createDuskApp({
+    pinnedNodeUrl: nodeUrl,
+    autoConnect: false,
+    wallet: { waitForProvider: false, rememberLastUsedProvider: false },
+    contracts: {
+      hatchery: {
+        contractId,
+        driverUrl: new URL("/drivers/hatchery.wasm", nodeUrl).href,
+      },
+    },
+  });
+}
+
+export async function countDusklings(dusk) {
+  const count = await dusk.readContract({ contract: "hatchery", functionName: "duskling_count" });
+  return BigInt(count);
+}
+
+export async function readDna(dusk, id) {
+  return await dusk.readContract({ contract: "hatchery", functionName: "dna_of", args: id });
+}
+
+export async function readOwner(dusk, id) {
+  return await dusk.readContract({ contract: "hatchery", functionName: "owner_of", args: id });
+}
+
+export async function listDusklings(dusk) {
+  const count = await countDusklings(dusk);
+  const dusklings = [];
+  for (let id = 0; id < count; id++) {
+    const dna = await readDna(dusk, id);
+    dusklings.push({ id, dna, owner: await readOwner(dusk, id), exact: Number.isSafeInteger(dna) });
+  }
+  return dusklings;
+}
+
+export async function loadAlmanac(dusk) {
+  try {
+    return { status: "ok", dusklings: await listDusklings(dusk) };
+  } catch (error) {
+    return { status: "unavailable" };
+  }
+}
+
+export async function prepareHatch(dusk, seed) {
+  return await dusk.prepareContractCall({
+    contract: "hatchery",
+    functionName: "hatch",
+    args: JSON.rawJSON(seed.toString()),
+    privacy: "public",
+    amount: "0",
+    deposit: "0",
+  });
+}
+
+export function seedFromName(name) {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(name)) {
+    hash ^= BigInt(byte);
+    hash = (hash * 0x100000001b3n) & 0xffffffffffffffffn;
+  }
+  return hash;
+}
+
+export async function prepareTransfer(dusk, id, to) {
+  return await dusk.prepareContractCall({
+    contract: "hatchery",
+    functionName: "transfer",
+    args: [id, to],
+    privacy: "public",
+    amount: "0",
+    deposit: "0",
+  });
+}
+```
+
+# Secret stats
+
+Write dusk-plonk circuits that prove a Duskling's power without revealing its stats, then that it's at least 50. Each check makes a real PLONK proof.
+
+URL: https://dusklings.com/secret-stats.html
+
+## Lesson 1: Secret stats
+
+### Show nothing, prove everything
+
+URL: https://dusklings.com/secret-stats.html#stats-intro
+
+In this path you'll write a **circuit**: a set of mathematical rules that a zero-knowledge proof shows were followed.
+
+The **prover** knows the secret values. The **verifier** checks the proof against the circuit and a few **public inputs**, and learns nothing else.
+
+You'll use **dusk-plonk**, Dusk's PLONK library. Your browser will generate and check real proofs.
+
+### Private inputs
+
+URL: https://dusklings.com/secret-stats.html#witnesses
+
+A circuit's secret inputs are called **witnesses**. `composer.append_witness(value)` adds one and returns a **handle** that later gates can refer to.
+
+Circuit values are `BlsScalar`s: numbers in the finite field that dusk-plonk works in.
+
+```rust
+let luck = composer.append_witness(self.luck);
+```
+
+**Task:**
+
+1. Replace the comment with two witnesses: `strength` from `self.strength`, then `agility` from `self.agility`.
+
+### An addition gate
+
+URL: https://dusklings.com/secret-stats.html#add-gate
+
+A **gate** is a rule relating witnesses. `gate_add` takes a `Constraint` describing a weighted sum, and returns a handle to the result:
+
+```rust
+let total = composer.gate_add(
+    Constraint::new().left(1).right(1).a(x).b(y)
+);
+```
+
+`left` and `right` are the weights for `a` and `b`, so this computes 1·x + 1·y.
+
+**Task:**
+
+1. Add `let sum = …`: an addition gate over `strength` and `agility`, both with weight 1.
+
+### The claimed power
+
+URL: https://dusklings.com/secret-stats.html#claim
+
+Next, the value the arena cares about: power. Allocate it as another witness.
+
+When you check this chapter, your browser really proves the circuit for three keepers. Watch closely what happens to Rook's claim.
+
+**Task:**
+
+1. After the gate, add `let power = composer.append_witness(self.power);`
+
+### Tie it together
+
+URL: https://dusklings.com/secret-stats.html#bind
+
+Allocating `power` didn't connect it to anything, so it can be any number. `assert_equal` adds an **equality constraint**: the proof is only valid if both handles hold the same value.
+
+```rust
+composer.assert_equal(a, b);
+```
+
+> A Rust `assert!` wouldn't do this. It only runs on the prover's machine while the circuit is built, so a cheating prover could just delete it. A constraint is part of what the verifier checks.
+
+**Task:**
+
+1. Constrain `sum` and `power` to be equal.
+
+### Show the verifier the power
+
+URL: https://dusklings.com/secret-stats.html#public
+
+The arena needs to know which power a proof is about. So far power is a secret witness too, and the proof doesn't say which power it covers.
+
+`append_public` makes a value a **public input**: the verifier supplies it when checking, and the proof only verifies for that exact value. Keep strength and agility as witnesses.
+
+> Rust's `pub` on a struct field controls which code can access it. It has nothing to do with what a proof reveals.
+
+**Task:**
+
+1. Change power's allocation to `composer.append_public(self.power)`. Keep the equality constraint.
+
+### Prove your Duskling's power
+
+URL: https://dusklings.com/secret-stats.html#stats-proof
+
+Your circuit from this lesson is ready. Generate a real PLONK proof for your own Duskling, then try to cheat with it.
+
+> This proof says the prover knows *some* strength and agility that add up to power. Nothing ties them to a particular Duskling yet: Rook could simply claim 30 + 20. A real game would keep stats off-chain and commit to them, for example with a hash stored in the Hatchery, then prove the stats match it. Here, your stats are worked out from your Duskling's DNA just so you have numbers to play with, and DNA is public.
+
+### The code at the end of lesson 1
+
+```rust
+use dusk_plonk::prelude::*;
+
+// Your Duskling's stats. strength and agility stay secret.
+#[derive(Default)]
+pub struct SecretStats {
+    pub strength: BlsScalar,
+    pub agility: BlsScalar,
+    pub power: BlsScalar,
+}
+
+impl Circuit for SecretStats {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), Error> {
+        let strength = composer.append_witness(self.strength);
+        let agility = composer.append_witness(self.agility);
+        let sum = composer.gate_add(Constraint::new().left(1).right(1).a(strength).b(agility));
+        let power = composer.append_public(self.power);
+        composer.assert_equal(sum, power);
+        Ok(())
+    }
+}
+```
+
+## Lesson 2: The arena pass
+
+### Fifty or more
+
+URL: https://dusklings.com/secret-stats.html#pass-intro
+
+Proving a **threshold** without revealing the number is a classic zero-knowledge job. It's the same idea as proving you're old enough without showing your birthday.
+
+You'll hide power again, add a helper witness, and learn why numbers in a circuit can wrap around, and how a **range check** stops that.
+
+### Power goes private
+
+URL: https://dusklings.com/secret-stats.html#hide-power
+
+For the arena pass, the proof shouldn't reveal power at all. It should only show that the rules hold. Turn power back into a witness.
+
+The circuit itself is public, so the arena knows exactly which rules a valid proof satisfied.
+
+**Task:**
+
+1. Change power back to `composer.append_witness(self.power)`.
+
+### A helper witness
+
+URL: https://dusklings.com/secret-stats.html#slack
+
+To show power ≥ 50, the prover supplies the difference as another witness: `slack = power − 50`.
+
+`BlsScalar` supports subtraction, and `BlsScalar::from(50u64)` turns a number into a field value.
+
+```rust
+let bonus = composer.append_witness(self.luck - BlsScalar::from(7u64));
+```
+
+**Task:**
+
+1. At the end of the circuit, allocate `slack` as a witness holding `self.power - BlsScalar::from(50u64)`.
+
+### Check the helper
+
+URL: https://dusklings.com/secret-stats.html#floor
+
+A cheating prover can put any value in `slack`, so the circuit must check it. Rebuild power from it: `slack + 50`, using a **constant** term, and require it to equal power.
+
+```rust
+let plus_seven = composer.gate_add(Constraint::new().left(1).constant(7).a(bonus));
+```
+
+**Task:**
+
+1. Add `let floor = …`: a gate computing `slack + 50` (weight 1 on `slack`, constant 50).
+2. Constrain `floor` and `power` to be equal.
+
+### Keep slack small
+
+URL: https://dusklings.com/secret-stats.html#range
+
+Numbers in a circuit live in a **finite field**, where there's no going below zero: `23 − 50` wraps around to a 77-digit number. So “slack exists” proves nothing until you also prove it's small.
+
+`component_range::<8>(w)` constrains `w` to 8 bit pairs, that is 16 bits: 0 to 65,535. A wrapped-around slack is far bigger, so no valid proof can be made.
+
+**Task:**
+
+1. Add `composer.component_range::<8>(slack);` at the end of the circuit.
+
+### Your arena pass
+
+URL: https://dusklings.com/secret-stats.html#pass-proof
+
+Generate an arena pass for your own Duskling with the circuit you just finished.
+
+> This pass isn't tied to you or to tonight, so anyone who copied it could reuse it. A real pass would add a public input, such as a session number or a commitment to the keeper, so each proof only works where it's meant to. That's the same idea as “Valid isn't forever” in the keeper's journey.
+
+### The code at the end of lesson 2
+
+```rust
+use dusk_plonk::prelude::*;
+
+// Your Duskling's stats. strength and agility stay secret.
+#[derive(Default)]
+pub struct SecretStats {
+    pub strength: BlsScalar,
+    pub agility: BlsScalar,
+    pub power: BlsScalar,
+}
+
+impl Circuit for SecretStats {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), Error> {
+        let strength = composer.append_witness(self.strength);
+        let agility = composer.append_witness(self.agility);
+        let sum = composer.gate_add(Constraint::new().left(1).right(1).a(strength).b(agility));
+        let power = composer.append_witness(self.power);
+        composer.assert_equal(sum, power);
+        let slack = composer.append_witness(self.power - BlsScalar::from(50u64));
+        let floor = composer.gate_add(Constraint::new().left(1).constant(50).a(slack));
+        composer.assert_equal(floor, power);
+        composer.component_range::<8>(slack);
+        Ok(())
+    }
+}
+```

@@ -85,7 +85,8 @@ test('every page has a strict Content Security Policy, and the Almanac allows ex
     const scripts = policy.match(/script-src ([^;]+)/)[1];
     assert.ok(!/'unsafe-inline'|'unsafe-eval'/.test(scripts), `${page}.html allows no inline or eval scripts`);
     assert.match(policy, /object-src 'none'.*base-uri 'none'/, `${page}.html blocks plugins and base changes`);
-    assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/.test(html), `${page}.html has no inline scripts`);
+    // JSON-LD is a data block: browsers never run it, so it's the one inline <script> allowed.
+    assert.ok(!/<script(?![^>]*\b(?:src=|type="application\/ld\+json"))[^>]*>/.test(html), `${page}.html has no inline scripts`);
   }
   assert.ok(readFileSync(new URL('../almanac.html', import.meta.url), 'utf8').includes(`'sha256-${hash}'`),
     'almanac.html must allow the current sandbox script: update its hash after changing FRAME_SCRIPT');

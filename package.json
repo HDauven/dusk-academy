@@ -7,11 +7,13 @@
   "scripts": {
     "dev": "python3 -m http.server 5173 --bind 127.0.0.1",
     "start": "npm run dev",
-    "test": "node --test academy/runtime.test.mjs academy/lessons.test.mjs academy/paths.test.mjs",
+    "test": "node --test academy/runtime.test.mjs academy/lessons.test.mjs academy/paths.test.mjs academy/seo.test.mjs",
     "test:e2e": "node tools/test_pages.cjs",
     "test:rust": "node tools/check_rust.mjs",
     "test:vm": "node tools/check_vm.mjs",
     "build:circuit": "node tools/circuit_engine.mjs",
-    "build:almanac": "node tools/build_almanac.mjs"
+    "build:almanac": "node tools/build_almanac.mjs",
+    "build:seo": "node tools/build_seo.mjs",
+    "build:images": "node tools/build_images.mjs"
   }
 }
