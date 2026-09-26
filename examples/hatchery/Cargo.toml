@@ -1,0 +1,39 @@
+# The Hatchery contract from the Dusklings contract lessons, as a real Dusk Forge crate.
+[package]
+name = "dusk-hatchery"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MPL-2.0"
+publish = false
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+dusk-core = { version = "1.6", git = "https://github.com/dusk-network/rusk", tag = "dusk-core-1.6.0" }
+dusk-data-driver = { version = "0.3", optional = true }
+dusk-forge = "0.3.0"
+# Event types: rkyv encodes them on chain, serde turns them into JSON in the data-driver.
+bytecheck = { version = "0.6.12", default-features = false }
+rkyv = { version = "0.7", default-features = false, features = ["alloc", "size_32", "validation"] }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
+
+[features]
+# The contract itself, for on-chain execution.
+contract = ["dusk-core/abi-dlmalloc"]
+
+# The data-driver: encodes and decodes the contract's calls and events as JSON.
+data-driver = [
+  "dep:serde",
+  "dusk-core/serde",
+  "dep:dusk-data-driver",
+  "dusk-data-driver/wasm-export",
+]
+
+# The data-driver with the allocator exports that JavaScript hosts need.
+data-driver-js = ["data-driver", "dusk-data-driver/alloc"]
+
+[lib]
+crate-type = ["cdylib"]
+
+# Forge's template keeps overflow checks on in release builds. Never turn them off.
+[profile.release]
+overflow-checks = true

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c0d1d">
+  <title>Keeper's Journey | Dusklings</title>
+  <link rel="stylesheet" href="academy/style.css">
+  <script type="module" src="academy/quiz.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Dusklings home">DUSKLINGS</a>
+      <button class="lesson-button" id="menu-button" aria-haspopup="dialog"><span class="kicker" id="level-kicker">Level 1</span> <span id="level-title">First egg</span> <span aria-hidden="true">▾</span></button>
+      <div class="progress"><ol id="pips" aria-hidden="true"></ol><span id="count" aria-live="polite">1 / 9</span></div>
+    </header>
+
+    <main class="stage">
+      <section class="left">
+        <div class="scene-wrap">
+          <canvas id="scene" aria-label="Dusk Harbor at night, with lanterns along the pier"></canvas>
+          <p class="scene-tag" id="scene-tag"></p>
+        </div>
+        <article class="chapter" id="chapter" tabindex="0">
+          <p class="kicker" id="chapter-kicker"></p>
+          <h1 id="chapter-title"></h1>
+          <div class="wick" id="wick" hidden><canvas id="wick-face" width="64" height="64" aria-hidden="true"></canvas><p id="wick-line"></p></div>
+          <div class="prose" id="chapter-body"></div>
+        </article>
+      </section>
+
+      <section class="right quiz-bench" aria-label="Question">
+        <div class="quiz-pane">
+          <div class="visual" id="visual"></div>
+          <form class="question" id="question" hidden>
+            <p class="kicker">Question</p>
+            <h2 id="question-text"></h2>
+            <div class="choices" id="choices"></div>
+            <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bottombar">
+      <button class="ghost" id="prev"><span aria-hidden="true">←</span> Back</button>
+      <p class="toast" id="toast" role="status" aria-live="polite"></p>
+      <button class="primary" id="next">Next <span aria-hidden="true">→</span></button>
+    </footer>
+  </div>
+
+  <dialog id="menu" aria-labelledby="menu-title">
+    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <h2 id="menu-title">Keeper's journey</h2>
+    <ol id="menu-list"></ol>
+    <button class="ghost small" id="reset">Reset progress</button>
+  </dialog>
+</body>
+</html>

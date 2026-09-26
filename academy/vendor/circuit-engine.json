@@ -1,0 +1,10 @@
+{
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "plonk": "0.22.1",
+  "crate": "engines/circuit",
+  "sourceSha256": "2db502001181e15e8e1c4a2cdfc831415b7712656d439773cddef704218f6950",
+  "wasm": {
+    "bytes": 781075,
+    "sha256": "d299fc0cdc870c71c9cf4d88083ecab5dfc83c57f5f5ceecbf1f7bbe131ff682"
+  }
+}

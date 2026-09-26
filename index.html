@@ -2,98 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#121622">
-  <meta name="description" content="Learn about Dusk, then choose contract, dApp or circuit development.">
-  <title>Learning paths | Dusk Academy</title>
-  <link rel="icon" href="academy/assets/portrait-pixel.webp" type="image/webp">
+  <meta name="theme-color" content="#0c0d1d">
+  <meta name="description" content="Learn Dusk by raising Dusklings: explore privacy on Dusk, write Rust contracts and hatch creatures of your own.">
+  <title>Dusklings</title>
   <link rel="stylesheet" href="academy/style.css">
-  <script type="module" src="academy/app.js?v=static-1"></script>
+  <script type="module" src="academy/home.js"></script>
 </head>
-<body>
-  <a class="skip-link" href="#paths-title">Skip to learning paths</a>
-  <div class="shell">
-    <header class="masthead">
-      <a class="brand" href="#paths" aria-label="Dusk Academy, all learning paths">DUSK<span>ACADEMY</span></a>
-      <p class="course" id="course" hidden>DuskVM contracts <span aria-hidden="true">/</span> <strong id="course-title">Your first contract</strong></p>
-      <div class="header-actions" id="lesson-controls" hidden><button id="skills-button" class="text-button">Your skills</button><button id="about-button" class="icon-button" aria-label="About this lesson">?</button></div>
-      <div id="path-profile"><img src="academy/assets/portrait-pixel.webp" alt="" width="115" height="130"><span class="character-name">Apprentice</span></div>
-    </header>
-    <main id="paths" aria-labelledby="paths-title">
-      <div class="paths-heading">
-        <h1 id="paths-title" tabindex="-1">Learning paths</h1>
-        <a id="resume-path" class="next-button" href="#begin" hidden><span id="resume-label">Continue contracts</span><small id="resume-chapter"></small></a>
+<body class="home">
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Dusklings home">DUSKLINGS</a>
+    <a class="keeper-chip" id="keeper-chip" href="journey.html#hatch"><canvas id="keeper-face" width="32" height="32" aria-hidden="true"></canvas><span id="keeper-name">No Duskling yet</span></a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="kicker">Learn to build on Dusk</p>
+        <h1>Raise Dusklings.<br>Learn Dusk.</h1>
+        <p class="lead">Learn how Dusk works, then write smart contracts, zero-knowledge circuits and dApps for it, with one Duskling shared across every path.</p>
+        <div class="row">
+          <a class="primary" id="hero-primary" href="journey.html">Start the keeper's journey</a>
+          <a class="ghost" id="hero-secondary" href="hatchery.html">Jump into code</a>
+        </div>
       </div>
-      <section class="starter-path" aria-labelledby="starter-title">
-        <div><h2 id="starter-title">Start with Dusk</h2><p>Learn how shared records, wallets and transactions work. Then look at privacy, credentials and compliance rules.</p></div>
-        <div class="path-entry"><p id="dusk-size" class="path-status">1 lesson · 15 chapters</p><p id="dusk-progress" class="path-status" hidden></p><a id="open-dusk" class="path-link" href="course.html?path=dusk">Open path →</a></div>
-      </section>
-      <section aria-labelledby="development-title">
-        <h2 id="development-title">DuskVM development</h2>
-        <div class="development-paths">
-          <article class="path-card" aria-labelledby="contracts-title">
-            <h3 id="contracts-title">Contract development</h3>
-            <p>Build your first Dusk Forge contract in <span id="contracts-first-count">15</span> short chapters, with worked examples and optional practice. Keep the same Rust file as you add records, permissions, events and contract calls, then simulate the workflow and check its interface against a prebuilt data-driver.</p>
-            <div class="path-meta"><p class="path-status" id="contracts-size">7 lessons · 83 chapters</p><p class="path-status" id="contracts-progress" hidden></p></div>
-            <a id="open-contracts" class="path-link" href="#begin">Open path <span aria-hidden="true">→</span></a>
-          </article>
-          <article class="path-card" aria-labelledby="dapps-title">
-            <h3 id="dapps-title">dApp development</h3>
-            <p>Use Dusk Connect to read contract state, prepare unsigned calls and build a read-only registration explorer with exact IDs and failed-read recovery.</p>
-            <div class="path-meta"><p class="path-status" id="dapps-size">2 lessons · 23 chapters</p><p class="path-status" id="dapps-progress" hidden></p></div>
-            <a id="open-dapps" class="path-link" href="course.html?path=dapps">Open path →</a>
-          </article>
-          <article class="path-card" aria-labelledby="circuits-title">
-            <h3 id="circuits-title">Circuit development</h3>
-            <p>Build a PLONK sum circuit, generate proofs in your browser and check public inputs. Contract verification comes later.</p>
-            <div class="path-meta"><p class="path-status" id="circuits-size">1 lesson · 12 chapters</p><p class="path-status" id="circuits-progress" hidden></p></div>
-            <a id="open-circuits" class="path-link" href="course.html?path=circuits">Open path →</a>
-          </article>
+      <div class="hero-scene"><canvas id="scene" aria-label="Dusk Harbor at night"></canvas></div>
+    </section>
+
+    <section class="paths" aria-labelledby="paths-title">
+      <h2 id="paths-title">Choose a path</h2>
+      <p class="muted">The paths are independent: start with the journey, or go straight to code.</p>
+      <div class="path-list">
+        <article class="path" id="path-journey">
+          <canvas class="path-icon" data-dna="0001010104060000" width="64" height="64" aria-hidden="true"></canvas>
+          <div class="path-body">
+            <p class="kicker">Start here, no code</p>
+            <h3>Keeper's journey</h3>
+            <p>Hatch your Duskling, then learn how Dusk works: privacy, credentials, regulated markets and the network. Each chapter explains one idea and asks one question.</p>
+            <ol class="lesson-map" id="journey-map"></ol>
+          </div>
+          <a class="primary" id="journey-go" href="journey.html">Start</a>
+        </article>
+
+        <article class="path" id="path-contracts">
+          <canvas class="path-icon" data-dna="1568560902483828" width="64" height="64" aria-hidden="true"></canvas>
+          <div class="path-body">
+            <p class="kicker">Smart contracts in Rust</p>
+            <h3>The Hatchery</h3>
+            <p>Write one Dusk Forge contract across five lessons: hatch Dusklings, give them keepers, hunt moths from another contract, battle, and trade.</p>
+            <ol class="lesson-map" id="lesson-map"></ol>
+          </div>
+          <a class="primary" id="contracts-go" href="hatchery.html">Start</a>
+        </article>
+
+        <article class="path" id="path-almanac">
+          <canvas class="path-icon" data-dna="2788147323984481" width="64" height="64" aria-hidden="true"></canvas>
+          <div class="path-body">
+            <p class="kicker">dApps in JavaScript</p>
+            <h3>The Almanac</h3>
+            <p>Build a web page that reads every Duskling from the Hatchery with Dusk Connect and the contract's data-driver, then prepare hatch and transfer calls for a wallet.</p>
+            <ol class="lesson-map" id="almanac-map"></ol>
+          </div>
+          <a class="primary" id="almanac-go" href="almanac.html">Start</a>
+        </article>
+
+        <article class="path" id="path-stats">
+          <canvas class="path-icon" data-dna="1335947248835871" width="64" height="64" aria-hidden="true"></canvas>
+          <div class="path-body">
+            <p class="kicker">Zero-knowledge circuits</p>
+            <h3>Secret stats</h3>
+            <p>Write a dusk-plonk circuit that proves your Duskling's power without revealing its stats, then an arena pass that proves power ≥ 50. Every check generates a real PLONK proof.</p>
+            <ol class="lesson-map" id="stats-map"></ol>
+          </div>
+          <a class="primary" id="stats-go" href="secret-stats.html">Start</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="yours" id="yours" hidden aria-labelledby="yours-title">
+      <h2 id="yours-title">Your Duskling</h2>
+      <div class="card">
+        <canvas id="yours-creature" width="192" height="192" aria-hidden="true"></canvas>
+        <div>
+          <h3 id="yours-name"></h3>
+          <p class="dna" id="yours-dna"></p>
+          <dl class="traits" id="yours-traits"></dl>
         </div>
-      </section>
-    </main>
-    <div id="contract-path" hidden>
-    <nav class="chapter-overview" aria-label="All contract chapters"><p id="part-title"></p><div><label class="sr-only" for="chapter-menu">Jump to a contract chapter</label><select id="chapter-menu"></select></div></nav>
-    <nav class="chapters" aria-label="Chapters in this part" id="chapters"></nav>
-    <main class="lesson" id="lesson" data-step="0">
-      <article class="story" aria-labelledby="lesson-title">
-        <p class="eyebrow" id="chapter-label">Lesson 01 · Contract state</p>
-        <h1 id="lesson-title" tabindex="-1">Build a registration counter</h1>
-        <div id="story-copy"></div>
-        <div id="study-panels">
-          <section class="quiz-panel reading-panel" id="reading-panel" aria-labelledby="reading-title" hidden><p class="eyebrow">Worked example</p><h2 id="reading-title"></h2><div id="reading-copy"></div></section>
-          <section class="quiz-panel" id="quiz-panel" aria-label="Check your understanding" hidden><p class="aside" id="practice-note">Optional practice. These questions do not award skills or block the next chapter.</p><form id="quiz"><fieldset><legend id="question"></legend><div id="choices"></div></fieldset><button class="run-button" type="submit">Check answer</button></form><p class="feedback" id="quiz-feedback" role="status" hidden></p></section>
-        </div>
-        <div class="task"><span class="task-mark" aria-hidden="true">◇</span><div><h2 id="task-label">The goal</h2><p id="task-copy"></p></div></div>
-        <p class="aside" id="lesson-note"></p>
-        <p class="aside" id="simulator-note">Browser simulator. Your Rust subset is interpreted, not compiled or executed in DuskVM. State, callers, events and venue calls are simulated. No real gas or network transactions. <a href="https://github.com/HDauven/dusk-academy/blob/main/academy/README.md#browser-runtime">Supported Rust subset</a>.</p>
-        <details id="hint" hidden><summary>Need a hint?</summary><p id="hint-copy"></p></details>
-        <div class="character-card" id="character-card" hidden>
-          <img src="academy/assets/portrait-pixel.webp" alt="Your pixel-art adventurer" width="115" height="130">
-          <div><span class="eyebrow">Your character</span><strong class="character-name">Apprentice</strong><span class="character-skill" id="character-skill">Learning contract state</span></div>
-        </div>
-      </article>
-      <section class="scene" id="scene" aria-label="Your character in the workshop">
-        <img class="scene-art" src="academy/assets/workshop-pixel.webp" width="768" height="512" alt="An adventurer in a lantern-lit workshop overlooking the city at dusk">
-        <div class="scene-caption"><span class="eyebrow">The workshop</span><strong class="character-name">Apprentice</strong></div>
-        <div class="character-setup" id="character-setup"><div><label for="character-name-input">Character name</label><input id="character-name-input" placeholder="Apprentice" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="name-note"><span id="name-note">Optional</span></div><div class="skill-to-learn"><span class="skill-emblem" aria-hidden="true">◇</span><div><small>Your first skill</small><strong>Contract state</strong></div></div></div>
-        <div class="earned" id="earned" hidden><span class="skill-emblem" aria-hidden="true">✓</span><div><small id="earned-label">Skill learned</small><strong id="earned-title">Contract state</strong><span id="earned-summary">Store a count between calls</span></div></div>
-      </section>
-      <section class="editor" id="editor" aria-label="Dusk Forge contract editor" hidden>
-        <header class="filebar"><span>src / <strong>lib.rs</strong></span><span>Dusk Forge</span></header>
-        <p id="code-context" hidden></p>
-        <div class="code-editor"><div class="gutter" aria-hidden="true"><pre id="line-numbers"></pre></div><div class="code-surface"><pre id="highlight" aria-hidden="true"></pre><textarea id="code" aria-label="Contract source in src/lib.rs" aria-describedby="code-note" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" maxlength="8000"></textarea></div></div>
-        <div class="editor-actions"><span id="code-note">Ctrl / ⌘ + Enter to simulate</span><button id="run" class="run-button"><span aria-hidden="true">▶</span> Simulate contract</button></div>
-        <div class="test-panel" id="test-panel"><div class="test-heading"><h2>Contract calls</h2><span id="results-runtime">Browser simulator · not DuskVM</span></div><p id="test-empty">Run the contract to see the call results.</p><ol id="call-results" hidden></ol><table id="trace-results" hidden><caption class="sr-only">Contract calls, return values and the state before and after each call</caption><thead><tr><th scope="col">Call</th><th scope="col">Result</th><th scope="col">Before → after</th></tr></thead><tbody></tbody></table><details id="trace-details" hidden><summary id="trace-summary">View call trace</summary><p class="aside">A and B are local contract principals. Fixture rows are test setup. Results describe registry operations. Raw receipt events do not establish a committed transaction or finality.</p></details><details id="build-results" hidden><summary>Source, reference driver and method schema</summary><pre id="build-detail" tabindex="0" aria-label="Artifact hashes and method schema"></pre></details></div>
-        <div class="feedback" id="feedback" role="status" hidden><p id="feedback-text"></p><details id="diagnostics" hidden><summary>Runtime details</summary><pre id="error-detail"></pre></details></div>
-      </section>
-    </main>
-    <nav class="lesson-actions" aria-label="Continue the lesson"><button id="previous" class="back-button" hidden>← Back</button><span id="page-count">1 / 15</span><button id="next" class="next-button">Begin lesson <span aria-hidden="true">→</span></button><a id="all-paths" class="next-button" href="#paths" hidden>All paths <span aria-hidden="true">→</span></a></nav>
-    </div>
-    <p id="save-error" role="status" hidden>Your browser couldn’t save your work. Keep this tab open.</p>
-  </div>
-  <dialog id="skills" aria-labelledby="skills-title"><form method="dialog"><button class="close" aria-label="Close your skills">×</button></form><h2 id="skills-title">Your skills</h2><p>DuskVM contract development</p><div id="lesson-skills"></div><a href="#paths">All learning paths <span aria-hidden="true">→</span></a></dialog>
-  <dialog id="about" aria-labelledby="about-title"><form method="dialog"><button class="close" aria-label="Close about this lesson">×</button></form><h2 id="about-title">How the lessons run</h2><p>The browser interprets your edited Rust subset and simulates contract state, callers, events and venue calls. It is not a compiler or DuskVM. The same runtime is used on localhost and GitHub Pages.</p><p>Each run starts with a fresh simulated instance. Calls within it share state. Failed operations restore state; attempted receipt events are not proof of committed success.</p><p>Instruction and memory teaching limits are not gas accounting. Exhaustion or unsupported syntax cannot pass as a valid business rejection. The caller and venue fixtures are not authenticated wallets or production services.</p><p>The last checkpoint checks your parsed public signatures against a prebuilt reference data-driver and exercises real ABI encoding with Dusk Connect. It does not compile or export edited Rust.</p><p>No wallet, network transaction or cryptographic proof is involved in this contract path. Native Rust is retained only in developer build and conformance tooling.</p><p>Dusk Academy is an independent learning project, not an official Dusk product.</p><a href="https://docs.dusk.network/developer/duskvm/quickstart/" target="_blank" rel="noopener noreferrer">Dusk Forge quickstart ↗</a></dialog>
-  <noscript><p>Enable JavaScript to open the lessons and run the editor.</p></noscript>
+      </div>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <p>Progress is saved in this browser only. Contract checks use a Rust-subset interpreter, not the Rust compiler or DuskVM. Every reference answer is also compiled with Dusk Forge and replayed in Dusk's VM.</p>
+    <p><a href="https://github.com/HDauven/dusklings">Source on GitHub</a></p>
+  </footer>
 </body>
 </html>

@@ -1,0 +1,17 @@
+{
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "forge": "0.3.0",
+  "duskCore": "1.6.0",
+  "contractSourceSha256": "2ca18e7efe183a0a1d445f9d927b8d5add319c4c7f9ac308aa8251d56905fd82",
+  "hatchery-driver.wasm": {
+    "bytes": 280360,
+    "sha256": "383d532dfcccc31b2321c7ebe123985db096f143eface0b06b819b74ef37e2ad"
+  },
+  "almanac-fixture.json": {
+    "sha256": "df042601461e7de87cc71f8d27fa13323f3ef7e4d6aefc5ce52bdfed3d17506f"
+  },
+  "dusk-connect.js": {
+    "sha256": "baca5dbabd83326cf319f8c575ef7bab92a9842287129ccb11ab796adf991976",
+    "source": "https://github.com/dusk-network/connect @ 67b37ab0969bd42bf2b8d95f7b610cb654e49be8"
+  }
+}

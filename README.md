@@ -1,117 +1,83 @@
-# Dusk Academy
+# Dusklings
 
-A browser-based course in Dusk development.
+Learn Dusk by raising Dusklings: pixel creatures made from 16 digits of DNA.
 
-**[Open Dusk Academy](https://hdauven.github.io/dusk-academy/)** · [Source on GitHub](https://github.com/HDauven/dusk-academy)
+**[Open Dusklings](https://hdauven.github.io/dusklings/)**
 
-**Every coding path runs from static files:** all 22 contract checkpoints, both dApp lessons and both circuit checks. No execution server, public RPC, wallet, API key or learner installation is required. Localhost and Pages use the same runtime, with no runtime switch. Historical native checks remain separately labelled and saved; new browser checks never become native credit.
+| Path | Size | What you do |
+|---|---|---|
+| **Start with Dusk: Keeper's journey** | 5 levels, 38 questions, no code | Hatch your Duskling, then learn how Dusk works: the shared ledger, wallets and transactions; privacy with Moonlight, Phoenix and zero-knowledge proofs; credentials with Citadel; regulated markets; and the network (provisioners, Succinct Attestation). Each level earns gear for your Duskling. |
+| **Contracts: the Hatchery** | 5 lessons, 42 code chapters | Write one Dusk Forge contract in Rust that hatches Dusklings, announces them with registered event types, gives them keepers, hunts moths from another contract, battles and trades. Every chapter is one small edit. Each lesson ends in a playground running your own contract. |
+| **dApps: the Almanac** | 2 lessons, 11 code chapters | Build a web page in JavaScript that reads every Duskling from the Hatchery with the real Dusk Connect SDK and the contract's real data-driver, then prepare hatch and transfer calls for a wallet. It covers exact `u64` values, `JSON.rawJSON` and a down node. |
+| **Circuits: Secret stats** | 2 lessons, 9 code chapters | Write a dusk-plonk circuit that proves your Duskling's power without revealing its stats, then an arena pass proving power ≥ 50 with a range check. Every check generates and verifies real PLONK proofs in the browser. |
 
-Contracts interpret a bounded Rust subset and simulate Dusk behavior. dApps execute actual JavaScript with genuine Connect/data-drivers against simulated reads. Circuits interpret edited gate-building code and generate **real PLONK proofs** in a prebuilt engine. Edited Rust is not compiled in the browser.
-
-| Learning path | Lessons | Chapters | What you build or study |
-|---|---:|---:|---|
-| Start with Dusk | 1 | 15 | Shared records, wallets, transactions, privacy, credentials and policy |
-| DuskVM contract development | 7 | 83 | State, arguments, validation, records, contract permissions, events, calls and testing/building |
-| DuskVM dApp development | 2 | 23 | Connect reads, unsigned call preparation and a read-only registration explorer |
-| DuskVM circuit development | 1 | 12 | A PLONK sum circuit with constraints, proofs and public inputs |
-
-These are **11 lessons / 133 chapters**, not four finished courses. Paths are independent. No contract-course completion is required for dApps or circuits.
-
-The first contract lesson has 15 chapters. Lessons combine short explanations, worked examples and optional practice. Coding lessons keep the same editable file throughout. Run always checks the active coding task, including when reviewing an earlier page. The contract path has 22 execution checkpoints and 19 optional questions.
-
-The entrance keeps curriculum totals visible beside saved progress, with Open, Continue or Review links. Each path saves its own source and checks. The character name is shared. Earlier chapter links, drafts, historical checkpoints and earned skills survive save migration. Normal saving is silent. A failed save shows a warning and asks before leaving the page.
+You get one Duskling, shared across paths, and progress is saved in your browser only.
 
 ## Run locally
 
-Only a static HTTP server is needed. With Python 3:
-
 ```sh
-git clone https://github.com/HDauven/dusk-academy.git
-cd dusk-academy
-python3 -m http.server 5173 --bind 127.0.0.1
+git clone https://github.com/HDauven/dusklings.git
+cd dusklings
+npm run dev        # python3 -m http.server 5173 --bind 127.0.0.1
 ```
 
-Open **http://localhost:5173/**. `npm run dev` and `npm start` run that same command; neither prepares Rust dependencies nor exposes execution endpoints. Any ordinary static host can serve the project, including from a subdirectory. Keep the development server on loopback.
+Then open **http://localhost:5173/**. Any static host works, including from a subdirectory; GitHub Pages serves the root of `main`.
 
-The browser needs WebAssembly and, for exact-ID exercises, native `JSON.rawJSON`. Unsupported browsers receive an update message rather than rounded IDs. Only same-site static assets are fetched. No CDN, analytics, browser API keys or wallet controls are used. There is no service worker or offline-reopening guarantee.
+## How the contract lessons are checked
 
-Saves belong to the browser origin. Pages drafts and progress do not automatically transfer to localhost; copy any source you want to keep before switching. If saving fails, keep the tab open and copy your source somewhere safe.
+In the browser, the Hatchery runs your edited contract in a **Rust-subset interpreter** (`academy/rust-runtime.js`). It evaluates the source as data: no `eval`, and no JavaScript or host access. It also enforces Forge's event rules: every emitted event type is registered in `#[dusk_forge::contract(events = [...])]`, with its derives and `ContractEvent` topics. Dusk's host functions are simulated: `abi::emit`, `abi::public_sender` (you, Rook, Fen or a shielded sender), `abi::block_height`, and `abi::call` to a Moth Nest contract. Checks grade what the contract *does*: calls, state, events, panics and rollback.
 
-## Browser runtime
+The interpreter isn't rustc or DuskVM. To keep the lessons honest, two checks run the real thing:
 
-Choose any path and edit the supplied file. The contract and circuit interpreters evaluate the supported source, including incorrect logic, rather than recognize answers or select a successful precompiled solution. Unsupported features report a runtime limitation, not invalid Rust.
+- `npm run test:rust`: **every chapter's reference answer compiles with real Dusk Forge 0.3 and dusk-core 1.6**, as a contract and as a data-driver.
+- `npm run test:vm`: **every chapter's answer, and every lesson playground, runs in Dusk's VM** (dusk-vm 1.7, built on piecrust). It sits next to a real Moth Nest contract. Every call a lesson check or playground makes in the interpreter is replayed with the same sender and block height. The return values, panic messages, events and the whole contract state after every call must match. Each answer's own data-driver encodes and decodes the values.
 
-The contract model covers exact integers, records, immediate callers, events, nested venue calls, failed-call rollback and atomic pairs. Its final check compares the parsed public interface against a **prebuilt reference driver** and tests real ABI encoding. The displayed source hash is not a compiled contract hash. No gas, deployment, wallet authentication or finality is simulated.
+The finished contract lives in [`examples/hatchery`](examples/hatchery), ready to build yourself.
 
-Actual learner JavaScript runs in a disposable worker inside an opaque sandboxed iframe. Inherited CSP blocks external connections, including attempts to bypass the fixture transport. It cannot access the page's DOM, storage or injected wallet. Virtual `/api/…` and `/on/…` addresses in exercises are handled entirely by the in-memory fixture transport, not HTTP services.
+**Secret stats** interprets your circuit into gates. A real dusk-plonk 0.22.1 engine, compiled to WebAssembly from [`engines/circuit`](engines/circuit), proves and verifies them in a worker, with fresh demonstration parameters. `npm run test:rust` also compiles every chapter's answer as real Rust inside that engine and checks that its proofs come out the same as in the browser.
 
-Circuit Rust is interpreted as bounded gate instructions; the bundled dusk-plonk engine proves and verifies those instructions with fresh demonstration parameters. See [supported syntax, isolation and limits](academy/README.md#browser-runtime).
+**The Almanac** runs your JavaScript, unmodified except for the SDK import, in a disposable worker inside an opaque sandboxed iframe whose CSP blocks all network connections. It uses the real Dusk Connect and the Hatchery's real data-driver. The node is a practice node inside the page, answering with bytes that [`engines/almanac-fixture`](engines/almanac-fixture) produces from the real Rust types.
 
-Contract owners are immediate calling contracts, not authenticated wallet users. The A/B relays are open test fixtures and must not be used as production authorization. Raw receipt events can describe attempted work that later rolls back. They do not establish committed success or network finality.
-
-The explorer's separate getters are coherent only because its fixture never changes. A public owner ID is not a credential, and confirmation is application state rather than finality. Circuit field arithmetic does not authenticate real-world facts or provide bounded-integer constraints.
-
-No live deployment, signed write, credential issuance, legal assessment or registered event-decoding schema is implemented. Saves and local checks are learning aids, not certification.
+Dusk facts in the journey were checked against the Dusk sources: `dusk-core` host functions, Forge's contract rules, Phoenix view keys, and rusk's consensus, staking and slashing code.
 
 ## Checks
 
 ```sh
-npm test
-npm run test:e2e
+npm test            # interpreter limits and rollback; every chapter passes with its answer and fails from its start
+npm run test:e2e    # the whole site over static HTTP in Chromium: every chapter, playgrounds, narrow screens, axe audits
+npm run test:rust   # every contract and circuit answer, compiled for real; vendored artifacts rebuilt byte for byte
+npm run test:vm     # every contract answer and playground, replayed call by call in Dusk's VM
 ```
 
-`npm test` covers the interpreters, all contract checkpoints, real bundled PLONK execution, artifact hashes, separate histories, migrations and missing developer-cache guidance without Rust setup.
+- **`test:e2e`** needs Playwright (and optionally `@axe-core/playwright`). `CHROMIUM_PATH` picks a Chromium and `NODE_PATH` points at an external `node_modules`.
+- **`test:rust`** and **`test:vm`** need Rust with the `wasm32-unknown-unknown` target. `RUST_TOOLCHAIN=stable` swaps the pinned 1.98.0 for an installed toolchain, and `CARGO_NET_OFFLINE=true` builds from cached crates only.
 
-The optional E2E check needs existing Playwright and `@axe-core/playwright` development tools. `CHROMIUM_PATH` selects an existing Chromium; `NODE_PATH` can point to an external installation. It starts and stops a plain Python static server itself. No compiler setup or running academy server is required.
+## Layout
 
-`tools/test_pages.cjs` is the single learner E2E suite: all 133 chapters and 32 coding checks over actual static HTTP at a project subpath, plus localhost and mocked HTTPS Pages checks. It covers real SDK/driver/proof workers, exact IDs, wrong/equivalent programs, isolation, cancellation, historical native credit, migrations, storage failures, keyboard focus, responsive layouts and accessibility. Browser validation is Chromium-only, not an independent sandbox audit or a Firefox/Safari guarantee.
+- `index.html`, `journey.html`, `hatchery.html`, `almanac.html`, `secret-stats.html`: the pages. `creatures.html` is a developer sheet showing every trait and piece of gear.
+- `academy/`:
+  - Duskling generation and scenes: `creature.js`, `scene.js`
+  - Journey content and screen: `journey.js`, `quiz.js`
+  - Hatchery lessons: `lesson1.js` … `lesson5.js`, `course.js`, `hatchery-file.js`
+  - Contract runner and simulated hosts: `contract.js`, `rust-runtime.js`
+  - Hatchery screen: `app.js`; home: `home.js`; progress: `store.js`; styles: `style.css`
+  - The dApps and Circuits screens: `path-app.js`, `editor.js`
+  - Secret stats: `stats-lessons.js`, `stats-app.js`, `circuit.js`, `circuit-worker.js`
+  - The Almanac: `almanac-lessons.js`, `almanac-app.js`, `almanac-sandbox.js`, `almanac-harness.js`, `almanac-transport.js`
+  - `vendor/`: Dusk Connect, the circuit engine, the Hatchery data-driver and the practice-node fixture, with hashes in `circuit-engine.json` and `almanac.json`. Rebuild them with `npm run build:circuit` and `npm run build:almanac`.
+- `examples/hatchery/`: the finished contract as a Forge crate.
+- `engines/circuit/`: the browser's PLONK engine. `engines/almanac-fixture/` generates the practice node's answers. `engines/vm-runner/` replays calls in Dusk's VM for `test:vm`, with the Moth Nest contract in `moth_nest.rs`.
+- `tools/`: builds for the vendored artifacts, the end-to-end test and the Rust checks.
 
-## Native developer tooling
-
-Native Rust remains the reference for artifact builds and conformance tests, **not an alternative learner runtime**. Preparation is optional and never invoked by the website or static server.
-
-The host needs Linux, Python 3, Node, Rust/rustup, a C build toolchain and bubblewrap (`sudo apt install bubblewrap` on Debian/Ubuntu):
-
-```sh
-rustup toolchain install 1.98.0 --profile minimal \
-  --component rust-src --target wasm32-unknown-unknown
-cargo +1.98.0 install --git https://github.com/dusk-network/forge \
-  --tag v0.3.0 --root "$HOME/.local/dusk-forge-course" dusk-forge-cli
-DUSK_FORGE_BIN="$HOME/.local/dusk-forge-course/bin/dusk-forge" npm run setup:forge
-npm run setup:circuits
-npm run test:forge
-npm run test:circuits
-npm run build:browser
-```
-
-Setup builds trusted dependencies, fixed VM fixtures and matching data-drivers in `~/.cache/dusk-academy/{forge-lesson,circuit-lesson}`. Missing or stale caches give setup guidance; build/test helpers do not install dependencies or rebuild caches automatically. Do not delete learner saves to repair a build cache.
-
-Forge tests compare 69 freshly compiled positive/negative/equivalent programs across all seven lessons with interpreted traces, including ownership, events and rollback. The opening comparison also covers 13 cases, including exact integers and arithmetic rejection; these sets overlap. Simulated explorer bytes are compared against actual pinned VM output. Native circuit tests compile real dusk-plonk source and check proofs, invalid witnesses and public-input binding. These finite comparisons are not a proof of general Rust/DuskVM equivalence.
-
-Compilation and VM execution still use bubblewrap, fixed commands, private workspaces, no network and resource limits, with no unsandboxed fallback. They are local developer tools, not an independently reviewed public compilation service. [Artifact provenance and reproduction](academy/vendor/README.md#browser-wasm-artifacts) document the pinned browser bundles.
-
-## Publication
-
-GitHub Pages publishes the root of `main`, with `.nojekyll` disabling Jekyll processing. There is no hosted compiler or build service. Changes on a development branch are not live until separately merged and deployed. A successful Pages deployment verifies publication, not sandbox security or wallet integration.
+The classic registration-counter academy was replaced by this one. It's preserved at the git tag `classic-academy`.
 
 ## License
 
-Original academy code and lesson text are available under the [MIT License](LICENSE). Separately licensed material keeps its existing terms:
+Dusklings code and lesson text are available under the [MIT License](LICENSE). Separately licensed material keeps its own terms:
 
-- Rust examples and tutorial snippets derived from them: MPL-2.0. See [contract license](examples/first-contract/LICENSE) and [circuit license](examples/first-circuit/LICENSE).
-- Bundled Dusk Connect: [MIT](academy/vendor/dusk-connect.LICENSE), with [source provenance](academy/vendor/README.md).
-- Bundled WASM engines/drivers: [sources, reproduction and upstream licensing](academy/vendor/README.md#browser-wasm-artifacts). Their upstream licenses, including MPL-2.0, remain in effect.
+- [`examples/hatchery`](examples/hatchery) follows the Dusk Forge contract template, and [`engines/circuit`](engines/circuit) derives from the classic academy's dusk-plonk harness. Both are provided under MPL-2.0.
+- Dusk Connect ([`academy/vendor/dusk-connect.js`](academy/vendor/dusk-connect.js)) is bundled from [dusk-network/connect](https://github.com/dusk-network/connect) at commit `67b37ab`, under the [MIT License](academy/vendor/dusk-connect.LICENSE).
+- The WebAssembly artifacts in `academy/vendor` are built from the sources above and their pinned dependencies (`Cargo.lock`), which keep their own licenses.
 - Manrope and Silkscreen fonts: [Manrope OFL](assets/Manrope-OFL.txt) and [Silkscreen OFL](assets/Silkscreen-OFL.txt).
 
-The generated workshop and portrait artwork in `academy/assets/` are included under MIT to the extent the project owner holds rights. [Artwork provenance](academy/README.md#artwork) records the generation and processing details; this is not a claim of exclusive copyright in AI-generated output. Dusk names and trademarks remain with their respective owners. This is an independent learning project, not an official Dusk product.
-
-## Implementation notes
-
-- [Curriculum, save formats, execution limits, references and artwork provenance](academy/README.md)
-- [Pinned Forge reference and native fixtures](examples/first-contract/README.md)
-- [PLONK harness](examples/first-circuit/README.md)
-- [Connect source pin, license and reproduction](academy/vendor/README.md)
-
-The UI is vanilla HTML/CSS/JavaScript. Contract lessons use `index.html` and `academy/app.js`. The other paths share `course.html` and `academy/course-app.js`. Both reuse `academy/editor.js` and the stylesheet. `tools/forge_lesson.py` and `tools/circuit_lesson.py` are called only by developer setup, build and conformance tools, never by HTTP.
-
-Only the current academy is included. Save migrations remain to preserve learner work. Superseded prototypes, build caches and generation logs stay outside the project, and unrelated browser storage is never cleared.
+Dusk names and trademarks remain with their respective owners. This is an independent learning project, not an official Dusk product.

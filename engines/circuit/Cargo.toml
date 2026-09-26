@@ -1,0 +1,23 @@
+# The Dusklings PLONK engine. Built with src/gates.rs as the circuit for the browser, or with a
+# learner's real circuit to compare it with the browser engine (npm run test:rust).
+[package]
+name = "dusklings-circuit"
+version = "0.2.0"
+edition = "2024"
+license = "MPL-2.0"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dusk-plonk = { version = "=0.22.1", default-features = false, features = ["alloc"] }
+dusk-bytes = "=0.1.8"
+rand_chacha = { version = "=0.3.1", default-features = false }
+rand_core = { version = "=0.6.4", default-features = false }
+serde_json = "=1.0.149"
+
+[profile.release]
+opt-level = 3
+panic = "abort"
+overflow-checks = true

@@ -1,0 +1,15 @@
+# Replays Hatchery calls in Dusk's real VM (dusk-vm, built on piecrust), so tools/check_vm.mjs can
+# compare every lesson check's calls with the browser interpreter.
+[package]
+name = "vm-runner"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[dependencies]
+dusk-vm = "=1.7.0"
+dusk-core = { version = "=1.7.0", features = ["serde"] }
+rand_chacha = { version = "0.3", default-features = false }
+rand_core = { version = "0.6", default-features = false }
+serde_json = "1"
