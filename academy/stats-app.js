@@ -27,7 +27,7 @@ function finale(c, ctx) {
   const other = power >= 50n ? {who: 'Rook', stats: [14n, 9n, 23n]} : {who: 'Fen', stats: cast('fen')};
   ctx.pane.innerHTML = `<div class="panel">
       <p class="kicker">Proof lab</p>
-      <h2>${arena ? `${ctx.codeHtml(name)}'s arena pass` : `${ctx.codeHtml(name)}'s power`}</h2>
+      <h2>${arena ? `${ctx.escapeHtml(name)}'s arena pass` : `${ctx.escapeHtml(name)}'s power`}</h2>
       <div class="cards">
         <div class="card-face mine"><small>strength</small><b>${strength}</b></div><span class="op">+</span>
         <div class="card-face mine"><small>agility</small><b>${agility}</b></div><span class="op">=</span>
@@ -55,13 +55,13 @@ function finale(c, ctx) {
     if (!b) return;
     const k = cases[b.dataset.lab];
     b.disabled = true;
-    log('log', `› proving for ${ctx.codeHtml(k.who)}…`);
+    log('log', `› proving for ${ctx.escapeHtml(k.who)}…`);
     try {
       const [r] = (await prove(ctx.source, [[0n, 0n, 0n], k.stats], ctx.signal)).cases;
       if (r.verified) {
         log('ok', `✓ Proof verified. ${r.proof.length / 2} bytes, starting ${r.proof.slice(0, 24)}…`);
         log('log', r.publics.length ? `Public input: power ${k.stats[2]}. Checked with power ${k.stats[2] + 1n} instead → ${r.tamperedVerified ? '✓ still verifies?!' : '✗ rejected'}.` : 'No public inputs: the arena learns only that the rules hold.');
-      } else log('refused', `✗ No valid proof can be made. ${arena && k === cases.mine ? `${ctx.codeHtml(name)}'s power is below 50, so the circuit is doing its job.` : 'The circuit\'s rules don\'t hold for these numbers.'}`);
+      } else log('refused', `✗ No valid proof can be made. ${arena && k === cases.mine ? `${ctx.escapeHtml(name)}'s power is below 50, so the circuit is doing its job.` : 'The circuit\'s rules don\'t hold for these numbers.'}`);
       if (k === cases.mine) scene(r.verified ? '✓' : '✗');
       ctx.played();
     } catch (error) {

@@ -1,5 +1,5 @@
 // The code editor shared by every coding path: a textarea under a highlighted copy of its text.
-const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
 const LANGUAGES = {
   rust: {

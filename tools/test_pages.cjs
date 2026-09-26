@@ -144,6 +144,31 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
     assert.ok(await page.isVisible('#yours'));
     assert.match(await page.textContent('#yours-traits'), /Lighthouse lantern/);
 
+    // Hostile data stays text: a crafted name, and Almanac "learner code" that returns HTML.
+    const noScriptRan = async where => { await page.waitForTimeout(150); assert.deepEqual(await page.evaluate(() => [window.__pwned, window.pw]), [undefined, undefined], `${where}: injected script ran`); };
+    const hostileName = '"><img src onerror=pw=1>';
+    await page.evaluate(name => localStorage.setItem('dusklings:keeper:v1', JSON.stringify({...JSON.parse(localStorage.getItem('dusklings:keeper:v1')), name})), hostileName);
+    await go('');
+    assert.ok((await page.textContent('#journey-map')).includes(`${hostileName} hatched`), 'the name is shown as text');
+    await noScriptRan('home');
+    const tag = '<img src=x onerror="__pwned=1">';
+    const hostileCode = `export function createApp() { return {readContract() {}}; }
+export async function loadAlmanac() { const x = ${JSON.stringify(tag)}; return {status: "ok", dusklings: [{id: x, dna: x, owner: x}]}; }
+export function seedFromName() { return ${JSON.stringify(tag)}; }
+export async function prepareHatch() { const x = ${JSON.stringify(tag)}; return {contractId: x, fnName: x, fnArgs: x, privacy: x, amount: x, deposit: x}; }`;
+    await page.evaluate(src => { const s = JSON.parse(localStorage.getItem('dusklings:almanac:v1')); localStorage.setItem('dusklings:almanac:v1', JSON.stringify({...s, passed: {...s.passed, offline: src, 'prepare-transfer': src}})); }, hostileCode);
+    await go('almanac.html', 'almanac-lab');
+    await page.waitForSelector('.almanac-card', {timeout: 60000});
+    assert.ok((await page.textContent('#almanac-grid')).includes(tag), 'the gallery shows returned values as text');
+    await noScriptRan('almanac gallery');
+    await go('almanac.html', 'hatch-lab');
+    assert.equal(await page.inputValue('#hatch-name'), hostileName, 'the name stays inside the input');
+    await page.click('#prepare');
+    await page.waitForSelector('#lab-log .refused', {timeout: 60000});
+    assert.ok((await page.textContent('#lab-log')).includes(tag), 'the hatch request shows returned values as text');
+    await noScriptRan('hatch request');
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('dusklings:almanac:v1')); delete s.passed.offline; delete s.passed['prepare-transfer']; localStorage.setItem('dusklings:almanac:v1', JSON.stringify(s)); });
+
     // Narrow screens: no sideways scrolling.
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({width, height: 800});

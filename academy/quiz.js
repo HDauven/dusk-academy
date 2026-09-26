@@ -20,7 +20,7 @@ const right = c => !!save.answers[c.id]?.right;
 const lit = l => levelQuizzes(l).map(right);
 const levelDone = l => lit(l).every(Boolean);
 const done = c => c.kind === 'intro' ? true : c.kind === 'quiz' ? right(c) : levelDone(c.level) && (c.level > 0 || !!keeper.dna);
-const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const firstOpen = l => levelQuizzes(l).find(c => !right(c));
 
 function paintScene(animate) {

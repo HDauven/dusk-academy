@@ -1,4 +1,8 @@
 // Progress lives in this browser only. Every read and write tolerates blocked storage.
+// Storage is shared with every other page on this origin (all of a user's GitHub Pages sites),
+// so whatever is read back is treated as untrusted input.
+import {GEAR_INFO} from './creature.js';
+
 export const KEYS = {hatchery: 'dusklings:hatchery:v1', journey: 'dusklings:journey:v1', keeper: 'dusklings:keeper:v1', stats: 'dusklings:secret-stats:v1', almanac: 'dusklings:almanac:v1'};
 
 // Progress saved before the rename to Dusklings moves to the new keys, once.
@@ -16,7 +20,8 @@ export function load(path, defaults) {
   try {
     const raw = localStorage.getItem(KEYS[path]);
     const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed && typeof parsed === 'object') Object.assign(value, parsed);
+    if (parsed && typeof parsed === 'object')
+      for (const [k, v] of Object.entries(parsed)) if (!['__proto__', 'constructor', 'prototype'].includes(k)) value[k] = v;
   } catch {}
   return value;
 }
@@ -26,11 +31,15 @@ export function store(path, value) {
 }
 
 // One Duskling per keeper, shared by every path. Gear is earned in the journey.
+const validName = name => typeof name === 'string' ? name.trim().slice(0, 24) : '';
+const validDna = dna => typeof dna === 'string' && /^\d{16}$/.test(dna) ? dna : '';
 export function loadKeeper() {
-  const keeper = load('keeper', {name: '', dna: '', gear: []});
+  const stored = load('keeper', {name: '', dna: '', gear: []});
+  const keeper = {name: validName(stored.name), dna: validDna(stored.dna),
+    gear: Array.isArray(stored.gear) ? stored.gear.filter(g => Object.hasOwn(GEAR_INFO, g)) : []};
   if (!keeper.dna) {
     const legacy = load('hatchery', {duskling: null}).duskling;
-    if (legacy?.dna) Object.assign(keeper, {name: legacy.name, dna: legacy.dna});
+    if (validDna(legacy?.dna)) Object.assign(keeper, {name: validName(legacy.name), dna: legacy.dna});
   }
   // Learners from the classic academy keep their character name as a suggestion. That site
   // stored it under its own key.

@@ -20,7 +20,7 @@ drawCreature($('#wick-face'), WICK, {scale: 2});
 let at = 0;
 const chapter = () => chapters[at];
 const lessonOf = c => lessons[c.lesson];
-const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const codeHtml = s => escapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 
 // ---- Editor ---------------------------------------------------------------------------------

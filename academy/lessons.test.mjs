@@ -51,3 +51,19 @@ test('every journey question has exactly one right answer and an explanation for
   assert.equal(levels.length, 5);
   assert.ok(!/xsc/i.test(JSON.stringify(journey)), 'XSC is shelved and must not appear');
 });
+
+test('stored progress is untrusted: keeper data is validated and prototype keys are ignored', async () => {
+  const data = new Map();
+  globalThis.localStorage = {getItem: k => data.get(k) ?? null, setItem: (k, v) => data.set(k, String(v)), removeItem: k => data.delete(k)};
+  try {
+    const name = ' <svg onload=alert(1)> with a long tail ';
+    data.set('dusklings:keeper:v1', JSON.stringify({name, dna: '<b>1234567890123456</b>', gear: ['cloak', 'crown', '__proto__'], extra: 1}));
+    data.set('dusklings:journey:v1', '{"__proto__": {"polluted": true}, "at": 2}');
+    const {loadKeeper, load} = await import('./store.js');
+    assert.deepEqual(loadKeeper(), {name: name.trim().slice(0, 24), dna: '', gear: ['cloak']});
+    const trip = load('journey', {at: 0, answers: {}});
+    assert.equal(trip.at, 2);
+    assert.equal(trip.polluted, undefined);
+    assert.equal(Object.getPrototypeOf(trip), Object.prototype);
+  } finally { delete globalThis.localStorage; }
+});

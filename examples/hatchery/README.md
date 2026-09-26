@@ -2,6 +2,8 @@
 
 `src/lib.rs` is the contract you build in the five Hatchery lessons of Dusklings: hatching, keepers, the moth hunt, night battles and trading. Here it's a real [Dusk Forge](https://github.com/dusk-network/forge) crate that you can compile yourself.
 
+> **A teaching contract, not a production one.** It hasn't been audited, and its battle rolls are predictable on purpose: anyone can work out a battle's result before sending it. Don't deploy it to hold anything of value.
+
 You need Rust with the `wasm32-unknown-unknown` target. `rust-toolchain.toml` pins 1.98.0, and rustup installs it on first use.
 
 ```sh

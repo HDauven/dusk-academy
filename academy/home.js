@@ -8,6 +8,7 @@ import {drawCreature, sprite, traitNames, GENE_COLORS, GEAR_INFO} from './creatu
 import {load, favicon, loadKeeper} from './store.js';
 
 const $ = s => document.querySelector(s);
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const trip = load('journey', {at: 0, answers: {}});
 const code = load('hatchery', {at: 0, passed: {}});
 const keeper = loadKeeper();
@@ -21,7 +22,7 @@ const current = levels.findIndex((_, l) => !levelDone(l));
 const tripStarted = trip.at > 0 || Object.keys(trip.answers).length > 0, tripDone = current < 0;
 $('#journey-map').innerHTML = levels.map((lv, l) => {
   const n = levelLit(l), total = levelQuizzes(l).length, first = journey.find(c => c.level === l);
-  const status = levelDone(l) ? (lv.reward ? GEAR_INFO[lv.reward] : `${keeper.name} hatched`) : n ? `${n} / ${total} lit` : lv.topic;
+  const status = levelDone(l) ? (lv.reward ? GEAR_INFO[lv.reward] : `${escapeHtml(keeper.name)} hatched`) : n ? `${n} / ${total} lit` : lv.topic;
   return `<li class="open ${levelDone(l) ? 'done' : ''} ${l === current ? 'next' : ''}"><a href="journey.html#${first.id}"><b>${l + 1}</b><strong>${lv.title}</strong><small>${status}</small></a></li>`;
 }).join('');
 const resume = journey[trip.at] ?? journey[0];

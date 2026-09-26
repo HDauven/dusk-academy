@@ -7,7 +7,7 @@ import {load, store, favicon} from './store.js';
 import {friendly, WICK, KEEPERS} from './contract.js';
 
 const $ = s => document.querySelector(s);
-const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+export const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 export const codeHtml = s => escapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 
 export function startPath({key, lessons, chapters, language, pathName, check: runCheck, finale, sceneKind = 'hatchery'}) {
@@ -93,7 +93,7 @@ export function startPath({key, lessons, chapters, language, pathName, check: ru
     if (pane === 'lab') {
       const last = lessonCode(c.lesson).at(-1);
       finale(c, {
-        pane: $('#lab-pane'), paintScene, codeHtml,
+        pane: $('#lab-pane'), paintScene, codeHtml, escapeHtml,
         source: save.passed[last.id] ?? l.reference, own: !!save.passed[last.id], lastTitle: last.title,
         played() { save.labs[c.id] = true; persist(); renderProgress(); },
         signal: (running = new AbortController()).signal,
