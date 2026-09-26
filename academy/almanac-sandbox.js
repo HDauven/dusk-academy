@@ -10,7 +10,9 @@ function files(signal) {
 }
 
 // Trusted bootstrap only. Learner source never becomes HTML: it arrives over a private MessagePort.
-const frame = `<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob: 'wasm-unsafe-eval'; worker-src blob:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'"><script>
+// The frame inherits almanac.html's CSP too, which allows this script by its SHA-256 hash;
+// academy/paths.test.mjs checks that the hash still matches.
+export const FRAME_SCRIPT = `
 onmessage = ({ports, source}) => {
   const port = ports[0]; if (source !== parent || !port) return; onmessage = null;
   port.onmessage = ({data}) => {
@@ -21,7 +23,8 @@ onmessage = ({ports, source}) => {
   };
   port.postMessage({ready: true});
 };
-</script>`;
+`;
+const frame = `<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob: 'wasm-unsafe-eval'; worker-src blob:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'"><script>${FRAME_SCRIPT}</script>`;
 const bootstrap = `
 const blob = text => URL.createObjectURL(new Blob([text], {type: 'text/javascript'}));
 onmessage = async ({data}) => {

@@ -58,6 +58,10 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
       ['{"migrated":true}', null], 'old progress moves to the dusklings keys');
     await page.evaluate(() => localStorage.clear());
 
+    // The developer creature sheet renders every trait, under the page's CSP.
+    await go('creatures.html');
+    assert.ok(await page.locator('canvas').count() > 50, 'the creature sheet draws its Dusklings');
+
     // Home, fresh.
     await go('');
     assert.equal(await page.locator('.path').count(), 4);

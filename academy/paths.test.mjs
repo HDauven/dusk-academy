@@ -6,6 +6,7 @@ import {readFileSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {createHash} from 'node:crypto';
 import {chapters as stats, lessons as statsLessons, samplesOf, SUM_CASES} from './stats-lessons.js';
 import {chapters as almanac, lessons as almanacLessons} from './almanac-lessons.js';
 import {circuitProgram, runEngine} from './circuit.js';
@@ -72,4 +73,20 @@ test('the practice node answers only itself, and a down node fails instead of lo
   await assert.rejects(f('https://example.com/on/contracts:00/duskling_count', {method: 'POST'}), /practice node/);
   assert.equal((await f(`${OFFLINE_NODE}/on/contracts:${fixture.contract}/duskling_count`, {method: 'POST'})).status, 503);
   assert.equal((await f(`${NODE}/on/contracts:${'00'.repeat(32)}/duskling_count`, {method: 'POST'})).status, 404);
+});
+
+test('every page has a strict Content Security Policy, and the Almanac allows exactly its sandbox script', async () => {
+  const {FRAME_SCRIPT} = await import('./almanac-sandbox.js');
+  const hash = createHash('sha256').update(FRAME_SCRIPT, 'utf8').digest('base64');
+  for (const page of ['index', 'journey', 'hatchery', 'secret-stats', 'almanac', 'creatures']) {
+    const html = readFileSync(new URL(`../${page}.html`, import.meta.url), 'utf8');
+    const policy = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1];
+    assert.ok(policy, `${page}.html has a policy`);
+    const scripts = policy.match(/script-src ([^;]+)/)[1];
+    assert.ok(!/'unsafe-inline'|'unsafe-eval'/.test(scripts), `${page}.html allows no inline or eval scripts`);
+    assert.match(policy, /object-src 'none'.*base-uri 'none'/, `${page}.html blocks plugins and base changes`);
+    assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/.test(html), `${page}.html has no inline scripts`);
+  }
+  assert.ok(readFileSync(new URL('../almanac.html', import.meta.url), 'utf8').includes(`'sha256-${hash}'`),
+    'almanac.html must allow the current sandbox script: update its hash after changing FRAME_SCRIPT');
 });
