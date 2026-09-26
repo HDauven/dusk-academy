@@ -484,13 +484,13 @@ export const levels = [
       },
       {
         id: 'faults', kind: 'quiz', title: 'Missing a turn',
-        body: `<p>Provisioners are rewarded for doing their job and penalised for failing it. If a provisioner chosen to propose a block produces nothing, that's a <strong>soft</strong> fault. The first one is only a warning. After that, the provisioner is suspended for a while and part of its stake is <strong>locked</strong>.</p>
-<p>Serious faults, like proposing an invalid block or voting twice, are <strong>hard</strong> faults: the provisioner is suspended and part of its stake is <strong>burned</strong>.</p>`,
+        body: `<p>Provisioners are rewarded for doing their job and penalised for failing it. If a provisioner chosen to propose a block produces nothing, that's a <strong>fault</strong>. The first one is only a warning. After that, the provisioner is suspended for a while and part of its stake is <strong>locked</strong>.</p>
+<p>Dusk treats every fault this way, as a <strong>soft</strong> fault: a provisioner that fails its job is sidelined for a while and part of its stake is locked, not burned.</p>`,
         question: 'A provisioner is chosen to propose a block several times and never does. What happens?',
         choices: [
           {id: 'nothing', text: 'Nothing. Missing a turn is free.', why: 'A missed turn costs the network time, so it\'s penalised.'},
-          {id: 'soft', right: true, text: 'After a warning, it\'s suspended for a while and part of its stake is locked.', why: 'Right, that\'s a soft fault. Hard faults, like invalid blocks, burn part of the stake.'},
-          {id: 'banned', text: 'It\'s banned forever and loses all its stake.', why: 'Missed turns lead to suspension and locked stake. Burning stake is for serious faults.'},
+          {id: 'soft', right: true, text: 'After a warning, it\'s suspended for a while and part of its stake is locked.', why: 'Right. Dusk treats every fault as a soft fault: a suspension and locked stake, not burned stake.'},
+          {id: 'banned', text: 'It\'s banned forever and loses all its stake.', why: 'Faults lead to a suspension and locked stake, not a ban. Dusk doesn\'t burn provisioners\' stake.'},
         ],
       },
       {
