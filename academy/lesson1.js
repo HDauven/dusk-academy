@@ -414,7 +414,7 @@ Self { eggs: Vec::new() }</code></pre>
     body: `<p>Right now seed 7 becomes DNA <code>0000000000000007</code>, and seed 8 is almost identical. We want every digit to change when the seed changes.</p>
 <p>A contract can't roll dice: every node that runs it must get exactly the same answer. So instead of randomness we <strong>mix</strong> the seed. We multiply it by a huge odd number and let the result overflow on purpose.</p>
 <p>Normally overflow makes the call fail. <code>wrapping_mul</code> says the overflow is intended and wraps the result around instead. The <code>MIX</code> constant is already in the file.</p>
-<p class="aside">Anyone can compute this in advance, so it isn't fair randomness. DuskVM also has hash host functions such as <code>abi::keccak256</code>. We'll come back to fairness when Dusklings start battling.</p>`,
+<p class="aside">Anyone can compute this in advance, so it isn't fair randomness. It even runs backwards: <code>MIX</code> is odd, so anyone can work out the seed that gives the DNA they want. A hash such as <code>abi::keccak256</code> can't be run backwards, but people can still try seeds until they like the result. We'll come back to fairness when Dusklings start battling.</p>`,
     tasks: [`Change <code>generate_dna</code> to return <code>seed.wrapping_mul(MIX) % DNA_MODULUS</code>.`],
     hint: `The whole body is one line: <code>seed.wrapping_mul(MIX) % DNA_MODULUS</code>`,
     start: step.mixing0, answer: step.mixing,

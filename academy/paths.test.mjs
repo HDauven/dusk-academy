@@ -90,3 +90,11 @@ test('every page has a strict Content Security Policy, and the Almanac allows ex
   assert.ok(readFileSync(new URL('../almanac.html', import.meta.url), 'utf8').includes(`'sha256-${hash}'`),
     'almanac.html must allow the current sandbox script: update its hash after changing FRAME_SCRIPT');
 });
+
+test('bundled files match the hashes recorded next to them', () => {
+  const sha = data => createHash('sha256').update(data).digest('hex');
+  const circuit = JSON.parse(vendor('circuit-engine.json')), almanac = JSON.parse(vendor('almanac.json'));
+  assert.equal(sha(vendor('circuit-engine.wasm')), circuit.wasm.sha256);
+  for (const name of ['hatchery-driver.wasm', 'almanac-fixture.json', 'dusk-connect.js']) assert.equal(sha(vendor(name)), almanac[name].sha256, name);
+  assert.equal(sha(readFileSync(new URL('../examples/hatchery/src/lib.rs', import.meta.url))), almanac.contractSourceSha256);
+});

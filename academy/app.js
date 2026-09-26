@@ -43,7 +43,7 @@ function renderTags() {
   $('#scene-tags').innerHTML = scene.layout().filter(p => typeof p.creature === 'object' && p.creature.owner).map(({creature: d, x, y}, i) => {
     const who = KEEPERS[d.owner] ?? {name: d.owner, tone: 'rival'};
     const detail = d.wins !== undefined && d.wins !== null ? `Lv${d.level} ${d.wins}–${d.losses}` : d.approved ? `→ ${KEEPERS[d.approved]?.name ?? d.approved}` : '';
-    return `<span class="tag ${who.tone}" style="left:${x}%;top:${y - (i % 2) * 7}%">${who.name}${detail ? `<small>${detail}</small>` : ''}</span>`;
+    return `<span class="tag ${who.tone}" style="left:${x}%;top:${y - (i % 2) * 7}%">${escapeHtml(who.name)}${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span>`;
   }).join('');
 }
 

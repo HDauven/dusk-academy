@@ -65,5 +65,9 @@ test('stored progress is untrusted: keeper data is validated and prototype keys 
     assert.equal(trip.at, 2);
     assert.equal(trip.polluted, undefined);
     assert.equal(Object.getPrototypeOf(trip), Object.prototype);
+    data.set('dusklings:hatchery:v1', '{"at": "3", "passed": null, "drafts": [], "extra": 1}');
+    assert.deepEqual(load('hatchery', {at: 0, passed: {}, drafts: {}}), {at: 0, passed: {}, drafts: {}, extra: 1});
+    data.set('dusklings:journey:v1', '{"at": -1, "answers": {"x": {"right": true}}}');
+    assert.deepEqual(load('journey', {at: 0, answers: {}}), {at: 0, answers: {x: {right: true}}});
   } finally { delete globalThis.localStorage; }
 });

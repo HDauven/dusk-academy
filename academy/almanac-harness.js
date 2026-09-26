@@ -31,10 +31,12 @@ export async function runPlan(learner, plan, fixture, requests = []) {
   return results;
 }
 
-// Results cross a message channel: keep BigInts and plain data, drop anything else.
-function plain(value, depth = 0) {
+// Results cross a message channel: keep BigInts and plain data, drop anything else. The page applies
+// this again to whatever arrives, since learner code can post to the channel itself.
+export function plain(value, depth = 0) {
   if (depth > 6) return undefined;
-  if (value === null || ['string', 'number', 'boolean', 'bigint', 'undefined'].includes(typeof value)) return value;
+  if (typeof value === 'string') return value.slice(0, 10000);
+  if (value === null || ['number', 'boolean', 'bigint', 'undefined'].includes(typeof value)) return value;
   if (Array.isArray(value)) return value.slice(0, 64).map(v => plain(v, depth + 1));
   if (typeof value === 'object') return Object.fromEntries(Object.entries(value).slice(0, 32).map(([k, v]) => [k, plain(v, depth + 1)]));
   return String(value);

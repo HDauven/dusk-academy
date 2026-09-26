@@ -15,13 +15,22 @@ try {
   }
 } catch {}
 
+// A stored value replaces a default only when it has the same shape: a non-negative integer for a
+// number, a plain object for an object, and so on.
+const fits = (v, d) => d === null ? true
+  : Array.isArray(d) ? Array.isArray(v)
+  : typeof d === 'object' ? v !== null && typeof v === 'object' && !Array.isArray(v)
+  : typeof d === 'number' ? Number.isInteger(v) && v >= 0
+  : typeof v === typeof d;
+
 export function load(path, defaults) {
   const value = structuredClone(defaults);
   try {
     const raw = localStorage.getItem(KEYS[path]);
     const parsed = raw ? JSON.parse(raw) : null;
     if (parsed && typeof parsed === 'object')
-      for (const [k, v] of Object.entries(parsed)) if (!['__proto__', 'constructor', 'prototype'].includes(k)) value[k] = v;
+      for (const [k, v] of Object.entries(parsed))
+        if (!['__proto__', 'constructor', 'prototype'].includes(k) && (!Object.hasOwn(defaults, k) || fits(v, defaults[k]))) value[k] = v;
   } catch {}
   return value;
 }

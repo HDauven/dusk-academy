@@ -1,5 +1,6 @@
 // Learner JavaScript runs in a disposable worker inside an opaque, sandboxed iframe. The frame's CSP
 // blocks every network connection; Dusk Connect talks only to the in-memory practice node.
+import {plain} from './almanac-harness.js';
 let assets;
 function files(signal) {
   return assets ??= Promise.all(['vendor/dusk-connect.js', 'almanac-transport.js', 'almanac-harness.js', 'vendor/almanac-fixture.json', 'vendor/hatchery-driver.wasm'].map(async name => {
@@ -60,7 +61,7 @@ export async function runInSandbox(payload, signal) {
     }
     channel.port1.onmessage = ({data}) => {
       if (data?.ready && !started) { started = true; channel.port1.postMessage({bootstrap, payload: {...payload, files: loaded}}); }
-      else finish(data?.error ? Error(String(data.error)) : null, data?.result);
+      else finish(data?.error ? Error(String(data.error).slice(0, 3000)) : null, Array.isArray(data?.result) ? plain(data.result) : undefined);
     };
     iframe.onload = () => iframe.contentWindow.postMessage(null, '*', [channel.port2]);
     signal?.addEventListener('abort', abort, {once: true});

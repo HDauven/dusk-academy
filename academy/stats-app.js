@@ -59,7 +59,7 @@ function finale(c, ctx) {
     try {
       const [r] = (await prove(ctx.source, [[0n, 0n, 0n], k.stats], ctx.signal)).cases;
       if (r.verified) {
-        log('ok', `✓ Proof verified. ${r.proof.length / 2} bytes, starting ${r.proof.slice(0, 24)}…`);
+        log('ok', `✓ Proof verified. ${r.proof.length / 2} bytes, starting ${ctx.escapeHtml(String(r.proof).slice(0, 24))}…`);
         log('log', r.publics.length ? `Public input: power ${k.stats[2]}. Checked with power ${k.stats[2] + 1n} instead → ${r.tamperedVerified ? '✓ still verifies?!' : '✗ rejected'}.` : 'No public inputs: the arena learns only that the rules hold.');
       } else log('refused', `✗ No valid proof can be made. ${arena && k === cases.mine ? `${ctx.escapeHtml(name)}'s power is below 50, so the circuit is doing its job.` : 'The circuit\'s rules don\'t hold for these numbers.'}`);
       if (k === cases.mine) scene(r.verified ? '✓' : '✗');

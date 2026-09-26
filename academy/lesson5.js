@@ -94,8 +94,9 @@ abi::emit("transferred", crate::Transferred { id, to });</code></pre>`,
     },
     {
       id: 'approved-field', kind: 'code', title: 'Room for an approval',
-      body: `<p>Sometimes the new keeper should collect the Duskling themselves, for example after paying for it. For that, the current keeper <strong>approves</strong> someone in advance.</p>
-<p>A Duskling may or may not have an approval, which is a job for <code>Option</code>: <code>Some(key)</code> or <code>None</code>.</p>`,
+      body: `<p>Sometimes the new keeper should collect the Duskling themselves, for example after paying for it outside the contract. For that, the current keeper <strong>approves</strong> someone in advance.</p>
+<p>A Duskling may or may not have an approval, which is a job for <code>Option</code>: <code>Some(key)</code> or <code>None</code>.</p>
+<p class="aside">The Hatchery never sees that payment, so one side has to trust the other. “Both sides or neither” in the keeper's journey shows how a single call can do both at once.</p>`,
       tasks: ['Add <code>approved: Option&lt;BlsPublicKey&gt;</code> to <code>Duskling</code>, after <code>losses</code>.', 'Start it as <code>None</code> in <code>create_duskling</code>.'],
       hint: `<code>Duskling { dna, level: 1, owner, ready_at: 0, wins: 0, losses: 0, approved: None }</code>`,
       start: S.transferred, answer: S.approvedField,

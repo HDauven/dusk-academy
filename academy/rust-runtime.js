@@ -151,7 +151,7 @@ export function parseRust(source, options={}) {
       if(take('mod')){expect(options.module??'registry');expect('{');scope='module';declarations('}');scope='root';expect('}');continue;}
       if(take('struct')) {
         const id=name();if(structs.has(id))fail('Duplicate struct.');const fields=new Map();structs.set(id,fields);where.set(id,{scope,attrs,offset:tokens[p-1].offset});expect('{');
-        if(!take('}')){do{take('pub');const key=name();expect(':');if(fields.has(key))fail('Duplicate field.');fields.set(key,type());}while(take(',')&&peek()!=='}');expect('}');}continue;
+        if(!take('}')){do{take('pub');const key=name();expect(':');if(fields.has(key))fail('Duplicate field.');const t=type();if(t.split(/[^A-Za-z0-9_]+/).some(x=>['_','Error','Composer','Constraint'].includes(x)))fail(`A struct field can't have type ${t}.`);fields.set(key,t);}while(take(',')&&peek()!=='}');expect('}');}continue;
       }
       if(take('const')){const id=name();expect(':');const declared=type();expect('=');const value=expr();expect(';');if(constants.has(id))fail('Duplicate constant.');constants.set(id,{declared,value});continue;}
       if(take('impl')) {
@@ -201,8 +201,11 @@ export function parseRust(source, options={}) {
 
 export function createRuntime(source, hosts={}) {
   const program=parseRust(source,{module:hosts.module}), globals=new Map(), contract=hosts.contract??'Registry';let budget=200000,depth=0;
+  // Steps are counted, and each top-level call also gets a wall-clock limit: one step can compare or
+  // copy a large value, so steps alone don't bound the time spent.
+  const now=()=>globalThis.performance?.now?.()??Date.now();let callStart=now();
   const unsupported=message=>{throw Error('Not supported by this lesson runtime. '+message);};
-  const tick=()=>{if(--budget<0)throw new RuntimeLimit('Lesson runtime instruction limit reached. This is not a successful contract rejection.');};
+  const tick=()=>{if(--budget<0)throw new RuntimeLimit('Lesson runtime instruction limit reached. This is not a successful contract rejection.');if((budget&1023)===0&&now()-callStart>2000)throw new RuntimeLimit('Lesson runtime time limit reached. This is not a successful contract rejection.');};
   const bool=x=>{if(typeof x!=='boolean')unsupported('A condition must be Boolean.');return x;};
   const uint=x=>{if(typeof x!=='bigint'||x<0n||x>U64_MAX)unsupported('Expected a u64 value.');return x;};
   const bounded=n=>{uint(n);if(n>128n)throw new RuntimeLimit('Lesson collections are limited to 128 elements.');return Number(n);};
@@ -384,6 +387,7 @@ export function createRuntime(source, hosts={}) {
   }
   const debugText=v=>typeof v==='bigint'?String(v):typeof v==='string'?JSON.stringify(v):v?.kind==='contract-error'?v.debug:'…';
   function invoke(self,id,args=[],mutable=true,owner=self?.type) {
+    if(!depth)callStart=now();
     tick();if(++depth>48){depth--;throw new RuntimeLimit('Lesson call-depth limit reached.');}
     try {
       const m=program.methods.get(owner+'::'+id);if(!m)unsupported('Missing method '+id+'.');

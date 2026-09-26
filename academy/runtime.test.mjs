@@ -80,3 +80,14 @@ test("Forge's event rules: registered types with derives and topics, emitted by 
   assert.throws(() => c.as('you').call('hunt', 0, 40), {message: 'The Moth Nest has no such moth: Panic("index out of bounds: the len is 6 but the index is 40")'});
   assert.throws(() => run('pub fn f(&self) -> u64 { let v: Vec<u64> = Vec::new(); v[2] }', 'f'), {message: 'index out of bounds: the len is 0 but the index is 2'});
 });
+
+test('struct fields reject placeholder types, and heavy work hits a time limit instead of freezing the page', () => {
+  const make = src => createRuntime(src, {module: 'hatchery', contract: 'Hatchery'});
+  assert.throws(() => make(contract('').replace('pub struct Hatchery { n: u64 }', 'pub struct Hatchery { n: _ }')), /A struct field can't have type _/);
+  assert.throws(() => make(contract('').replace('pub struct Hatchery { n: u64 }', 'pub struct Hatchery { n: Vec<Error> }')), /can't have type/);
+  const rows = Array.from({length: 16}, () => `vec![${Array(128).fill('1').join(',')}]`).join(',');
+  const heavy = contract('pub fn f(&self) { loop { let x = A == A; } }').replace('    pub struct Hatchery', `    const A: Vec<Vec<u64>> = vec![${rows}];\n    pub struct Hatchery`).replace('use dusk_core::abi;', 'use alloc::vec::Vec;');
+  const start = Date.now();
+  assert.throws(() => { const rt = make(heavy); rt.invoke(rt.create(), 'f', [], true); }, e => e instanceof RuntimeLimit);
+  assert.ok(Date.now() - start < 5000, `stopped after ${Date.now() - start} ms`);
+});

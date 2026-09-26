@@ -151,7 +151,11 @@ try { AxeBuilder = require('@axe-core/playwright').default; } catch {}
     assert.match(await page.textContent('#yours-traits'), /Lighthouse lantern/);
 
     // Hostile data stays text: a crafted name, and Almanac "learner code" that returns HTML.
-    const noScriptRan = async where => { await page.waitForTimeout(150); assert.deepEqual(await page.evaluate(() => [window.__pwned, window.pw]), [undefined, undefined], `${where}: injected script ran`); };
+    const noScriptRan = async where => {
+      await page.waitForTimeout(150);
+      assert.deepEqual(await page.evaluate(() => [window.__pwned, window.pw]), [undefined, undefined], `${where}: injected script ran`);
+      assert.equal(await page.locator('main img[src="x"], main img:not([src]), #scene-tags a, #scene-tags img, meta[http-equiv="refresh"]').count(), 0, `${where}: injected markup was rendered`);
+    };
     const hostileName = '"><img src onerror=pw=1>';
     await page.evaluate(name => localStorage.setItem('dusklings:keeper:v1', JSON.stringify({...JSON.parse(localStorage.getItem('dusklings:keeper:v1')), name})), hostileName);
     await go('');
@@ -174,6 +178,16 @@ export async function prepareHatch() { const x = ${JSON.stringify(tag)}; return 
     assert.ok((await page.textContent('#lab-log')).includes(tag), 'the hatch request shows returned values as text');
     await noScriptRan('hatch request');
     await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('dusklings:almanac:v1')); delete s.passed.offline; delete s.passed['prepare-transfer']; localStorage.setItem('dusklings:almanac:v1', JSON.stringify(s)); });
+    // A passed Hatchery contract that stores markup in a Duskling's owner is refused, so it never
+    // reaches the scene labels.
+    const {chapters: hatcheryChapters} = await import('../academy/course.js');
+    const huntedType = hatcheryChapters.find(c => c.id === 'hunted-type');
+    const hostileContract = huntedType.answer.replace('        owner: BlsPublicKey,', '        owner: _,')
+      .replace('self.dusklings.push(Duskling { dna, level: 1, owner });', 'self.dusklings.push(Duskling { dna, level: 1, owner: "<a href=x>phish</a>" });');
+    await page.evaluate(src => { const s = JSON.parse(localStorage.getItem('dusklings:hatchery:v1')); localStorage.setItem('dusklings:hatchery:v1', JSON.stringify({...s, passed: {...s.passed, 'hunted-type': src}})); }, hostileContract);
+    await go('hatchery.html', 'hunted-type');
+    await noScriptRan('hatchery scene');
+    await page.evaluate(src => { const s = JSON.parse(localStorage.getItem('dusklings:hatchery:v1')); s.passed['hunted-type'] = src; localStorage.setItem('dusklings:hatchery:v1', JSON.stringify(s)); }, huntedType.answer);
 
     // Narrow screens: no sideways scrolling.
     for (const width of [320, 390, 768]) {
