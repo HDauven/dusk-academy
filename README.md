@@ -62,6 +62,10 @@ Crawlers that don't run JavaScript, including most AI crawlers, read these inste
 
 `npm run build:images` renders the icons and the 1200×630 preview cards in `assets/og/` with the game's own sprites and scenes. It needs Playwright, like `test:e2e`.
 
+## Trailer
+
+`npm run build:trailer` builds the 27.5-second launch trailer in `tools/trailer/out/`: 1920×1080 at 30 fps, with an original chiptune synthesized in `tools/trailer/music.mjs`. It screenshots three chapters of the real app after their checks pass, then renders every frame with the game's scenes on a virtual clock. `tools/trailer/timeline.mjs` sets when things happen, for the video and the music alike. It needs Playwright, as `test:e2e` does, and an ffmpeg with libx264 (`FFMPEG`, the `PATH` or `ffmpeg-static`). `-- --preview 4.4,12.4` writes just those moments as PNGs.
+
 ## Layout
 
 - `index.html`, `journey.html`, `hatchery.html`, `almanac.html`, `secret-stats.html`: the pages. `creatures.html` is a developer sheet showing every trait and piece of gear.
