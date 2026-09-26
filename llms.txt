@@ -4,6 +4,8 @@
 
 Dusklings is a set of browser lessons about the Dusk blockchain. Learners share one pixel creature, a Duskling, across four independent paths. Progress is saved in the browser. Contract checks run a Rust-subset interpreter in the page, and every reference answer is also compiled with Dusk Forge and replayed in Dusk's VM. Circuit checks make and verify real PLONK proofs.
 
+Built by Hein Dauven (https://github.com/HDauven).
+
 ## Paths
 
 - [Keeper's journey](https://dusklings.com/journey.html): A no-code introduction to Dusk in five levels: blockchain basics, zero-knowledge privacy, identity and credentials, regulated assets and the network.

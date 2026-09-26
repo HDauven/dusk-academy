@@ -302,9 +302,11 @@ body.home main { flex: 1; width: 100%; max-width: 1240px; margin: 0 auto; paddin
 #yours-creature { width: 192px; height: 192px; image-rendering: pixelated; background: radial-gradient(circle, #2a2562, #151637 70%); flex: none; }
 #yours-name { margin: 0 0 6px; font-family: var(--pixel); font-weight: 400; font-size: 26px; overflow-wrap: anywhere; }
 .card > div { min-width: 0; }
-.home-footer { border-top: 2px solid var(--line); padding: 16px 24px; display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
-.home-footer p { margin: 0; max-width: 760px; }
-.home-footer a { color: var(--accent); }
+.site-footer { border-top: 2px solid var(--line); color: var(--muted); font-size: 13px; }
+.site-footer > div { max-width: 1240px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: space-between; }
+.site-footer p { margin: 0; }
+.site-footer p + p { display: flex; gap: 16px; }
+.site-footer a { color: var(--accent); }
 
 @media (max-width: 980px) {
   .quiz-pane { padding: 20px 16px 28px; }
@@ -413,7 +415,7 @@ canvas.pixel { image-rendering: pixelated; display: block; }
 .mystery { width: 96px; height: 96px; margin: 0 auto 8px; display: grid; place-items: center; font-family: var(--pixel); font-size: 40px; color: var(--accent); background: repeating-linear-gradient(45deg, #231f45 0 6px, #1b1838 6px 12px); }
 
 /* Path pages: what the path covers, with a link to every chapter, below the app. */
-.syllabus { max-width: 1240px; margin: 0 auto; padding: 40px 24px 56px; border-top: 2px solid var(--line); }
+.syllabus { max-width: 1240px; margin: 0 auto; padding: 40px 24px 28px; border-top: 2px solid var(--line); }
 .syllabus h2 { margin: 6px 0 6px; font-family: var(--pixel); font-weight: 400; font-size: 22px; }
 .syllabus > p:not(.kicker) { max-width: 760px; margin: 0 0 8px; color: var(--muted); }
 .syllabus > p a { color: var(--accent); }
@@ -424,4 +426,4 @@ canvas.pixel { image-rendering: pixelated; display: block; }
 .syllabus-units ol { margin: 8px 0 0; padding-left: 22px; font-size: 13.5px; line-height: 1.7; }
 .syllabus-units a { color: var(--text); text-decoration: none; }
 .syllabus-units a:hover, .syllabus-units a:focus-visible { color: var(--accent); text-decoration: underline; }
-@media (max-width: 980px) { .syllabus { padding: 32px 16px 40px; } }
+@media (max-width: 980px) { .syllabus { padding: 32px 16px 20px; } .site-footer > div { padding: 14px 16px; } }

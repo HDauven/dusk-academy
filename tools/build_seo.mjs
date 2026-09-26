@@ -15,6 +15,7 @@ export const SITE = 'https://dusklings.com';
 const root = resolve(import.meta.dirname, '..');
 const DUSK = {'@type': 'Thing', name: 'Dusk', url: 'https://dusk.network'};
 const SOURCE = 'https://github.com/HDauven/dusklings';
+const AUTHOR = {'@type': 'Person', name: 'Hein Dauven', url: 'https://github.com/HDauven'};
 
 const lessonUnits = lessons => lessons.map(l => ({label: `Lesson ${l.n}`, title: l.title, chapters: l.chapters, reference: l.reference}));
 
@@ -66,7 +67,7 @@ function structuredData(page) {
   if (page === HOME) return {
     '@context': 'https://schema.org',
     '@graph': [
-      {'@type': 'WebSite', '@id': `${SITE}/#website`, url: `${SITE}/`, name: 'Dusklings', description: page.description, inLanguage: 'en', publisher: {'@id': `${SITE}/#org`}, about: DUSK},
+      {'@type': 'WebSite', '@id': `${SITE}/#website`, url: `${SITE}/`, name: 'Dusklings', description: page.description, inLanguage: 'en', author: AUTHOR, publisher: {'@id': `${SITE}/#org`}, about: DUSK},
       provider,
       {'@type': 'ItemList', name: 'Dusklings paths', itemListElement: PATHS.map((p, i) => ({'@type': 'ListItem', position: i + 1, name: p.name, url: url(p)}))},
     ],
@@ -74,7 +75,7 @@ function structuredData(page) {
   return {
     '@context': 'https://schema.org', '@type': 'Course', '@id': `${url(page)}#course`,
     name: page.name, description: page.description, url: url(page), inLanguage: 'en',
-    isAccessibleForFree: true, educationalLevel: 'Beginner', teaches: page.teaches, about: DUSK,
+    isAccessibleForFree: true, educationalLevel: 'Beginner', teaches: page.teaches, about: DUSK, author: AUTHOR,
     provider: {'@type': 'Organization', name: 'Dusklings', url: `${SITE}/`},
     hasCourseInstance: {'@type': 'CourseInstance', courseMode: 'Online'},
     offers: {'@type': 'Offer', category: 'Free', price: 0, priceCurrency: 'EUR'},
@@ -90,6 +91,7 @@ function head(page) {
   return [
     `<title>${text(page.title)}</title>`,
     `<meta name="description" content="${attr(page.description)}">`,
+    `<meta name="author" content="${attr(AUTHOR.name)}">`,
     `<link rel="canonical" href="${url(page)}">`,
     '<link rel="icon" href="favicon.ico" sizes="32x32">',
     '<link rel="icon" href="assets/icons/icon-192.png" type="image/png" sizes="192x192">',
@@ -126,6 +128,12 @@ ${units}
     <p class="muted"><a href="./">All paths</a></p>
   </section>`;
 }
+
+// Every page ends with the same footer.
+const footer = () => `  <footer class="site-footer"><div>
+    <p>Progress stays in this browser. Contract checks use a Rust-subset interpreter; reference answers also run in Dusk's VM.</p>
+    <p><span>Built by <a href="${AUTHOR.url}">${AUTHOR.name}</a></span> <a href="${SOURCE}">Source on GitHub</a></p>
+  </div></footer>`;
 
 function between(html, name, content, file) {
   const re = new RegExp(`<!-- seo:${name} -->[\\s\\S]*?<!-- /seo:${name} -->`);
@@ -175,6 +183,7 @@ function llms() {
     '# Dusklings', '',
     `> ${HOME.description}`, '',
     'Dusklings is a set of browser lessons about the Dusk blockchain. Learners share one pixel creature, a Duskling, across four independent paths. Progress is saved in the browser. Contract checks run a Rust-subset interpreter in the page, and every reference answer is also compiled with Dusk Forge and replayed in Dusk\'s VM. Circuit checks make and verify real PLONK proofs.', '',
+    `Built by ${AUTHOR.name} (${AUTHOR.url}).`, '',
     '## Paths', '',
     ...PATHS.map(p => `- [${p.name}](${url(p)}): ${p.description}`), '',
     '## Full text', '',
@@ -197,6 +206,7 @@ export function build() {
     let html = readFileSync(join(root, page.file), 'utf8');
     html = between(html, 'head', head(page), page.file);
     if (page !== HOME) html = between(html, 'syllabus', syllabus(page), page.file);
+    html = between(html, 'footer', footer(), page.file);
     files[page.file] = html;
   }
   Object.assign(files, {'robots.txt': robots(), 'sitemap.xml': sitemap(), 'llms.txt': llms(), 'llms-full.txt': llmsFull()});
