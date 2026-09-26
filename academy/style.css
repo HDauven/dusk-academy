@@ -272,7 +272,6 @@ body.home main { flex: 1; width: 100%; max-width: 1240px; margin: 0 auto; paddin
 .hero h1 { margin: 10px 0 14px; font-family: var(--pixel); font-weight: 400; font-size: clamp(30px, 4.2vw, 50px); line-height: 1.08; }
 .lead { font-size: 17px; margin: 0 0 22px; color: #d6d3ee; }
 .hero .row a { text-decoration: none; }
-.hero .muted { margin-top: 14px; }
 .hero-scene { border: 2px solid var(--line-2); box-shadow: 0 8px 0 #07081a; }
 .hero-scene canvas { display: block; width: 100%; aspect-ratio: 16 / 9; image-rendering: pixelated; }
 .paths { padding: 24px 0 40px; }

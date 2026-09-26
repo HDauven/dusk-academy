@@ -11,7 +11,7 @@ Learn Dusk by raising Dusklings: pixel creatures made from 16 digits of DNA.
 | **dApps: the Almanac** | 2 lessons, 11 code chapters | Build a web page in JavaScript that reads every Duskling from the Hatchery with the real Dusk Connect SDK and the contract's real data-driver, then prepare hatch and transfer calls for a wallet. It covers exact `u64` values, `JSON.rawJSON` and a down node. |
 | **Circuits: Secret stats** | 2 lessons, 9 code chapters | Write a dusk-plonk circuit that proves your Duskling's power without revealing its stats, then an arena pass proving power ≥ 50 with a range check. Every check generates and verifies real PLONK proofs in the browser. |
 
-Everything runs from static files in your browser: no server, wallet, RPC node or account. You get one Duskling, shared across paths, and progress is saved in your browser only.
+You get one Duskling, shared across paths, and progress is saved in your browser only.
 
 ## Run locally
 
