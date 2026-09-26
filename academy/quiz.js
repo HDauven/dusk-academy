@@ -26,7 +26,7 @@ const firstOpen = l => levelQuizzes(l).find(c => !right(c));
 function paintScene(animate) {
   const l = chapter().level, on = lit(l);
   scene.show({keeper: WICK, companion: keeper.dna || null, egg: !keeper.dna, gear: keeper.gear, lanterns: on.length, lit: on, animate});
-  $('#scene-tag').textContent = `Level ${l + 1} · lanterns ${on.filter(Boolean).length} / ${on.length}`;
+  $('#scene-tag').textContent = `${on.filter(Boolean).length} of ${on.length} lanterns lit`;
 }
 
 function renderProgress() {
@@ -37,7 +37,7 @@ function renderProgress() {
   $('#level-title').textContent = levels[l].title;
   $('#menu-list').innerHTML = levels.map((lv, i) => {
     const n = lit(i).filter(Boolean).length, total = levelQuizzes(i).length;
-    const head = `<li class="menu-level ${levelDone(i) ? 'done' : ''}"><strong>Level ${i + 1} · ${lv.title}</strong><span>${lv.topic} · ${n} / ${total} lit · ${lv.reward ? GEAR_INFO[lv.reward] : 'your Duskling'}</span></li>`;
+    const head = `<li class="menu-level ${levelDone(i) ? 'done' : ''}"><strong>Level ${i + 1}: ${lv.title}</strong><span>${lv.topic}. ${n} of ${total} lanterns lit. Reward: ${lv.reward ? GEAR_INFO[lv.reward] : 'your Duskling'}</span></li>`;
     return head + chapters.map((ch, k) => ch.level !== i ? '' :
       `<li class="${ch.kind === 'quiz' && done(ch) ? 'done' : ''} ${k === at ? 'here' : ''}"><button data-go="${k}"><span class="n">${ch.kind === 'quiz' ? '◆' : ch.kind === 'intro' ? '▸' : '★'}</span>${ch.title}<span class="s">${ch.kind === 'quiz' ? (done(ch) ? '✓ lit' : '') : ch.kind === 'finale' ? (done(ch) ? '✓ reward' : 'reward') : ''}</span></button></li>`).join('');
   }).join('');
@@ -62,7 +62,7 @@ const VISUALS = {
     const l = chapter().level, lv = levels[l], reward = lv.reward;
     const preview = keeper.dna ? creature(keeper.dna, 128, reward ? [...new Set([...keeper.gear, reward])] : keeper.gear) : egg(128);
     return `<div class="panel level-card">
-      <div><p class="kicker">Level ${l + 1} · ${lv.topic}</p><h2>${lv.title}</h2>
+      <div><p class="kicker">Level ${l + 1}: ${lv.topic}</p><h2>${lv.title}</h2>
       <ol class="stops">${levelQuizzes(l).map(q => `<li class="${right(q) ? 'on' : ''}"><span class="lamp" aria-hidden="true"></span>${q.title}</li>`).join('')}</ol></div>
       <figure class="reward-preview">${preview}<figcaption>Reward<br><strong>${reward ? GEAR_INFO[reward] : 'Your own Duskling'}</strong></figcaption></figure>
     </div>
@@ -72,7 +72,7 @@ const VISUALS = {
   apps: () => `<div class="panel"><p class="kicker">Two apps, one contract</p><div class="mocks">
     <div class="mock"><p class="mock-title">The Almanac</p><div class="mini-dusklings">${[SAMPLE[0], SAMPLE[1], SAMPLE[2], '0111777324930839', '2018107282932423'].map(d => creature(d, 64, [])).join('')}</div></div>
     <div class="mock"><p class="mock-title">Keeper app</p><p class="big-number">5</p><p class="muted">Dusklings hatched</p></div>
-  </div><p class="reads">Both read <code>Hatchery · dusklings.len() = 5</code></p></div>`,
+  </div><p class="reads">Both read <code>dusklings.len() = 5</code></p></div>`,
   wallet: () => `<div class="panel wallet-demo"><div class="wallet-popup">
     <p class="wallet-title">Keeper wallet</p>
     <p>The Hatchery wants to call <code>hatch(seed: 42)</code>.</p>
@@ -121,7 +121,7 @@ const VISUALS = {
       <form class="hatch-form" data-hatch>
         <label for="name-input">${keeper.dna ? 'Hatch again, or keep your Duskling' : 'Name your Duskling'}</label>
         <div class="row"><input id="name-input" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Moonpaw" required value="${escapeHtml(keeper.name)}" ${ready ? '' : 'disabled'}><button class="primary" ${ready ? '' : 'disabled'}>Hatch <span aria-hidden="true">✦</span></button></div>
-        <p class="muted hatch-note">${ready ? 'Same name, same Duskling. Every time, on every node.' : ''}</p>
+        <p class="muted hatch-note">${ready ? 'The same name always hatches the same Duskling.' : ''}</p>
       </form>
       ${ready ? '' : remaining(0)}
     </div>${keeper.dna ? keeperCard() : ''}`;
@@ -309,7 +309,7 @@ function show(i, {focus = true} = {}) {
   save.at = at; persist();
   const c = chapter(), l = c.level, quizzes = levelQuizzes(l);
   history.replaceState(null, '', '#' + c.id);
-  $('#chapter-kicker').textContent = c.kind === 'quiz' ? `Level ${l + 1} · question ${quizzes.indexOf(c) + 1} of ${quizzes.length}` : c.kind === 'intro' ? `Level ${l + 1} · ${levels[l].topic}` : `Level ${l + 1} · reward`;
+  $('#chapter-kicker').textContent = c.kind === 'quiz' ? `Level ${l + 1}, question ${quizzes.indexOf(c) + 1} of ${quizzes.length}` : c.kind === 'intro' ? `Level ${l + 1}: ${levels[l].topic}` : `Level ${l + 1}: reward`;
   $('#chapter-title').textContent = c.title;
   $('#wick').hidden = !c.wick;
   $('#wick-line').innerHTML = c.wick ?? '';

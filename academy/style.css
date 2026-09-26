@@ -224,7 +224,7 @@ dialog h2 { margin: 0 0 12px; font-family: var(--pixel); font-weight: 400; font-
 .lifecycle li { padding: 10px; background: #11133a; border: 2px solid var(--line-2); font-size: 13px; animation: step 4s infinite; }
 .lifecycle li:nth-child(2) { animation-delay: 1s; } .lifecycle li:nth-child(3) { animation-delay: 2s; } .lifecycle li:nth-child(4) { animation-delay: 3s; }
 .lifecycle b { display: block; font-family: var(--pixel); font-weight: 400; font-size: 11px; color: var(--accent); margin-bottom: 4px; }
-.lifecycle b::before { counter-increment: step; content: counter(step) ' · '; color: var(--muted); }
+.lifecycle b::before { counter-increment: step; content: counter(step) '. '; color: var(--muted); }
 .lifecycle span { color: var(--muted); }
 @keyframes step { 0%, 24% { border-color: var(--accent); background: #2a2350; } 25%, 100% { border-color: var(--line-2); background: #11133a; } }
 .toggle { display: inline-flex; border: 2px solid var(--line-2); margin-bottom: 12px; }

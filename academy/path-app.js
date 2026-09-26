@@ -30,7 +30,7 @@ export function startPath({key, lessons, chapters, language, pathName, check: ru
   function paintScene(sc = {}, animate = false) {
     scene.show({creatures: sc.creatures ?? [], nests: 0, bare: true, solo: null, gear: [], animate});
     const n = sc.creatures?.length ?? 0;
-    $('#scene-tag').textContent = sc.tag ?? (n ? `${pathName} · ${n} Duskling${n === 1 ? '' : 's'}` : pathName);
+    $('#scene-tag').textContent = sc.tag ?? (n ? `${n} Duskling${n === 1 ? '' : 's'}` : pathName);
     $('#scene-tags').innerHTML = scene.layout().filter(p => typeof p.creature === 'object' && (p.creature.label || p.creature.owner)).map(({creature: d, x, y}, i) => {
       const who = KEEPERS[d.owner] ?? {name: d.owner ?? '', tone: 'you'};
       return `<span class="tag ${who.tone}" style="left:${x}%;top:${y - (i % 2) * 7}%">${escapeHtml(d.label ?? who.name)}</span>`;
@@ -46,7 +46,7 @@ export function startPath({key, lessons, chapters, language, pathName, check: ru
     $('#lesson-title').textContent = l.title;
     $('#menu-list').innerHTML = lessons.map((lesson, i) => {
       const code = lessonCode(i), passed = code.filter(x => save.passed[x.id]).length;
-      return `<li class="menu-level ${passed === code.length ? 'done' : ''}"><strong>Lesson ${lesson.n} · ${lesson.title}</strong><span>${passed} / ${code.length} checks passed</span></li>`
+      return `<li class="menu-level ${passed === code.length ? 'done' : ''}"><strong>Lesson ${lesson.n}: ${lesson.title}</strong><span>${passed} / ${code.length} checks passed</span></li>`
         + chapters.map((x, k) => x.lesson !== i ? '' : `<li class="${x.kind === 'code' && done(x) ? 'done' : ''} ${k === at ? 'here' : ''}"><button data-go="${k}"><span class="n">${x.kind === 'code' ? '◆' : x.kind === 'intro' ? '▸' : '★'}</span>${x.title}<span class="s">${x.kind === 'code' ? (done(x) ? '✓ passed' : 'code') : x.kind === 'intro' ? 'story' : 'finale'}</span></button></li>`).join('');
     }).join('');
   }
@@ -65,7 +65,7 @@ export function startPath({key, lessons, chapters, language, pathName, check: ru
     save.at = at; persist();
     const c = chapter(), l = lessonOf(c), list = chapters.filter(x => x.lesson === c.lesson);
     history.replaceState(null, '', '#' + c.id);
-    $('#chapter-kicker').textContent = `Lesson ${l.n} · chapter ${list.indexOf(c) + 1}`;
+    $('#chapter-kicker').textContent = `Lesson ${l.n}, chapter ${list.indexOf(c) + 1}`;
     $('#chapter-title').textContent = c.title;
     $('#wick').hidden = !c.wick;
     $('#wick-line').innerHTML = c.wick ?? '';
@@ -80,7 +80,7 @@ export function startPath({key, lessons, chapters, language, pathName, check: ru
     if (pane === 'code') {
       editor.set(save.drafts[c.id] ?? c.start);
       $('#console').innerHTML = save.passed[c.id]
-        ? '<p class="ok">✓ You passed this chapter. Edit and check again any time.</p>'
+        ? '<p class="ok">✓ You passed this chapter.</p>'
         : '<p class="muted">Press <kbd>Check</kbd> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>) to run your code.</p>';
     }
     if (pane === 'overview') {
@@ -88,7 +88,7 @@ export function startPath({key, lessons, chapters, language, pathName, check: ru
       $('#overview-title').textContent = l.title;
       $('#overview-learn').innerHTML = (c.learn ?? []).map(x => `<li>${x}</li>`).join('');
       const code = lessonCode(c.lesson), passed = code.filter(x => save.passed[x.id]).length;
-      $('#overview-count').textContent = `${code.length} code chapters · ${passed} passed. Each one is a single small edit.`;
+      $('#overview-count').textContent = `${passed} of ${code.length} code chapters passed.`;
     }
     if (pane === 'lab') {
       const last = lessonCode(c.lesson).at(-1);

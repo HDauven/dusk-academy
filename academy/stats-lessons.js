@@ -108,7 +108,7 @@ export const lessons = [
           const o = ops(source, SUM_CASES);
           need(o.length >= 2 && o[0][0] === 'witness' && o[1][0] === 'witness', 'Allocate two witnesses with `composer.append_witness(...)`.');
           need(o[0][1] === hexOf(30n) && o[1][1] === hexOf(25n), 'The first witness should be `self.strength` and the second `self.agility`.');
-          return {log: ['witness  ←  strength (secret)', 'witness  ←  agility (secret)'], win: 'Two secrets, safely inside the circuit.', scene: sceneOf(SUM_CASES)};
+          return {log: ['witness  ←  strength (secret)', 'witness  ←  agility (secret)'], win: 'strength and agility are now witnesses: private inputs to the circuit.', scene: sceneOf(SUM_CASES)};
         },
       },
       {

@@ -110,7 +110,7 @@ export const lesson = {
         need(c.rt.program.structs.get('Duskling')?.get('ready_at') === 'u64', '`Duskling` needs a field `ready_at: u64`.');
         c.as('you').call('hatch', 1);
         need(c.dusklings()[0].ready_at === 0n, 'A new Duskling should start with `ready_at: 0`.');
-        return {log: ['hatch  →  ready_at: 0'], win: 'Room for a rest.', scene: sceneOf(c)};
+        return {log: ['hatch  →  ready_at: 0'], win: 'Every Duskling now has a ready_at block, starting at 0.', scene: sceneOf(c)};
       },
     },
     {
@@ -143,7 +143,7 @@ export const lesson = {
         c.at(1000).as('you').call('hunt', 0, 1);
         const msg = c.at(1200).as('you').panics('hunt', 0, 2);
         c.at(1360).as('you').call('hunt', 0, 2);
-        return {log: ['block 1000: hunt  →  ok', `block 1200: hunt  →  panic: “${msg}”`, 'block 1360: hunt  →  ok'], win: 'Rest is enforced, block by block.', scene: sceneOf(c)};
+        return {log: ['block 1000: hunt  →  ok', `block 1200: hunt  →  panic: “${msg}”`, 'block 1360: hunt  →  ok'], win: 'A resting Duskling can\'t hunt until its ready_at block.', scene: sceneOf(c)};
       },
     },
     {
@@ -166,7 +166,7 @@ export const lesson = {
         const msg = c.as('rival').panics('hunt', 0, 1);
         c.at(1000).as('you').call('hunt', 0, 1);
         need(c.dusklings().length === 3, 'Hunting should still work for the keeper.');
-        return {log: [`hunt(0, 1) as Rook  →  panic: “${msg}”`, 'hunt(0, 1) as you  →  ok'], win: 'One helper guards every door.', scene: sceneOf(c)};
+        return {log: [`hunt(0, 1) as Rook  →  panic: “${msg}”`, 'hunt(0, 1) as you  →  ok'], win: 'hunt now checks the keeper with only_keeper.', scene: sceneOf(c)};
       },
     },
     {
@@ -181,7 +181,7 @@ export const lesson = {
         c.as('you').call('hatch', 1);
         const d = c.dusklings()[0];
         need(d.wins === 0n && d.losses === 0n, 'A new Duskling starts with 0 wins and 0 losses.');
-        return {log: ['hatch  →  wins: 0, losses: 0'], win: 'A clean record.', scene: sceneOf(c)};
+        return {log: ['hatch  →  wins: 0, losses: 0'], win: 'New Dusklings start with 0 wins and 0 losses.', scene: sceneOf(c)};
       },
     },
     {
@@ -207,7 +207,7 @@ export const lesson = {
           need(got === want, `roll(0, 1) at block ${h} returned ${got}, expected ${want}.`);
           log.push(`block ${h}: roll(0, 1)  →  ${got}`);
         }
-        return {log, win: 'Different every block, and predictable by anyone. Remember both halves.', scene: sceneOf(c)};
+        return {log, win: 'The roll changes every block, and anyone can work it out in advance.', scene: sceneOf(c)};
       },
     },
     {
@@ -226,7 +226,7 @@ let roll = self.roll(id, target);</code></pre>`,
         needMethod(c, 'battle', {pub: true, mut: true, params: [['id', 'u64'], ['target', 'u64']], output: '()'});
         const a = c.as('rival').panics('battle', 0, 1), b = c.as('you').panics('battle', 0, 0), d = c.as('you').panics('battle', 0, 9);
         c.as('you').call('battle', 0, 1);
-        return {log: [`battle(0, 1) as Rook  →  panic: “${a}”`, `battle(0, 0)  →  panic: “${b}”`, `battle(0, 9)  →  panic: “${d}”`, 'battle(0, 1) as you  →  ok'], win: 'The arena gates are guarded.', scene: sceneOf(c)};
+        return {log: [`battle(0, 1) as Rook  →  panic: “${a}”`, `battle(0, 0)  →  panic: “${b}”`, `battle(0, 9)  →  panic: “${d}”`, 'battle(0, 1) as you  →  ok'], win: 'battle refuses other keepers, self-battles and missing targets.', scene: sceneOf(c)};
       },
     },
     {
@@ -259,7 +259,7 @@ self.dusklings[id as usize].ready_at = abi::block_height() + COOLDOWN;</code></p
         c.at(lose).as('you').call('battle', 0, 1);
         [a, b] = c.dusklings();
         need(a.losses === 1n && b.wins === 1n && a.level === 2n, `At block ${lose} the roll is ${rollOf(0, 1, lose)}: the attacker should lose this time.`);
-        return {log: [`block ${win}: roll ${rollOf(0, 1, win)}  →  your Duskling wins, level 2`, `block ${win}: battle again  →  panic: “${tired}”`, `block ${lose}: roll ${rollOf(0, 1, lose)}  →  Rook's Duskling wins`], win: 'Tonight\'s results are on the chain.', scene: sceneOf(c)};
+        return {log: [`block ${win}: roll ${rollOf(0, 1, win)}  →  your Duskling wins, level 2`, `block ${win}: battle again  →  panic: “${tired}”`, `block ${lose}: roll ${rollOf(0, 1, lose)}  →  Rook's Duskling wins`], win: 'Wins, losses and levels are recorded, and the attacker has to rest.', scene: sceneOf(c)};
       },
     },
     {

@@ -162,7 +162,7 @@ export const lessons = [
         check([r]) {
           const v = ok(r, 'countDusklings');
           need(typeof v === 'bigint' && v === 6n, `Return a BigInt: \`BigInt(count)\`. You returned ${JSON.stringify(String(v))} (${typeof v}).`);
-          return {log: ['countDusklings()  →  6n (bigint)'], win: 'Exact, whatever the size.'};
+          return {log: ['countDusklings()  →  6n (bigint)'], win: 'The count comes back as an exact BigInt.'};
         },
       },
       {
@@ -178,7 +178,7 @@ export const lessons = [
           const found = ok(a, 'readDna'), missing = ok(b, 'readDna');
           need(found === 8356281049284737, `readDna(0) should be 8356281049284737, not ${JSON.stringify(String(found))}.`);
           need(missing === null, 'readDna(99) should be null: there\'s no Duskling 99.');
-          return {log: ['readDna(0)  →  8356281049284737', 'readDna(99)  →  null'], win: 'A Duskling, and a clean “nobody here”.'};
+          return {log: ['readDna(0)  →  8356281049284737', 'readDna(99)  →  null'], win: 'readDna returns the DNA, or null when there\'s no such Duskling.'};
         },
       },
       {
@@ -193,7 +193,7 @@ export const lessons = [
           const found = ok(a, 'readOwner'), missing = ok(b, 'readOwner');
           need(found === fixture.keepers.you, `readOwner(0) should return your key (${short(fixture.keepers.you)}).`);
           need(missing === null, 'readOwner(99) should be null.');
-          return {log: [`readOwner(0)  →  "${short(found)}" (you)`, 'readOwner(99)  →  null'], win: 'Keys, not names. The Almanac can label the ones it knows.'};
+          return {log: [`readOwner(0)  →  "${short(found)}" (you)`, 'readOwner(99)  →  null'], win: 'readOwner returns the keeper\'s key. The Almanac shows names for the keys it knows.'};
         },
       },
       {
@@ -253,7 +253,7 @@ dusklings.push({ id, dna, owner: await readOwner(dusk, id), exact: Number.isSafe
           const a = ok(down, 'loadAlmanac'), b = ok(up, 'loadAlmanac');
           need(a?.status === 'unavailable', 'With the node down, `loadAlmanac` should return `{ status: "unavailable" }`.');
           need(b?.status === 'ok' && b.dusklings?.length === 6, 'With the node up, it should still return the Dusklings.');
-          return {log: ['loadAlmanac(node down)  →  { status: "unavailable" }', 'loadAlmanac(node up)  →  { status: "ok", 6 Dusklings }'], win: 'Down is not the same as empty.', scene: galleryScene(fixture, b.dusklings)};
+          return {log: ['loadAlmanac(node down)  →  { status: "unavailable" }', 'loadAlmanac(node up)  →  { status: "ok", 6 Dusklings }'], win: 'A down node now reports “unavailable” instead of an empty Almanac.', scene: galleryScene(fixture, b.dusklings)};
         },
       },
       {
@@ -290,7 +290,7 @@ dusklings.push({ id, dna, owner: await readOwner(dusk, id), exact: Number.isSafe
         check([r]) {
           const p = ok(r, 'prepareHatch');
           expectPrepared(p, 'hatch', '0x' + leHex(42));
-          return {log: [`fnName: "hatch"`, `fnArgs: ${p.fnArgs}  (42, encoded by the driver)`, 'privacy: "public" · amount: "0" · deposit: "0"'], win: 'Ready for a wallet to sign.'};
+          return {log: [`fnName: "hatch"`, `fnArgs: ${p.fnArgs}  (42, encoded by the driver)`, 'privacy: "public", amount: "0", deposit: "0"'], win: 'Ready for a wallet to sign.'};
         },
       },
       {

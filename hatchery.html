@@ -30,7 +30,7 @@
           <div class="wick" id="wick" hidden><canvas id="wick-face" width="64" height="64" aria-hidden="true"></canvas><p id="wick-line"></p></div>
           <div class="prose" id="chapter-body"></div>
           <section class="tasks" id="tasks" aria-labelledby="tasks-title" hidden>
-            <h2 id="tasks-title">Put it to the test</h2>
+            <h2 id="tasks-title">Your task</h2>
             <ol id="task-list"></ol>
           </section>
         </article>
@@ -38,7 +38,7 @@
 
       <section class="right" id="workbench" aria-label="Workbench">
         <div class="pane" id="code-pane" hidden>
-          <div class="tabbar"><span class="tab">src/lib.rs</span><button class="info" id="runtime-info" aria-describedby="runtime-note">Runs in your browser</button><p id="runtime-note" role="tooltip" hidden>Checks run a Rust-subset interpreter in this tab. It models Forge contract state and calls. It isn't rustc or DuskVM.</p></div>
+          <div class="tabbar"><span class="tab">src/lib.rs</span><button class="info" id="runtime-info" aria-describedby="runtime-note">How checks work</button><p id="runtime-note" role="tooltip" hidden>Checks run a Rust-subset interpreter in this tab. It models Forge contract state and calls. It isn't rustc or DuskVM.</p></div>
           <div class="editor" id="editor">
             <pre class="gutter" id="gutter" aria-hidden="true"></pre>
             <div class="surface">
@@ -77,7 +77,7 @@
         <div class="pane play" id="play-pane" hidden>
           <div class="panel">
             <p class="kicker">Playground</p>
-            <h2>Your contract, live</h2>
+            <h2>Try your contract</h2>
             <p class="muted" id="play-source"></p>
             <div class="play-actions" id="play-actions"></div>
           </div>
@@ -104,7 +104,7 @@
           <div class="complete" id="complete" hidden>
             <p class="kicker">Lesson 1 complete</p>
             <ul class="skills" id="skills"></ul>
-            <div class="row"><button class="ghost" id="download">Save card</button><button class="primary" id="to-next-lesson">Lesson 2 · Keepers <span aria-hidden="true">→</span></button></div>
+            <div class="row"><button class="ghost" id="download">Save card</button><button class="primary" id="to-next-lesson">Lesson 2: Keepers <span aria-hidden="true">→</span></button></div>
           </div>
         </div>
       </section>
@@ -119,7 +119,7 @@
 
   <dialog id="menu" aria-labelledby="menu-title">
     <form method="dialog"><button class="close" aria-label="Close">×</button></form>
-    <h2 id="menu-title">Contracts · The Hatchery</h2>
+    <h2 id="menu-title">The Hatchery</h2>
     <ol id="menu-list"></ol>
     <button class="ghost small" id="reset">Reset progress</button>
   </dialog>

@@ -98,7 +98,7 @@ export const lesson = {
         const a = c.call('dna_of', 1), b = c.call('dna_of', 7);
         need(a?.kind === 'some' && a.value === dnaFor(2), `dna_of(1) should be Some(${dnaFor(2)}).`);
         need(b === null, 'dna_of(7) should be None: there is no Duskling 7.');
-        return {log: [`dna_of(1)  →  Some(${pad16(a.value)})`, 'dna_of(7)  →  None'], win: 'No crashes and no made-up values: just None.', scene: sceneOf(c)};
+        return {log: [`dna_of(1)  →  Some(${pad16(a.value)})`, 'dna_of(7)  →  None'], win: 'dna_of returns the DNA, or None for an id that doesn\'t exist.', scene: sceneOf(c)};
       },
     },
     {
@@ -116,7 +116,7 @@ export const lesson = {
         c.as('you').call('hatch', 1);
         const msg = c.as(null).panics('hatch', 2);
         need(c.call('duskling_count') === 1n, 'The failed shielded hatch should leave the Hatchery unchanged.');
-        return {log: ['hatch(1) from a Moonlight account  →  Duskling #0', `hatch(2) from a shielded account  →  panic: “${msg}”`, 'duskling_count()  →  1 (the failed call changed nothing)'], win: 'Shielded senders are turned away, and the rollback leaves no trace.', scene: sceneOf(c)};
+        return {log: ['hatch(1) from a Moonlight account  →  Duskling #0', `hatch(2) from a shielded account  →  panic: “${msg}”`, 'duskling_count()  →  1 (the failed call changed nothing)'], win: 'A hatch without a public sender now panics and changes nothing.', scene: sceneOf(c)};
       },
     },
     {
@@ -168,7 +168,7 @@ export const lesson = {
         c.as('you').call('hatch', 1); c.as('you').call('hatch', 2); c.as('rival').call('hatch', 3);
         const you = c.call('dusklings_of', 'you'), rival = c.call('dusklings_of', 'rival'), friend = c.call('dusklings_of', 'friend');
         need(you === 2n && rival === 1n && friend === 0n, `Expected 2 for you, 1 for Rook and 0 for Fen, got ${you}, ${rival} and ${friend}.`);
-        return {log: ['dusklings_of(you)  →  2', 'dusklings_of(Rook)  →  1', 'dusklings_of(Fen)  →  0'], win: 'Counted without a single loop variable.', scene: sceneOf(c)};
+        return {log: ['dusklings_of(you)  →  2', 'dusklings_of(Rook)  →  1', 'dusklings_of(Fen)  →  0'], win: 'dusklings_of counts with filter and count, without a loop.', scene: sceneOf(c)};
       },
     },
     {
@@ -187,7 +187,7 @@ export const lesson = {
         need(c.call('dusklings_of', 'you') === 1n, 'The second hatch should be rolled back.');
         c.as('rival').call('hatch', 3); c.as('friend').call('hatch', 4);
         need(c.call('duskling_count') === 3n, 'Rook and Fen should each still be able to hatch once.');
-        return {log: ['hatch as you  →  ok', `hatch as you again  →  panic: “${msg}”`, 'hatch as Rook  →  ok', 'hatch as Fen  →  ok'], win: 'One Duskling per keeper, enforced by the contract itself.', scene: sceneOf(c)};
+        return {log: ['hatch as you  →  ok', `hatch as you again  →  panic: “${msg}”`, 'hatch as Rook  →  ok', 'hatch as Fen  →  ok'], win: 'A keeper\'s second hatch now panics.', scene: sceneOf(c)};
       },
     },
     {

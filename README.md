@@ -2,7 +2,7 @@
 
 Learn Dusk by raising Dusklings: pixel creatures made from 16 digits of DNA.
 
-**[Open Dusklings](https://hdauven.github.io/dusklings/)** · [Source on GitHub](https://github.com/HDauven/dusklings)
+**[Open Dusklings](https://hdauven.github.io/dusklings/)**
 
 | Path | Size | What you do |
 |---|---|---|

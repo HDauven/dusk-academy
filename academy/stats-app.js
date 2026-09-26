@@ -41,7 +41,7 @@ function finale(c, ctx) {
         ${arena ? `<button class="ghost" data-lab="other">Try ${other.who}'s Duskling (power ${other.stats[2]})</button>` : ''}
       </div>
     </div>
-    <div class="console play-log" id="lab-log" tabindex="0" role="status" aria-live="polite"><p class="muted">Every button runs a real PLONK prover and verifier in your browser.</p></div>`;
+    <div class="console play-log" id="lab-log" tabindex="0" role="status" aria-live="polite"><p class="muted">Each button runs the PLONK prover and verifier.</p></div>`;
   const log = (kind, text) => { ctx.pane.querySelector('#lab-log').insertAdjacentHTML('beforeend', `<p class="${kind}">${text}</p>`); };
   const cases = {
     mine: {stats: [strength, agility, power], who: name},

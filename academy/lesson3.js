@@ -147,7 +147,7 @@ assert!(hunter.owner == keeper, "Only its keeper can send a Duskling hunting");<
         needMethod(c, 'hunt', {pub: true, mut: true, params: [['id', 'u64'], ['moth_id', 'u64']], output: '()'});
         c.as('you').call('hunt', 0, 1);
         const other = c.as('rival').panics('hunt', 0, 1), none = c.as('you').panics('hunt', 9, 1), shielded = c.as(null).panics('hunt', 0, 1);
-        return {log: ['hunt(0, 1) as you  →  ok', `hunt(0, 1) as Rook  →  panic: “${other}”`, `hunt(9, 1)  →  panic: “${none}”`, `hunt from a shielded account  →  panic: “${shielded}”`], win: 'Nobody hunts with someone else\'s Duskling.', scene: sceneOf(c)};
+        return {log: ['hunt(0, 1) as you  →  ok', `hunt(0, 1) as Rook  →  panic: “${other}”`, `hunt(9, 1)  →  panic: “${none}”`, `hunt from a shielded account  →  panic: “${shielded}”`], win: 'Hunting with someone else\'s Duskling now panics.', scene: sceneOf(c)};
       },
     },
     {
@@ -165,7 +165,7 @@ assert!(hunter.owner == keeper, "Only its keeper can send a Duskling hunting");<
         need(baby.dna === blendOf(all[0].dna, MOTHS[2]) && baby.owner === 'you', 'The new Duskling should have the blended DNA and belong to the hunter\'s keeper.');
         const msg = c.as('you').panics('hunt', 0, 40);
         need(c.dusklings().length === 3, 'A failed hunt must not hatch anything.');
-        return {log: [`hunt(0, 2)  →  Duskling #2 · ${pad16(baby.dna)} ✦`, `hunt(0, 40)  →  panic: “${msg}”`, 'Dusklings after the failed hunt  →  still 3'], win: 'A moth-born Duskling hatched, and the failed hunt left no trace.', scene: sceneOf(c)};
+        return {log: [`hunt(0, 2)  →  Duskling #2, DNA ${pad16(baby.dna)}, moth-born`, `hunt(0, 40)  →  panic: “${msg}”`, 'Dusklings after the failed hunt  →  still 3'], win: 'A moth-born Duskling hatched, and the failed hunt left no trace.', scene: sceneOf(c)};
       },
     },
     {
@@ -201,7 +201,7 @@ assert!(hunter.owner == keeper, "Only its keeper can send a Duskling hunting");<
         need(ev.length === 2 && ev[0].topic === 'hatched' && ev[1].topic === 'hunted', 'A hunt should emit "hatched" and then "hunted".');
         need(ev[1].type === 'Hunted', 'Emit the event type, `crate::Hunted { id, moth_id }`: apps can only decode registered event types.');
         need(ev[1].fields.id === 0n && ev[1].fields.moth_id === 3n, 'The `Hunted` event should carry the hunter\'s id and the moth\'s id: here 0 and 3.');
-        return {log: [`event "hatched"  Hatched { id: 2, dna: ${pad16(ev[0].fields.dna)} }`, 'event "hunted"   Hunted { id: 0, moth_id: 3 }'], win: 'Hunts are on the record.', scene: sceneOf(c)};
+        return {log: [`event "hatched"  Hatched { id: 2, dna: ${pad16(ev[0].fields.dna)} }`, 'event "hunted"   Hunted { id: 0, moth_id: 3 }'], win: 'A hunt now emits Hatched, then Hunted.', scene: sceneOf(c)};
       },
     },
     {

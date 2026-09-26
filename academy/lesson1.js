@@ -451,7 +451,7 @@ self.store_egg(size);</code></pre>`,
         c.call('hatch', seed);
         const last = c.dusklings().at(-1);
         need(last && last.dna === dnaFor(seed), `hatch(${seed}) should create a Duskling with DNA ${pad16(dnaFor(seed))}.`);
-        log.push(`hatch(${seed})  →  Duskling #${c.dusklings().length - 1}  ·  ${pad16(last.dna)}`);
+        log.push(`hatch(${seed})  →  Duskling #${c.dusklings().length - 1}, DNA ${pad16(last.dna)}`);
       }
       return {log, win: 'A working hatchery. One public method, two private helpers.', scene: sceneOf(c)};
     },

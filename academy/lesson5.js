@@ -89,7 +89,7 @@ abi::emit("transferred", crate::Transferred { id, to });</code></pre>`,
         need(ev.length === 1 && ev[0].topic === 'transferred', 'A transfer should emit one "transferred" event.');
         need(ev[0].type === 'Transferred', 'Emit the event type, `crate::Transferred { id, to }`: apps can only decode registered event types.');
         need(ev[0].fields.id === 0n && ev[0].fields.to?.id === 'friend', 'The event should carry the Duskling\'s id and the new keeper: here 0 and Fen.');
-        return {log: ['event "transferred"  Transferred { id: 0, to: Fen }'], win: 'Every handover leaves a receipt.', scene: sceneOf(c)};
+        return {log: ['event "transferred"  Transferred { id: 0, to: Fen }'], win: 'A transfer now emits Transferred with the new keeper.', scene: sceneOf(c)};
       },
     },
     {
@@ -161,7 +161,7 @@ duskling.approved = None;</code></pre>`,
         const msg = c.as('friend').panics('take', 0);
         need(c.dusklings()[0].owner === 'rival', 'Rook should still own the Duskling.');
         need(/approved\s*=\s*None/.test(fnSource(source, 'transfer')), '`transfer` should clear the approval.');
-        return {log: ['approve(0, Fen), then transfer(0, Rook)', `take(0) as Fen  →  panic: “${msg}”`, 'owner  →  Rook'], win: 'Loophole closed. That\'s the whole Hatchery!', scene: sceneOf(c)};
+        return {log: ['approve(0, Fen), then transfer(0, Rook)', `take(0) as Fen  →  panic: “${msg}”`, 'owner  →  Rook'], win: 'A transfer now clears the approval. That\'s the whole Hatchery!', scene: sceneOf(c)};
       },
     },
     {
